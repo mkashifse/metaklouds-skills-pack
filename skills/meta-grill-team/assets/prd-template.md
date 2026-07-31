@@ -41,7 +41,8 @@ Cover primary, alternate, recovery, permission, and failure journeys.
 
 ## Prototype evidence
 
-- Prototype workspace:
+- Root prototype path:
+- Root prototype/document commit:
 - Validated flows/states:
 - Findings affecting requirements:
 

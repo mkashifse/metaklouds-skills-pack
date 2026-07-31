@@ -8,6 +8,7 @@ the dev team. Preserve completed delivery history and append each new slice.
 ### Source slice
 
 - ID: `VS-0001`
+- Slice key: `<initiative-id>-VS-0001`
 - Document: `docs/vertical-slices/<initiative-id>/slice-0001.md`
 - Admission status: `READY_FOR_DEV_TEAM`
 
@@ -26,10 +27,14 @@ the dev team. Preserve completed delivery history and append each new slice.
 
 ### Repositories and branches
 
-- Canonical coordination repository/worktree/branch:
-- Prototype repository/workspace/reference:
-- Frontend repository/worktree/branch:
-- Backend repository/worktree/branch:
+- Root repository/worktree/branch: `<product>-root` / `main`
+- Root delivery policy: direct push; no PR
+- Root launch-package commit:
+- Root final-evidence commit:
+- Prototype root path/reference:
+- Frontend repository/worktree/branch: `slice/<slice-key>`
+- Backend repository/worktree/branch: `slice/<slice-key>`
+- Root ignore/isolation verified:
 
 ### Contract
 
@@ -113,10 +118,25 @@ No remediation recorded.
 
 ### Pull requests
 
-- Repository:
+- Root repository: no PR; direct `main` commits recorded above
+- Frontend PR:
   - URL:
-  - Head commit:
+  - Head/merge commit:
   - CI status:
+- Backend PR:
+  - URL:
+  - Head/merge commit:
+  - CI status:
+
+### Cross-repository release sequence
+
+- Compatibility strategy:
+- Database expand/migrate/switch/contract order:
+- PR merge order:
+- Deployment order:
+- Feature flag and initial state:
+- Flag enablement gate:
+- Cross-repository rollback:
 
 ### Release authority
 
@@ -135,6 +155,8 @@ No remediation recorded.
 - All mandatory slice flows delivered: No
 - Whole-slice E2E passed: No
 - Independently releasable/rollbackable: No
+- Exactly one FE PR and one BE PR accepted: No
+- Root evidence synchronized on `main`: No
 - Remaining risks:
 - Signed off by EM:
 - Completed at:

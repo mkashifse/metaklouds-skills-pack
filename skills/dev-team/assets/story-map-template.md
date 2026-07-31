@@ -4,6 +4,10 @@
 
 - Delivery ID:
 - Source slice:
+- Slice key:
+- Root launch-package commit:
+- Frontend branch: `slice/<slice-key>`
+- Backend branch: `slice/<slice-key>`
 - Prototype validation:
 - Relevant change records:
 - Owner: Engineering Manager

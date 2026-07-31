@@ -51,16 +51,21 @@ Read [references/repository-layout.md](references/repository-layout.md) when
 frontend and backend live in separate repositories.
 
 - Keep PRDs, slices, story maps, delivery documents, ADRs, context, and
-  `scrum.md` in one canonical coordination/product repository.
-- Keep the throwaway React prototype in a separate prototype
-  repository/workspace; use it as behavioral evidence only.
-- Keep frontend code and repository-local technical instructions in the
-  frontend repository.
-- Keep backend code, migrations, owned OpenAPI, and repository-local technical
-  instructions in the backend repository.
+  `scrum.md` in one canonical `<product>-root` repository.
+- Keep `prototypes/<initiative-id>/` in the root repository and use it as
+  behavioral evidence only.
+- Keep the independently versioned frontend and backend repositories nested
+  under the root working directory, while ignoring both exact directories from
+  the root Git index.
+- Never create a submodule/gitlink or accidentally stage code-repository
+  contents in root.
 - Never duplicate canonical planning/delivery documents into code repositories.
-- Record absolute repository/worktree paths, branches, commits, and PRs in the
-  canonical delivery ledger.
+- Push EM-owned root documents directly to root `main`; never create a root PR
+  and never force-push.
+- For one slice, use the same `slice/<initiative-id>-VS-000N` branch name in
+  both code repositories and create exactly one frontend PR plus one backend PR.
+- Record root commits, both code branches/commits/PRs, CI, merge/deploy order,
+  compatibility, flags, and release evidence in the canonical delivery ledger.
 
 ## Entry modes
 
@@ -94,8 +99,10 @@ When `DEV_TEAM_ROLE=EM` is present:
    contract, then have FE/BE refine the engineering tasks. Freeze the story
    map, task bundles, test plan, and integration contract before implementation.
 6. Spawn exactly one FE and one BE as direct subagents.
-7. Integrate, verify every lifecycle scenario, remediate through the owning
-   engineer, push, create/update PRs, and sign off only the complete slice.
+7. Push the frozen launch package directly to root `main`, then implement,
+   integrate, verify every lifecycle scenario, remediate through the owning
+   engineer, create/update exactly the frontend and backend PRs, and sign off
+   only the complete slice.
 
 The EM never writes or repairs product code.
 
@@ -147,6 +154,10 @@ Do not spawn another team or edit EM-owned documents.
 ## Delivery invariants
 
 - One source slice, one EM, one FE, one BE, one full-slice release decision.
+- One root delivery stream on direct `main`, one frontend PR, and one backend
+  PR. Do not create extra per-story/layer PRs or a root PR.
+- Use one slice key `<initiative-id>-VS-000N` and branch
+  `slice/<slice-key>` in both code repositories.
 - The EM is accountable for converting the slice into user stories. FE and BE
   jointly refine feasibility, dependencies, estimates, and engineering tasks.
   `$vertical-slice-team` retains ownership of product scope and acceptance.
@@ -183,12 +194,16 @@ docs/dev-team/<delivery-id>/delivery-report.md
 - Only the EM edits `scrum.md`, `story-map.md`, user-story files, and other
   delivery documents. Workers report evidence for the EM to record.
 - Contract changes are versioned, communicated, and reverified.
+- Cross-repository changes are compatibility-first. Record expand/migrate/
+  contract ordering, merge/deploy sequence, rollback, and any feature flag that
+  keeps incomplete capability hidden until both code sides are ready.
 - Any missing mandatory flow is a release blocker, not “follow-up work.”
 - The EM assigns product defects to FE or BE and never repairs code.
 - `scrum.md` is durable delivery history; append or migrate without erasing
   evidence.
-- Mark `COMPLETE` only after full-slice E2E verification, required pushes, PRs,
-  CI, and EM sign-off.
+- Mark `COMPLETE` only after root evidence is on `main`, both code PRs and CI
+  are accepted, the planned merge/deploy sequence is executed, full-slice E2E
+  verification passes, and the EM signs off.
 
 The EM may update only the execution-status/evidence section of the source slice
 after handoff. Scope, lifecycle, non-goals, and acceptance remain owned by

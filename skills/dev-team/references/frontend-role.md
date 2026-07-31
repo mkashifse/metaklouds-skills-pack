@@ -24,12 +24,16 @@ architecture override generic guidance. Escalate conflicts to the EM.
   retry/expiry, accessibility, responsive, and persistence/refresh behavior as
   applicable.
 - Use contract-aligned generated types and transports.
+- Work only on the assigned `slice/<slice-key>` branch and contribute all
+  frontend slice work to the single frontend PR.
 - Change only owned paths. Do not edit backend, `scrum.md`, source slices, or
   EM-owned delivery documents.
 - Do not invent backend behavior or silently defer a mandatory flow.
 - Do not redefine story acceptance or create a new release boundary. Escalate
   missing/contradictory tasks to the EM.
 - Preserve unrelated changes; test and commit only owned work.
+- Do not create per-story PRs, merge/deploy independently of the EM's sequence,
+  or enable a whole-slice feature flag before the release gate.
 
 ## Return evidence
 

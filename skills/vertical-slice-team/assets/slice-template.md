@@ -43,6 +43,21 @@ lifecycle step.
 
 ## Dependencies and sequencing
 
+## Repository and release coordination
+
+- Slice key: `<initiative-id>-VS-0001`
+- Root repository: `<product>-root`
+- Root delivery policy: direct commits to `main`; no root PR
+- Root prototype path/commit:
+- Frontend repository: `<product>-frontend`
+- Frontend branch/PR: `slice/<slice-key>` / exactly one slice PR
+- Backend repository: `<product>-backend`
+- Backend branch/PR: `slice/<slice-key>` / exactly one slice PR
+- Compatibility requirement:
+- Expected merge/deploy order:
+- Feature-flag requirement:
+- Rollback coordination:
+
 ## Acceptance scenarios
 
 Include whole-lifecycle happy, alternate, recovery, permission, security,
@@ -51,6 +66,7 @@ failure, persistence/refresh, rollout, and rollback scenarios.
 ## Dev-team handoff
 
 - Source slice ID: `VS-0001`
+- Shared slice key: `<initiative-id>-VS-0001`
 - Required release outcome:
 - Required repositories:
 - Required supporting skills:
@@ -67,6 +83,9 @@ failure, persistence/refresh, rollout, and rollback scenarios.
 - [ ] No mandatory follow-up for baseline value
 - [ ] Contracts and acceptance are unambiguous
 - [ ] Prototype findings and locked changes are reflected/dispositioned
+- [ ] Root/nested repository isolation and delivery policy are explicit
+- [ ] Exactly one frontend PR and one backend PR are planned
+- [ ] Compatibility, merge/deploy order, flags, and rollback are addressed
 - [ ] Approved by Planning Lead, Product/Domain Analyst, and Architect/QA Planner
 
 **Ready status:** `READY_FOR_DEV_TEAM` only when every item passes.

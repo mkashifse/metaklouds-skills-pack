@@ -102,10 +102,25 @@ For each approved slice:
 Use $dev-team to implement and release this entire vertical slice.
 ```
 
-The canonical product documents should live in a coordination repository. Keep
-the prototype, production frontend, and production backend in separate
-repositories or workspaces, as described by the `dev-team` repository-layout
-reference.
+The canonical product documents should live in a root repository. Keep the
+prototype there and nest the independently versioned
+production repositories beneath its working directory:
+
+```text
+workapp-root/                  # docs + prototypes; direct pushes to main
+├── docs/
+├── prototypes/
+├── workapp-frontend/          # separate .git; one PR per fat slice
+└── workapp-backend/           # separate .git; one PR per fat slice
+```
+
+The root `.gitignore` must ignore the exact frontend/backend directories. Do
+not create submodules or accidentally stage nested repository contents. For
+each slice, use one shared slice key and branch name in both code repositories,
+create exactly one frontend PR plus one backend PR, and create no root PR.
+Freeze compatibility, merge/deploy order, feature flags, and rollback in the
+root integration contract before implementation. A slice is complete only
+after both PRs and whole-slice E2E evidence pass.
 
 ## Install only the bundled Metaklouds skills
 

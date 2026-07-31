@@ -8,7 +8,8 @@
 
 ## Prototype reference and validation
 
-- Prototype workspace:
+- Root prototype path:
+- Root prototype/document commit:
 - Validated navigation:
 - Validated state families:
 - Relevant `CHG-000N` records:

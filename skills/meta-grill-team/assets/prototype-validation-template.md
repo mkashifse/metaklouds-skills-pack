@@ -3,8 +3,10 @@
 ## Metadata
 
 - Initiative ID:
-- Prototype repository/workspace:
-- Prototype branch/commit:
+- Root repository:
+- Prototype root path: `prototypes/<initiative-id>/`
+- Root branch: `main`
+- Root commit:
 - Run command:
 - Owner: Frontend React Prototype Engineer
 - Status: `DRAFT`
@@ -46,4 +48,5 @@ Reference `CHG-000N` records when prototype evidence changed a locked decision.
 - Unresolved product gates:
 - Architecture assumptions requiring implementation design:
 - Prototype paths worth inspecting:
+- Root commit containing validated prototype and documents:
 - Prototype code disposition after handoff:

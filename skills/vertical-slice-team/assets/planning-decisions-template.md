@@ -2,8 +2,8 @@
 
 ## Authoritative sources
 
-Include PRD, UX specification, prototype validation/workspace, context, ADRs,
-and relevant `CHG-000N` records.
+Include PRD, UX specification, root prototype path/validation/commit, context,
+ADRs, and relevant `CHG-000N` records.
 
 ## Capability-family map
 
@@ -20,5 +20,14 @@ Reference locked change records for runtime decisions that supersede prior
 inputs.
 
 ## Package, platform, and architecture constraints
+
+## Repository and release constraints
+
+- Root repository/main commit:
+- Nested frontend/backend repositories:
+- Root ignore/isolation verification:
+- Shared slice-key convention:
+- One frontend PR + one backend PR policy:
+- Compatibility, merge/deploy order, flag, and rollback requirements:
 
 ## Open planning gates

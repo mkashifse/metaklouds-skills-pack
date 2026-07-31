@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "name": "metaklouds-skills-pack",
+  "skills": [
+    {
+      "name": "meta-grill-team",
+      "kind": "bundled",
+      "path": "skills/meta-grill-team",
+      "license": "MIT"
+    },
+    {
+      "name": "vertical-slice-team",
+      "kind": "bundled",
+      "path": "skills/vertical-slice-team",
+      "license": "MIT"
+    },
+    {
+      "name": "dev-team",
+      "kind": "bundled",
+      "path": "skills/dev-team",
+      "license": "MIT"
+    },
+    {
+      "name": "change-management",
+      "kind": "bundled",
+      "path": "skills/change-management",
+      "license": "MIT"
+    },
+    {
+      "name": "prototype",
+      "kind": "upstream",
+      "repository": "https://github.com/mattpocock/skills.git",
+      "revision": "2ab958093e83e0ec752e6c1c5932da465bf23e0c",
+      "path": "skills/engineering/prototype",
+      "license": "MIT"
+    },
+    {
+      "name": "vercel-react-best-practices",
+      "kind": "upstream",
+      "repository": "https://github.com/vercel-labs/agent-skills.git",
+      "revision": "7c180d9044c9ae2b442b567aad4e42a28dd5ed62",
+      "path": "skills/react-best-practices",
+      "license": "No repository license declared"
+    },
+    {
+      "name": "fastapi",
+      "kind": "upstream",
+      "repository": "https://github.com/fastapi/fastapi.git",
+      "revision": "95f8322ee1dcda7ceace7b1c4f6c9915b36d748f",
+      "path": "fastapi/.agents/skills/fastapi",
+      "license": "MIT"
+    },
+    {
+      "name": "supabase",
+      "kind": "upstream",
+      "repository": "https://github.com/supabase/agent-skills.git",
+      "revision": "1207767388a0ffb55f21fb4e6988fee96942431d",
+      "path": "skills/supabase",
+      "license": "MIT"
+    },
+    {
+      "name": "supabase-postgres-best-practices",
+      "kind": "upstream",
+      "repository": "https://github.com/supabase/agent-skills.git",
+      "revision": "1207767388a0ffb55f21fb4e6988fee96942431d",
+      "path": "skills/supabase-postgres-best-practices",
+      "license": "MIT"
+    }
+  ]
+}

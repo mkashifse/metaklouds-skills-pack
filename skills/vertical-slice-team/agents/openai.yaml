@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vertical Slice Team"
+  short_description: "Plan fat end-to-end capability-family slices"
+  default_prompt: "Use $vertical-slice-team to convert this approved initiative into fat, end-to-end, dev-team-ready vertical slices."

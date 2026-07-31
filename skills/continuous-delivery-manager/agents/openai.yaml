@@ -1,0 +1,4 @@
+interface:
+  display_name: "Continuous Delivery Manager"
+  short_description: "Orchestrate initiatives through verified releases"
+  default_prompt: "Use $continuous-delivery-manager to inspect the current delivery state, recommend the next route, and execute approved initiatives through verified releases."

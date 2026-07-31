@@ -3,6 +3,18 @@
   "name": "metaklouds-skills-pack",
   "skills": [
     {
+      "name": "continuous-delivery-manager",
+      "kind": "bundled",
+      "path": "skills/continuous-delivery-manager",
+      "license": "MIT"
+    },
+    {
+      "name": "delivery-monitoring-dashboard",
+      "kind": "bundled",
+      "path": "skills/delivery-monitoring-dashboard",
+      "license": "MIT"
+    },
+    {
       "name": "meta-grill-team",
       "kind": "bundled",
       "path": "skills/meta-grill-team",

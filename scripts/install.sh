@@ -5,11 +5,12 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  ./scripts/install.sh codex|claude [--dest /absolute/path] [--force]
+  ./scripts/install.sh codex|claude [--dest /absolute/path] [--force] [--only NAME]
 
 Options:
   --dest PATH  Install into an explicit skills directory.
   --force      Replace existing skills after moving them to timestamped backups.
+  --only NAME  Install only this skill. Repeat to select multiple skills.
   -h, --help   Show this help.
 USAGE
 }
@@ -23,6 +24,8 @@ target="$1"
 shift
 destination=""
 force="false"
+only_skills=()
+only_count=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,6 +40,15 @@ while [[ $# -gt 0 ]]; do
     --force)
       force="true"
       shift
+      ;;
+    --only)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: --only requires a skill name." >&2
+        exit 2
+      fi
+      only_skills+=("$2")
+      only_count=$((only_count + 1))
+      shift 2
       ;;
     -h|--help)
       usage
@@ -73,6 +85,19 @@ if [[ "$destination" != /* ]]; then
   exit 2
 fi
 
+if [[ "$only_count" -gt 0 ]]; then
+  for selected_skill in "${only_skills[@]}"; do
+    case "$selected_skill" in
+      continuous-delivery-manager|delivery-monitoring-dashboard|meta-grill-team|vertical-slice-team|dev-team|change-management|prototype|vercel-react-best-practices|fastapi|supabase|supabase-postgres-best-practices)
+        ;;
+      *)
+        echo "Error: unknown skill for --only: $selected_skill" >&2
+        exit 2
+        ;;
+    esac
+  done
+fi
+
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_directory/.." && pwd)"
 temporary_root="$(mktemp -d)"
@@ -80,10 +105,31 @@ trap 'rm -rf "$temporary_root"' EXIT
 
 mkdir -p "$destination"
 
+should_install() {
+  local skill_name="$1"
+  local selected_skill
+
+  if [[ "$only_count" -eq 0 ]]; then
+    return 0
+  fi
+
+  for selected_skill in "${only_skills[@]}"; do
+    if [[ "$selected_skill" == "$skill_name" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 install_directory() {
   local source_directory="$1"
   local skill_name="$2"
   local target_directory="$destination/$skill_name"
+
+  if ! should_install "$skill_name"; then
+    return
+  fi
 
   if [[ ! -f "$source_directory/SKILL.md" ]]; then
     echo "Error: $source_directory is not a skill directory." >&2
@@ -114,6 +160,10 @@ fetch_and_install() {
   local skill_name="$4"
   local checkout_directory="$temporary_root/$skill_name"
 
+  if ! should_install "$skill_name"; then
+    return
+  fi
+
   if [[ -e "$destination/$skill_name" && "$force" != "true" ]]; then
     echo "Skipping $skill_name (already installed)."
     return
@@ -131,6 +181,8 @@ fetch_and_install() {
 
 echo "Installing Metaklouds Skills Pack for $target into $destination"
 
+install_directory "$repository_root/skills/continuous-delivery-manager" "continuous-delivery-manager"
+install_directory "$repository_root/skills/delivery-monitoring-dashboard" "delivery-monitoring-dashboard"
 install_directory "$repository_root/skills/meta-grill-team" "meta-grill-team"
 install_directory "$repository_root/skills/vertical-slice-team" "vertical-slice-team"
 install_directory "$repository_root/skills/dev-team" "dev-team"
@@ -167,7 +219,11 @@ fetch_and_install \
   "supabase-postgres-best-practices"
 
 echo
-echo "Installed the complete skills pack."
+if [[ "$only_count" -eq 0 ]]; then
+  echo "Installed the complete skills pack."
+else
+  echo "Installed selected skills: ${only_skills[*]}"
+fi
 if [[ "$target" == "codex" ]]; then
   echo "Start a new Codex task to refresh the skill catalog."
 else

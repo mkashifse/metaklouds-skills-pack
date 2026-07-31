@@ -117,6 +117,11 @@ locked decision, `$change-management` takes precedence: identify the dependency,
 classify lead versus human authority, lock the result, run the impact analysis,
 and synchronize affected artifacts.
 
+Evaluate accepted decisions for ADR eligibility after every round, not only
+during the architecture round. Keep ordinary product, business, UX,
+architecture, and operational decisions in the PRD decision ledger. Create an
+ADR only when the stricter qualification test under Deliverables is satisfied.
+
 ## Concurrent prototype workflow
 
 Start the Prototype Engineer after the first product/domain decisions are
@@ -178,8 +183,11 @@ for the prototype handoff. Create `change-management.md` from the
 - The UX specification and prototype validation are mandatory for this
   user-facing prototype workflow.
 - `CONTEXT.md` contains stable domain language, not implementation detail.
-- Create an ADR only when a decision is hard to reverse, surprising without
-  context, and the result of a real trade-off. Follow
+- Evaluate ADR eligibility in every decision round. Create one ADR file per
+  qualifying decision only when it is hard to reverse, surprising without
+  context, and the result of a real trade-off. Do not use a combined
+  architecture-decisions document or duplicate ordinary PRD ledger entries as
+  ADRs. Cross-reference the PRD decision when both records are useful. Follow
   [references/ADR-FORMAT.md](references/ADR-FORMAT.md).
 - Follow `CONTEXT-MAP.md` in multi-context repositories and
   [references/CONTEXT-FORMAT.md](references/CONTEXT-FORMAT.md).

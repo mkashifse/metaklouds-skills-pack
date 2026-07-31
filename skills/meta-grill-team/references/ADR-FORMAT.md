@@ -3,6 +3,14 @@
 ADRs live in `docs/adr/` and use sequential numbering: `0001-slug.md`, `0002-slug.md`, etc.
 
 Create the `docs/adr/` directory lazily — only when the first ADR is needed.
+Evaluate ADR eligibility after every accepted decision round; architecture
+rounds are not the only source of qualifying decisions.
+
+Keep one decision in each ADR file. Do not create a combined
+`architecture-decisions.md`. Separate files preserve focused context, status,
+supersession, links, and history. Keep ordinary decisions in the PRD decision
+ledger instead of duplicating them as ADRs; cross-reference a ledger decision
+when both records add value.
 
 ## Template
 

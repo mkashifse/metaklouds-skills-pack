@@ -14,7 +14,9 @@ release evidence, and sign-off. Manage exactly one FE and one BE directly.
 - Convert the slice into user stories; define engineering tasks, whole-slice
   design, contracts, scenarios, ownership, and gates.
 - Create branches/worktrees; spawn, message, wait for, and redirect FE/BE.
-- Run verification, integrate clean commits, push, and create/update PRs.
+- Push EM-owned root documents directly to `main`.
+- Run verification, integrate clean commits, and create/update exactly one
+  frontend PR plus one backend PR for the slice.
 
 ## Prohibited work
 
@@ -24,6 +26,7 @@ release evidence, and sign-off. Manage exactly one FE and one BE directly.
 - Do not manually resolve product-code conflicts.
 - Do not mark a partial, untested, unpushed, PR-less, or CI-failing slice
   complete.
+- Do not create a root PR, a per-story code PR, or force-push root `main`.
 
 Return scope defects to `$vertical-slice-team`. Assign code defects to FE or BE.
 
@@ -35,7 +38,8 @@ Return scope defects to `$vertical-slice-team`. Assign code defects to FE or BE.
 3. Run the fat-slice admission gate and record the result.
 4. Read the existing ledger and create a unique delivery ID.
 5. For split repositories, read `repository-layout.md`, identify the canonical
-   coordination repository, and record every worktree/branch.
+   root repository and nested independent frontend/backend repositories,
+   validate the root ignore boundary, and record every worktree/branch.
 6. Create `story-map.md` plus one
    `stories/US-000N-<slug>.md` per observable user/system outcome.
 7. Draft the whole-slice technical design and integration contract.
@@ -48,6 +52,7 @@ Return scope defects to `$vertical-slice-team`. Assign code defects to FE or BE.
    architecture precedence.
 11. Freeze the story map, story/task files, test plan, and contract together
     only when no mandatory flow or assigned task requires guessing.
+12. Push the frozen launch package directly to root `main` before worker launch.
 
 User stories are implementation planning units, not release units. Do not write
 frontend-only or backend-only stories; those are engineering task bundles.
@@ -72,6 +77,7 @@ Include:
 - `DEV_TEAM_ROLE=FE` or `DEV_TEAM_ROLE=BE`;
 - source slice ID and absolute path;
 - absolute repository/worktree and skill paths;
+- shared slice key and `slice/<slice-key>` branch;
 - story-map and assigned user-story paths;
 - technical design, contract, and test-plan paths;
 - complete cross-story task bundle, acceptance criteria, ownership, branch,
@@ -87,8 +93,11 @@ report evidence by story and task ID; the EM updates canonical delivery docs.
 ## Review and delivery
 
 Inspect every commit and run the full test plan. Record and reassign defects.
-After all gates pass, update the delivery report, push every repository, create
-or update PRs, observe required CI, coordinate the named repository
-maintainers/release authority, record the deployed environment plus
-release/rollback evidence, and sign off. Do not assume merge/deploy authority.
-Update the source slice execution evidence only after the release decision.
+After all gates pass, update and push root delivery evidence directly to
+`main`, push both code branches, create or update exactly one frontend PR and
+one backend PR, observe required CI,
+coordinate the frozen compatibility/merge/deploy/feature-flag plan with the
+named repository maintainers/release authority, record both PRs and the deployed
+environment plus release/rollback evidence, push final root evidence directly
+to `main`, and sign off. Do not assume merge/deploy authority. Update the source
+slice execution evidence only after the release decision.

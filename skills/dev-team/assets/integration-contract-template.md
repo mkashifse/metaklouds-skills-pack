@@ -80,8 +80,17 @@ Errors:
 
 - Contract versioning:
 - Backward compatibility:
-- Migration:
-- Feature flag:
+- Additive/expand changes:
+- Data migration/backfill:
+- Consumer switch:
+- Contract/cleanup:
+- Frontend PR and merge SHA:
+- Backend PR and merge SHA:
+- PR merge order:
+- Deployment order:
+- Feature flag and initial state:
+- Flag enablement gate:
+- Coordinated rollback:
 - Deprecation:
 
 ## Fixtures
@@ -93,6 +102,7 @@ Errors:
 - Frontend mock/consumer verification:
 - Backend provider/contract verification:
 - Integrated verification:
+- Whole-slice post-deploy E2E:
 
 ## Change log
 

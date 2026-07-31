@@ -53,9 +53,11 @@ implementation branches, commit product changes, or execute the dev-team
 workflow.
 
 For multi-repository products, create planning artifacts only in the canonical
-coordination/product repository. Treat frontend and backend repositories as
-read-only planning inputs and never copy slice documents into them. Treat the
-prototype repository as behavioral evidence, not production architecture.
+`<product>-root` repository. The root also contains
+`prototypes/<initiative-id>/`. Treat nested, independently versioned frontend
+and backend repositories as read-only planning inputs; never copy slice
+documents into them or stage them in the root repository. Treat the root
+prototype as behavioral evidence, not production architecture.
 
 ## The fat vertical-slice invariant
 
@@ -98,7 +100,11 @@ whose complete lifecycle can be released and evaluated independently.
 6. Define contracts, security, data, operations, rollout, and whole-journey
    acceptance for each slice.
 7. Run the readiness checklist with both specialist workers.
-8. Mark a slice `READY_FOR_DEV_TEAM` only when all checks pass.
+8. Define the shared slice key, required frontend/backend repositories,
+   compatibility strategy, merge/deploy order, and feature-flag expectation.
+9. Mark a slice `READY_FOR_DEV_TEAM` only when all checks pass.
+10. Commit and push the planning artifacts directly to root `main`; do not
+    create a root PR.
 
 Ask only unresolved high-impact questions. Do not re-ask facts answered by
 source documents or code. Return contradictions in initiative scope to
@@ -147,6 +153,11 @@ capability families and release order. Each slice file is the binding dev-team
 input. Keep implementation mechanics at the level needed to remove ambiguity;
 do not produce user stories, engineering task lists, or worker reports.
 
+Define the cross-repository slice key as `<initiative-id>-VS-0001`. Require the
+dev team to use `slice/<slice-key>` in both code repositories, create exactly
+one frontend PR and one backend PR, and create no root PR. Planning specifies
+compatibility and release constraints without dictating engineering microtasks.
+
 Default to one slice file for one capability family. Create another numbered
 slice only when it is a genuinely different capability family that independently
 passes every fat-slice invariant. Never use another file to defer a mandatory
@@ -169,13 +180,18 @@ Reject or return a slice when any answer is no:
   dispositioned?
 - Are all affected upstream and planning documents synchronized, with no
   temporary overlay crossing the readiness gate?
+- Are the root, frontend, and backend repositories identified, with nested code
+  repositories ignored by the root and a shared slice key defined?
+- Are compatibility, merge/deploy order, feature flags, and whole-slice release
+  coordination explicit enough for implementation planning?
 - Can the dev team deliver the full slice without silently shrinking it?
 
 Approved output status: `READY_FOR_DEV_TEAM`.
 
 The handoff is exactly one approved `slice-000N.md` plus its cited source
-documents, prototype validation, and relevant locked change records. The slice
-stays product-complete but implementation-high-level: dev-team's EM owns
+documents, root prototype validation/reference, relevant locked change records,
+and the root `main` commit containing them. The slice stays product-complete
+but implementation-high-level: dev-team's EM owns
 conversion into user stories, and FE/BE own refinement into engineering tasks.
 Recommend `$dev-team` for implementation. The next slice remains locked until
 the current slice is fully released or explicitly abandoned and replanned.

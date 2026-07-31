@@ -15,6 +15,7 @@ correction or superseding change.
 - Human approver, when required:
 - Decision-authority source:
 - Locked at:
+- Root `main` commit:
 - Supersedes:
 
 ### Misalignment or new evidence
@@ -47,6 +48,7 @@ correction or superseding change.
 | Security/privacy/compliance/accessibility | `NONE` | | | |
 | Tests/rollout/rollback/operations | `NONE` | | | |
 | Repositories/owners/cost/schedule | `NONE` | | | |
+| Root/FE PR/BE PR/compatibility/release order | `NONE` | | | |
 
 Allowed impact values: `NONE`, `UPDATE_REQUIRED`, `REPLAN_REQUIRED`.
 
@@ -59,5 +61,7 @@ Allowed impact values: `NONE`, `UPDATE_REQUIRED`, `REPLAN_REQUIRED`.
 
 - User informed:
 - Downstream leads informed:
+- Root commit pushed:
+- Frontend/backend PR owners informed:
 - Affected work paused:
 - Unaffected work continuing:

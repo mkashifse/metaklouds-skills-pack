@@ -69,6 +69,10 @@
 - Contract tests:
 - Integration tests:
 - End-to-end tests:
+- Compatibility before/after each deployment step:
+- Feature-flag-off verification:
+- Whole-slice feature-flag-on verification:
+- Coordinated rollback verification:
 
 ## Final results
 

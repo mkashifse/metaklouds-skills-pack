@@ -28,12 +28,24 @@
 
 ## Repository map
 
-- Canonical coordination repository/worktree/branch:
-- Prototype repository/workspace/reference:
-- Frontend repository/worktree/branch:
-- Backend repository/worktree/branch:
+- Root repository/worktree/branch: `<product>-root` / `main`
+- Root prototype path/reference:
+- Root launch-package commit:
+- Frontend repository/worktree/branch: `slice/<slice-key>`
+- Backend repository/worktree/branch: `slice/<slice-key>`
+- Root ignore/isolation verification:
 - Backend-owned OpenAPI location:
 - Frontend generated-client location:
+
+## Cross-repository delivery design
+
+- Exactly one frontend PR and one backend PR:
+- Backward-compatibility strategy:
+- Database expand/migrate/switch/contract sequence:
+- PR merge order:
+- Deployment order:
+- Feature flag and activation gate:
+- Coordinated rollback:
 
 ## Story traceability
 

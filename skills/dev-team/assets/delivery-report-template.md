@@ -4,8 +4,11 @@
 
 - Delivery ID:
 - Source slice:
+- Slice key:
 - Contract version:
-- Pull request(s):
+- Root evidence commits:
+- Frontend PR:
+- Backend PR:
 - Owner: Engineering Manager
 
 ## Feature behavior
@@ -60,16 +63,19 @@
 
 ## Repository delivery
 
-| Repository | Branch | Head commit | Pull request | CI/release status |
+| Repository | Branch | Head/merge commit | Delivery mechanism | CI/release status |
 | --- | --- | --- | --- | --- |
-| Coordination | | | | |
-| Frontend | | | | |
-| Backend | | | | |
+| Root | `main` | | Direct push; no PR | |
+| Frontend | `slice/<slice-key>` | | Exactly one frontend PR | |
+| Backend | `slice/<slice-key>` | | Exactly one backend PR | |
 
 ## Deployment and rollback
 
 - Deployment steps:
 - Migration order:
+- PR merge order:
+- Deployment order:
+- Feature-flag state and activation evidence:
 - Monitoring:
 - Rollback:
 - Target environment:
@@ -93,4 +99,6 @@
 
 - Mandatory source-slice flows missing:
 - Baseline value requires a follow-up:
+- Both code PRs accepted:
+- Root final evidence pushed to `main`:
 - Full slice released:

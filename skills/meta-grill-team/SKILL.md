@@ -38,9 +38,8 @@ When no `META_GRILL_ROLE` marker is present:
 
 1. Confirm subagent tools are available.
 2. Spawn exactly one lead with `META_GRILL_ROLE=LEAD`.
-3. Include the initiative, canonical coordination repository, prototype
-   repository/workspace, production code-repository paths, constraints, and
-   this skill path.
+3. Include the initiative, canonical root repository, root prototype path,
+   nested production repository paths, constraints, and this skill path.
 4. Instruct the lead to read this file and own the other three workers.
 5. Do not spawn the designer, architect, or prototype engineer directly.
 
@@ -64,19 +63,29 @@ workspace. Other workers inspect and advise. No worker writes production code.
 If concurrency is limited, keep the Prototype Engineer active while consulting
 the Designer and Architect sequentially.
 
-For multi-repository products, write initiative documents only in the canonical
-coordination/product repository. Inspect frontend and backend repositories as
-read-only sources; never duplicate the PRD or UX specification into code repos.
+For multi-repository products, use a root repository such as `<product>-root`.
+Keep canonical documents and prototype code in that repository. Keep the
+independent `<product>-frontend` and `<product>-backend` Git repositories nested
+inside the root working directory for convenient access, but ignore their exact
+directories from the root repository. Never add them as submodules, gitlinks,
+or ordinary root-repository files.
 
-Place prototype code in a dedicated prototype repository/workspace, normally:
+Place prototype code inside the root repository:
 
 ```text
-product-prototypes/<initiative-id>/
+<product>-root/prototypes/<initiative-id>/
 ```
 
-Reuse a user-provided prototype location when present. Do not modify the
-production frontend repository during meta-grill unless the user explicitly
-authorizes it.
+The prototype is committed with initiative documents to root `main`; it is not
+a separate repository. The Prototype Engineer edits only the prototype, while
+the Initiative Lead owns root staging, commits, and direct pushes. Do not create
+a root PR. Before staging, verify the nested frontend/backend directories are
+ignored and absent from the root index. Never force-push root `main`.
+
+Reuse a user-provided root prototype path when present. Inspect production
+frontend/backend repositories as read-only sources and never duplicate the PRD
+or UX specification into them. Do not modify production code during meta-grill
+unless the user explicitly authorizes a different workflow.
 
 ## Round workflow
 
@@ -154,6 +163,7 @@ docs/initiatives/<initiative-id>/prd.md
 docs/initiatives/<initiative-id>/ux-spec.md
 docs/initiatives/<initiative-id>/prototype-validation.md
 docs/initiatives/<initiative-id>/change-management.md
+prototypes/<initiative-id>/                      # React + JSON prototype
 CONTEXT.md                                        # glossary terms only
 docs/adr/NNNN-<slug>.md                           # qualifying decisions only
 ```
@@ -196,9 +206,11 @@ Set `READY_FOR_SLICE_PLANNING` only when:
   owners;
 - every change affecting initiative documents is fully synchronized; a
   temporary change-record overlay cannot cross this readiness gate;
+- root documents and prototype are committed and pushed directly to root
+  `main`, with no root PR and no nested code-repository content tracked;
 - the user approves the initiative definition.
 
 The handoff is the PRD, UX specification, prototype validation, prototype
-workspace reference, change history, context terms, and ADRs. Recommend
+root path/commit, change history, context terms, and ADRs. Recommend
 `$vertical-slice-team` next. Do not create slice files, user stories,
 engineering tasks, production branches, production commits, or production code.

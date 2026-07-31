@@ -13,7 +13,7 @@ turning routine delivery into an approval queue.
 Use one append-only file per initiative:
 
 ```text
-docs/initiatives/<initiative-id>/change-management.md
+<product>-root/docs/initiatives/<initiative-id>/change-management.md
 ```
 
 Create it from
@@ -30,6 +30,12 @@ locked record.
 
 Routine implementation details that do not change locked behavior, scope,
 contracts, risk, or acceptance belong in normal team documents, not this log.
+
+The canonical change log is committed directly to root `main`; it never uses a
+root PR. The active lead owns the root write/push while its stage is active.
+Before staging, re-read root state and verify nested frontend/backend
+repositories are ignored and absent from the root index. On a non-fast-forward
+push, synchronize and re-read the log before retrying. Never force-push.
 
 ## Decision authority
 
@@ -84,7 +90,9 @@ timestamp, decision, and rationale; then lock the record.
 8. Update documents owned by the current team. Assign named owners for other
    affected documents; the locked change record is the temporary authoritative
    overlay until synchronization completes.
-9. Notify downstream leads and continue delivery.
+9. Commit and push the locked record plus owned synchronization directly to
+   root `main`, recording the root commit.
+10. Notify downstream leads and continue delivery.
 
 ## Synchronization gates
 
@@ -98,7 +106,8 @@ continues, but it cannot cross these gates:
 - Dev-team worker launch: story map, stories/tasks, technical design, contract,
   and test plan reflect every relevant locked change.
 - `COMPLETE`: all canonical documents, production contracts/code, tests,
-  rollout/rollback evidence, and repository records are synchronized.
+  rollout/rollback evidence, root commits, and frontend/backend PR records are
+  synchronized.
 
 If synchronization cannot finish at a gate, record the blocker and stop only
 that transition.
@@ -114,6 +123,8 @@ Immediately after locking, assess:
 - security, privacy, compliance, accessibility, and operational risk;
 - tests, migrations, rollout, rollback, repositories, owners, cost, and
   schedule.
+- root prototype/documents, frontend PR, backend PR, compatibility, merge/deploy
+  order, and feature-flag state.
 
 For each area, record `NONE`, `UPDATE_REQUIRED`, or `REPLAN_REQUIRED`, with an
 owner and action. Escalate a newly discovered severe impact even if the original
@@ -128,3 +139,5 @@ change was lead-authorized.
 - Do not treat notification as a request for approval when lead authority is
   sufficient.
 - Do not mark document synchronization complete without traceable updates.
+- Do not create a root PR, force-push root `main`, or stage nested code
+  repositories in the root commit.

@@ -17,18 +17,20 @@ Read the full existing `scrum.md`. Append one section keyed to the source slice
 without erasing prior history. Record:
 
 - source slice path, ID, status, and capability promise;
+- shared slice key `<initiative-id>-VS-000N`;
 - all mandatory lifecycle features;
 - repositories, branches, worktrees, and ownership;
-- prototype repository/workspace and evidence status;
+- root prototype path/commit and evidence status;
 - relevant locked `CHG-000N` records;
 - supporting skills and architecture precedence;
 - status `SPECIFICATION`.
 
 For split repositories, read
-[repository-layout.md](repository-layout.md), identify the canonical
-coordination repository, and record every code-repository path/worktree/branch.
-Create the story map, one file per user story, technical design, integration
-contract, test plan, and delivery report from the bundled assets.
+[repository-layout.md](repository-layout.md), identify the canonical root
+repository and its nested independent code repositories, verify the root
+ignores both code directories, and record every path/worktree/branch. Create
+the story map, one file per user story, technical design, integration contract,
+test plan, and delivery report from the bundled assets.
 
 ## 3. Convert the slice into user stories and engineering tasks
 
@@ -75,17 +77,22 @@ After the design and contract are drafted, have FE and BE finalize technical
 tasks, paths, dependencies, and done criteria inside the story files. Freeze
 the story map, story/task files, test plan, and contract as one launch package.
 Do not launch workers while a relevant locked change remains unsynchronized
-with that package.
+with that package. Commit and push this frozen package directly to root `main`;
+record the root commit and do not create a root PR.
 
 ## 5. Launch the engineers
 
-Create safe branches/worktrees. Spawn exactly one FE and one BE concurrently.
+Create `slice/<initiative-id>-VS-000N` in both code repositories. Spawn exactly
+one FE and one BE concurrently.
 Each prompt includes the source slice, story map, assigned story files, all
 delivery docs, the worker's complete cross-story task bundle, owned/forbidden
-paths, supporting-skill paths, test expectations, and commit requirement.
+paths, shared slice key/branch, supporting-skill paths, test expectations, and
+commit requirement.
 
 FE owns frontend tasks across all stories. BE owns backend/data tasks across all
 stories. Shared integration and verification tasks have one explicit owner.
+Each worker contributes to its repository's single full-slice PR; never create
+per-story or per-layer PRs.
 
 ## 6. Review and integrate
 
@@ -99,7 +106,8 @@ For each result:
 5. Integrate acceptable commits only.
 
 Set status `INTEGRATING` and run combined verification. A partial component may
-be recorded as progress, but the slice remains unreleased.
+be merged or deployed only under the frozen compatibility/feature-flag plan and
+is recorded as progress, never as a partial slice release.
 
 ## 7. Remediate
 
@@ -141,6 +149,11 @@ Require:
   lifecycle verified;
 - FE and BE cross-story task bundles accepted;
 - frozen contract satisfied;
+- the root launch package is on `main` and nested code repositories remain
+  absent from the root index;
+- exactly one frontend PR and one backend PR represent the slice;
+- backward compatibility, migration order, merge/deploy order, feature-flag
+  state, and rollback are verified;
 - formatting, linting, type checks, builds, and automated suites pass;
 - real whole-slice E2E scenarios pass;
 - persistence, migration, compatibility, security, privacy, accessibility,
@@ -158,19 +171,28 @@ must not make a partial capability appear complete.
 After local gates:
 
 1. Mark `READY_FOR_PR`.
-2. Commit EM-owned artifacts.
-3. Push every changed repository.
-4. Create or update PRs with outcome, contract, tests, risks, and rollout.
-5. Wait for required CI.
-6. Have the named repository maintainers/release authority merge and deploy;
+2. Commit and push EM-owned artifacts directly to root `main`; create no root
+   PR and verify the nested repositories are not staged.
+3. Push `slice/<slice-key>` in frontend and backend.
+4. Create or update exactly one frontend PR and one backend PR. Both describe
+   the complete slice outcome, root contract commit, compatibility, tests,
+   risks, merge/deploy order, feature flag, and rollback.
+5. Wait for required CI on both PRs.
+6. Have the named repository maintainers/release authority merge and deploy in
+   the frozen order;
    the EM coordinates and verifies but does not assume credentials or authority.
-7. Record URLs, commits, CI, environment, deployment/release evidence, release
-   authority, and EM sign-off.
-8. Update the source slice execution evidence to `DELIVERED`.
-9. Mark the ledger `COMPLETE`.
+7. Run contract and whole-slice E2E verification with both deployed sides;
+   enable the feature flag only when the release gate passes.
+8. Record root commits, both PR URLs/head/merge SHAs, CI, environment,
+   deployment order, flag state, release/rollback evidence, release authority,
+   and EM sign-off.
+9. Push the final delivery evidence directly to root `main`.
+10. Update the source slice execution evidence to `DELIVERED`.
+11. Mark the ledger `COMPLETE`.
 
-If push, PR, CI, deployment, or a mandatory capability is blocked, record the
-blocker and preserve the work. Do not call the slice released or complete.
+If either code push/PR/CI/deployment, the root evidence push, compatibility, or
+a mandatory capability is blocked, record the blocker and preserve the work.
+Keep any release flag off and do not call the slice released or complete.
 If release authority or target environment is undefined, resolve it from the
 PRD/operating model before merge; unrelated verification may continue.
 

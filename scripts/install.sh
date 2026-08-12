@@ -135,6 +135,7 @@ install_directory "$repository_root/skills/meta-grill-team" "meta-grill-team"
 install_directory "$repository_root/skills/vertical-slice-team" "vertical-slice-team"
 install_directory "$repository_root/skills/dev-team" "dev-team"
 install_directory "$repository_root/skills/change-management" "change-management"
+install_directory "$repository_root/skills/meta-brand-guideline" "meta-brand-guideline"
 
 fetch_and_install \
   "https://github.com/mattpocock/skills.git" \

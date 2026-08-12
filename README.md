@@ -17,7 +17,7 @@ impact analysis, and keep unaffected work moving.
 
 ## Included skills
 
-The full installer provides nine skills:
+The full installer provides ten skills:
 
 | Skill | Ownership | Purpose |
 | --- | --- | --- |
@@ -25,13 +25,14 @@ The full installer provides nine skills:
 | `vertical-slice-team` | Metaklouds | Convert an approved initiative into fat, end-to-end vertical slices |
 | `dev-team` | Metaklouds | Map one fat slice into stories/tasks, implement it, test it, and release it |
 | `change-management` | Metaklouds | Control runtime decisions, approvals, impact analysis, and synchronization |
+| `meta-brand-guideline` | Metaklouds | Discover, recommend, showcase, and lock production brand systems and logo assets |
 | `prototype` | Upstream | Keep exploratory prototypes fast, explicit, and disposable |
 | `vercel-react-best-practices` | Upstream | Guide React and Next.js implementation |
 | `fastapi` | Upstream | Guide FastAPI and Pydantic implementation |
 | `supabase` | Upstream | Guide Supabase implementation and security |
 | `supabase-postgres-best-practices` | Upstream | Guide Postgres schemas, migrations, RLS, and performance |
 
-The four Metaklouds skills are bundled in this repository. Upstream skills are
+The five Metaklouds skills are bundled in this repository. Upstream skills are
 downloaded at pinned revisions from their original repositories during
 installation. See [THIRD_PARTY.md](THIRD_PARTY.md) and
 [manifest.json](manifest.json).
@@ -102,6 +103,13 @@ For each approved slice:
 Use $dev-team to implement and release this entire vertical slice.
 ```
 
+For brand-system work:
+
+```text
+Use $meta-brand-guideline to discover the existing identity, recommend a unified
+direction, and lock its guideline, showcase, SVG masters, and PNG exports.
+```
+
 The canonical product documents should live in a root repository. Keep the
 prototype there and nest the independently versioned
 production repositories beneath its working directory:
@@ -124,7 +132,7 @@ after both PRs and whole-slice E2E evidence pass.
 
 ## Install only the bundled Metaklouds skills
 
-Agents compatible with the open skills format can discover the four bundled
+Agents compatible with the open skills format can discover the five bundled
 skills under `skills/`. For example:
 
 ```bash

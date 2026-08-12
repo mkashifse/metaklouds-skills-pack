@@ -27,6 +27,12 @@
       "license": "MIT"
     },
     {
+      "name": "meta-brand-guideline",
+      "kind": "bundled",
+      "path": "skills/meta-brand-guideline",
+      "license": "MIT"
+    },
+    {
       "name": "prototype",
       "kind": "upstream",
       "repository": "https://github.com/mattpocock/skills.git",

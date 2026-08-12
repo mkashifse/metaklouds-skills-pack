@@ -1,0 +1,4 @@
+interface:
+  display_name: "Meta Brand Guideline"
+  short_description: "Discover, build, and lock production brand systems"
+  default_prompt: "Use $meta-brand-guideline to discover the existing brand, recommend a unified direction, and produce locked guidelines and logo assets."

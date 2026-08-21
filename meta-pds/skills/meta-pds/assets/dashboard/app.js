@@ -34,6 +34,7 @@
   const time = (value) => new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
   const dateTime = (value) => new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
   const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
+  const icon = (name, className = "") => `<svg class="lucide-icon ${esc(className)}" aria-hidden="true" focusable="false"><use href="#icon-${esc(name)}"></use></svg>`;
 
   function tone(status) {
     if (["RELEASED", "OUTCOME_VALIDATED", "DONE", "LOCKED", "PASSED", "ON_TRACK"].includes(status)) return "released";
@@ -223,8 +224,8 @@
         <div class="slice-actions">
           <div class="slice-actions-left">Acceptance ${acceptance.criteria} criteria · ${acceptance.verified}/${acceptance.stories} stories verified · Contracts ${lockedContracts}/${contracts.length} locked</div>
           <div class="slice-actions-right">
-            <button class="text-button" type="button" data-toggle-slice="${esc(slice.id)}"><span class="chevron">⌄</span>${expanded ? "Hide stories" : "Show stories"}</button>
-            <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}">Open full details</button>
+            <button class="text-button" type="button" data-toggle-slice="${esc(slice.id)}"><span class="chevron">${icon("chevron-down")}</span>${expanded ? "Hide stories" : "Show stories"}</button>
+            <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}">${icon("external-link", "button-icon")}Open full details</button>
           </div>
         </div>
         ${storyDrawer(slice)}
@@ -360,7 +361,7 @@
           <span class="story-accordion-dot"><i class="state-dot ${tone(story.status)}"></i></span>
           <span class="story-accordion-copy"><small>${esc(story.id)} · ${esc(pretty(story.status))}</small><strong>${esc(story.title)}</strong></span>
           <span class="story-accordion-count">${esc(acceptanceLabel(story))}</span>
-          <span class="story-accordion-chevron">⌄</span>
+          <span class="story-accordion-chevron">${icon("chevron-down")}</span>
         </summary>
         <div class="story-accordion-body">
           ${story.description ? `<p>${esc(story.description)}</p>` : ""}
@@ -427,7 +428,7 @@
         <span class="child-task-owner"><i>${esc(task.ownerInitials)}</i>${esc(task.owner)}</span>
         <span class="child-task-tests">${task.tests.passed}/${task.tests.total} tests</span>
         ${badge(task.status)}
-        <span class="child-task-arrow">›</span>
+        <span class="child-task-arrow">${icon("chevron-right")}</span>
       </button>`;
   }
 
@@ -499,7 +500,7 @@
       setText("#modal-id", `${task.id} · ${pretty(task.area)}`);
       setText("#modal-title", task.title);
       $("#modal-state").innerHTML = `<span class="state-dot ${tone(task.status)}"></span>`;
-      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button><span>›</span><button type="button" data-modal-slice>${esc(slice.title)}</button><span>›</span><strong>${esc(task.id)}</strong>`;
+      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.title)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(task.id)}</strong>`;
       $("#modal-content").innerHTML = taskIssueDetail(task, slice);
     } else {
       modalEntity = "slice";
@@ -507,7 +508,7 @@
       setText("#modal-id", `${slice.id} · ${slice.priority} · revision ${slice.revision}`);
       setText("#modal-title", slice.title);
       $("#modal-state").innerHTML = `<span class="state-dot ${tone(slice.status)}"></span>`;
-      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button><span>›</span><strong>${esc(slice.title)}</strong>`;
+      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(slice.title)}</strong>`;
       $("#modal-content").innerHTML = sliceIssueDetail(slice);
     }
     $("#modal-content").scrollTop = 0;

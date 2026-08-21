@@ -18,3 +18,10 @@ respective terms, attribution, and update policies continue to apply.
 The upstream revisions are pinned for reproducible installation. Updating a
 pin requires reviewing upstream changes, updating `manifest.json` and
 `scripts/install.sh` together, and rerunning the installation test.
+
+## Bundled UI assets
+
+The Meta PDS dashboard embeds selected SVG icons from
+[Lucide](https://lucide.dev), distributed under the ISC license. The icons are
+stored as a small inline sprite so the local dashboard has no network or runtime
+icon dependency.

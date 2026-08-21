@@ -188,7 +188,7 @@ h1, h2, h3, p { margin: 0; }
 .icon-button { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid var(--border); border-radius: 8px; background: #222; color: var(--muted); font-size: 19px; cursor: pointer; }
 .icon-button:hover { color: var(--text); }
 .modal-content { flex: 1; overflow-y: auto; padding: 0; background: #171717; }
-.issue-layout { display: grid; width: min(1240px, 100%); min-height: 100%; grid-template-columns: minmax(0, 1fr) 320px; margin: 0 auto; }
+.issue-layout { display: grid; width: min(1300px, 100%); min-height: 100%; grid-template-columns: minmax(0, 1fr) 380px; margin: 0 auto; }
 .issue-main { min-width: 0; padding: 30px 38px 56px; border-right: 1px solid var(--border); }
 .issue-section > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border-soft); }
 .issue-section > header h3 { color: var(--soft); font-size: 14px; font-weight: 570; }

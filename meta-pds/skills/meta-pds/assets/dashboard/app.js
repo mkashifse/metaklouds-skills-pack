@@ -170,18 +170,16 @@
               ${blockers.length ? `<span class="task-blocked">${blockers.length} blocker${blockers.length > 1 ? "s" : ""}</span>` : ""}
             </div>
           </div>
-          <div class="slice-side">
-            <div class="slice-state-line">
-              ${badge(slice.status)}
-              <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}" aria-label="Open ${esc(slice.title)} details">${icon("external-link", "button-icon")}Details</button>
-            </div>
-            <div class="progress-line"><div class="progress-track"><i style="width:${Number(slice.progress)}%"></i></div><span>${slice.progress}%</span></div>
-            <div class="slice-facts">
-              <div class="slice-fact"><span>Stories</span><strong>${stories.length}</strong></div>
-              <div class="slice-fact"><span>Tasks</span><strong>${doneTasks}/${tasks.length}</strong></div>
-              <div class="slice-fact"><span>Tests</span><strong>${passedTests}/${tests.length}</strong></div>
-            </div>
+        </div>
+        <div class="slice-status-bar">
+          ${badge(slice.status)}
+          <div class="slice-status-progress"><div class="progress-track"><i style="width:${Number(slice.progress)}%"></i></div><span>${slice.progress}%</span></div>
+          <div class="slice-status-metrics">
+            <span>Stories <strong>${stories.length}</strong></span>
+            <span>Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
+            <span>Tests <strong>${passedTests}/${tests.length}</strong></span>
           </div>
+          <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}" aria-label="Open ${esc(slice.title)} details">${icon("external-link", "button-icon")}Details</button>
         </div>
         ${activeTaskRows(tasks)}
       </article>`;

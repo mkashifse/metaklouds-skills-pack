@@ -88,7 +88,7 @@ h1, h2, h3, p { margin: 0; }
 
 .slice-list { overflow: hidden; border: 1px solid var(--border-soft); border-radius: 0 0 10px 10px; background: var(--panel); }
 .slice-item + .slice-item { border-top: 1px solid var(--border); }
-.slice-main { display: grid; grid-template-columns: minmax(0, 1fr) 315px; gap: 24px; padding: 17px 18px 15px; }
+.slice-main { padding: 17px 18px 15px; }
 .slice-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
 .state-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--faint); box-shadow: 0 0 0 3px rgba(98,98,94,.1); }
 .state-dot.released { background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
@@ -102,16 +102,13 @@ h1, h2, h3, p { margin: 0; }
 .slice-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; color: var(--faint); font-size: 12px; }
 .slice-meta span { display: flex; align-items: center; gap: 4px; }
 .slice-meta strong { color: var(--muted); font-weight: 530; }
-.slice-side { display: flex; flex-direction: column; justify-content: center; gap: 9px; }
-.slice-state-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.progress-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 9px; color: var(--faint); font-size: 11px; }
 .progress-track { height: 3px; overflow: hidden; border-radius: 2px; background: #303030; }
 .progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--orange); }
-.slice-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-.slice-fact { padding: 6px 7px; border: 1px solid var(--border-soft); border-radius: 6px; background: #191919; }
-.slice-fact span, .slice-fact strong { display: block; }
-.slice-fact span { color: var(--faint); font-size: 10px; text-transform: uppercase; }
-.slice-fact strong { margin-top: 2px; color: var(--soft); font-size: 13px; font-weight: 540; }
+.slice-status-bar { display: flex; min-height: 46px; align-items: center; gap: 14px; margin: 0 18px 14px; padding: 7px 8px 7px 10px; border: 1px solid var(--border-soft); border-radius: 8px; background: #191919; }
+.slice-status-progress { display: grid; width: 190px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 9px; color: var(--faint); font-size: 11px; }
+.slice-status-metrics { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: flex-end; gap: 0; }
+.slice-status-metrics span { display: flex; min-height: 24px; align-items: center; gap: 5px; padding: 0 14px; border-left: 1px solid var(--border-soft); color: var(--faint); font-size: 10px; letter-spacing: .025em; text-transform: uppercase; }
+.slice-status-metrics strong { color: var(--soft); font-size: 12px; font-weight: 560; letter-spacing: 0; }
 
 .active-work { margin: 0 18px 14px; border: 1px solid var(--border-soft); border-radius: 8px; background: #191919; }
 .active-work-label { display: flex; justify-content: space-between; padding: 8px 11px; border-bottom: 1px solid var(--border-soft); color: var(--faint); font-size: 10px; font-weight: 620; letter-spacing: .06em; text-transform: uppercase; }
@@ -280,7 +277,9 @@ h1, h2, h3, p { margin: 0; }
 @media (max-width: 900px) {
   .header-main, .top-tabs, .page-shell { width: min(100% - 24px, 1260px); }
   .initiative-context #initiative-id, .context-separator, .header-meta #updated-at { display: none; }
-  .slice-main { grid-template-columns: 1fr; gap: 13px; }
+  .slice-status-bar { flex-wrap: wrap; }
+  .slice-status-progress { min-width: 180px; flex: 1; }
+  .slice-status-metrics { flex: 0 0 auto; }
   .task-line { grid-template-columns: 65px minmax(0,1fr) 120px; }
   .task-line > :last-child { display: none; }
   .issue-layout { grid-template-columns: 1fr; }
@@ -300,7 +299,10 @@ h1, h2, h3, p { margin: 0; }
   .view-heading { align-items: flex-start; flex-direction: column; }
   .view-summary { width: 100%; overflow-x: auto; }
   .slice-main { padding: 14px 12px 12px; }
-  .slice-facts { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .slice-status-bar { gap: 10px; margin: 0 12px 11px; }
+  .slice-status-progress { order: 2; width: 100%; flex-basis: 100%; }
+  .slice-status-metrics { flex: 1; justify-content: flex-start; }
+  .slice-status-metrics span { padding: 0 8px; }
   .active-work { margin: 0 12px 11px; }
   .task-line { grid-template-columns: 60px minmax(0,1fr); }
   .task-line .assignee { display: none; }

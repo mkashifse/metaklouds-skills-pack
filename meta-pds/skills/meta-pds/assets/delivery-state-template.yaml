@@ -1,16 +1,24 @@
-schema_version: 1
+schema_version: 2
 initiative_id: INIT-0001
 initiative_status: DISCOVERING
 initiative_revision: 1
+health: UNKNOWN
 active_planning_slice: null
 active_execution_slice: null
 paused_slices: []
 completed_slices: []
+slice_states: []
+# Entry shape: {slice_id: SLICE-0001, status: DRAFT, current_gate: null, updated_at: ""}
 current_gate: null
 authority_envelope: ""
 human_decision_required: null
 blockers: []
 risks: []
-next_recommended_action: ""
+next_recommended_action:
+  title: ""
+  detail: ""
+  owner: Product Manager
+  impact: ""
+prototype: null
 last_verified_at: ""
 evidence: []

@@ -1,9 +1,10 @@
 initiative_id: INIT-0001
-schema_version: 1
+schema_version: 2
 decisions: []
 
 # Decision entry shape:
 # - id: DEC-0001
+#   revision: 1
 #   status: PROPOSED | TESTING | LOCKED | SUPERSEDED
 #   question: ""
 #   decision: ""

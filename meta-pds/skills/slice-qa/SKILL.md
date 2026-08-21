@@ -53,6 +53,10 @@ bounded remediation package.
 6. Inspect changed paths for unexplained scope or ownership drift.
 7. Record exact expected and observed evidence for every failure.
 
+In the delivery report's CLI evidence table, reuse each `Test ID` from the
+execution plan. The dashboard joins definitions and QA results by that ID; do
+not copy task, story, or slice data into the report.
+
 Return `RELEASE_READY` only for the complete fat slice. A component, work
 package, passing PR, or partial deployment is not a slice release.
 

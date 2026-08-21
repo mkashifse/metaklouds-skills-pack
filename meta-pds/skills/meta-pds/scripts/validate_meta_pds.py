@@ -7,6 +7,8 @@ import argparse
 import re
 from pathlib import Path
 
+from serve_dashboard import ArtifactError, markdown_section, parse_stories, parse_table, read_markdown, read_yaml
+
 
 REQUIRED_INITIATIVE_HEADINGS = {
     "Problem and target users",
@@ -40,12 +42,18 @@ ALLOWED_PACKAGE_STATUSES = {
     "PAUSED",
 }
 
-
-def clean_scalar(value: str) -> str:
-    value = value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-        return value[1:-1]
-    return value
+REQUIRED_SLICE_METADATA = {
+    "schema_version",
+    "initiative_id",
+    "initiative_revision",
+    "slice_id",
+    "title",
+    "slice_revision",
+    "status",
+    "order",
+    "priority",
+    "dependencies",
+}
 
 
 def top_level_keys(text: str) -> set[str]:
@@ -53,62 +61,6 @@ def top_level_keys(text: str) -> set[str]:
         match.group(1)
         for match in re.finditer(r"^([a-zA-Z_][a-zA-Z0-9_-]*):(?:\s|$)", text, re.MULTILINE)
     }
-
-
-def parse_list_value(block: str, field: str) -> list[str] | None:
-    match = re.search(
-        rf"^    {re.escape(field)}:\s*(.*?)\s*$", block, re.MULTILINE
-    )
-    if not match:
-        return None
-    inline = match.group(1).strip()
-    if inline.startswith("[") and inline.endswith("]"):
-        body = inline[1:-1].strip()
-        if not body:
-            return []
-        return [clean_scalar(item) for item in body.split(",") if item.strip()]
-    if inline:
-        return None
-
-    remainder = block[match.end() :]
-    items: list[str] = []
-    for line in remainder.splitlines():
-        if re.match(r"^    [a-zA-Z_]", line):
-            break
-        item = re.match(r"^      -\s+(.+?)\s*$", line)
-        if item:
-            items.append(clean_scalar(item.group(1)))
-    return items
-
-
-def parse_work_packages(text: str) -> list[dict[str, object]]:
-    start = re.search(r"^work_packages:\s*$", text, re.MULTILINE)
-    if not start:
-        return []
-    section = text[start.end() :]
-    end = re.search(r"^[a-zA-Z_][a-zA-Z0-9_-]*:\s*$", section, re.MULTILINE)
-    if end:
-        section = section[: end.start()]
-
-    starts = list(re.finditer(r"^  - id:\s*(.+?)\s*$", section, re.MULTILINE))
-    packages: list[dict[str, object]] = []
-    for index, match in enumerate(starts):
-        block_end = starts[index + 1].start() if index + 1 < len(starts) else len(section)
-        block = section[match.start() : block_end]
-        package: dict[str, object] = {"id": clean_scalar(match.group(1))}
-        for field in ["owner", "status"]:
-            field_match = re.search(
-                rf"^    {field}:\s*(.+?)\s*$", block, re.MULTILINE
-            )
-            if field_match:
-                package[field] = clean_scalar(field_match.group(1))
-        for field in ["depends_on", "supports", "required_tests"]:
-            value = parse_list_value(block, field)
-            if value is not None:
-                package[field] = value
-        packages.append(package)
-    return packages
-
 
 def markdown_headings(text: str) -> set[str]:
     return {
@@ -135,28 +87,97 @@ def check_required(keys: set[str], fields: list[str], path: Path, errors: list[s
             errors.append(f"{path}: missing field '{field}'")
 
 
-def check_execution_plan(path: Path, errors: list[str]):
+def check_execution_plan(path: Path, errors: list[str], story_ids: set[str] | None = None):
     if not path.exists():
         errors.append(f"missing execution plan: {path}")
         return
     text = path.read_text()
     check_required(
         top_level_keys(text),
-        ["slice_id", "slice_revision", "contract_version", "status", "work_packages"],
+        ["schema_version", "slice_id", "slice_revision", "contract_version", "status", "integration_contracts", "test_cases", "work_packages"],
         path,
         errors,
     )
-    packages = parse_work_packages(text)
+    try:
+        document = read_yaml(path)
+    except (ArtifactError, OSError) as error:
+        errors.append(f"{path}: {error}")
+        return
+    if document.get("schema_version") != 2:
+        errors.append(f"{path}: schema_version must be 2")
+    packages = document.get("work_packages")
+    if not isinstance(packages, list):
+        packages = []
     if not packages:
         errors.append(f"{path}: work_packages must be a non-empty list")
         return
 
+    test_cases = document.get("test_cases")
+    if not isinstance(test_cases, list) or not test_cases:
+        errors.append(f"{path}: test_cases must be a non-empty list")
+        test_cases = []
+    test_ids: set[str] = set()
+    for index, test in enumerate(test_cases):
+        label = f"{path}: test_cases[{index}]"
+        if not isinstance(test, dict):
+            errors.append(f"{label} must be a mapping")
+            continue
+        for field in ["id", "title", "type", "owner", "status", "supports", "command", "evidence"]:
+            if field not in test:
+                errors.append(f"{label} missing '{field}'")
+        for field in ["id", "title", "type", "owner", "status", "command"]:
+            if test.get(field) in {None, ""}:
+                errors.append(f"{label}.{field} must not be empty")
+        test_id = test.get("id")
+        if not isinstance(test_id, str) or not test_id:
+            errors.append(f"{label} has invalid id")
+        elif test_id in test_ids:
+            errors.append(f"{path}: duplicate test-case id '{test_id}'")
+        else:
+            test_ids.add(test_id)
+        supports = test.get("supports")
+        if not isinstance(supports, list):
+            errors.append(f"{label}.supports must be a list")
+        elif story_ids is not None:
+            for story_id in supports:
+                if story_id not in story_ids:
+                    errors.append(f"{label}.supports references unknown '{story_id}'")
+
+    contracts = document.get("integration_contracts")
+    if not isinstance(contracts, list):
+        errors.append(f"{path}: integration_contracts must be a list")
+        contracts = []
+    contract_ids: set[str] = set()
+    for index, contract in enumerate(contracts):
+        label = f"{path}: integration_contracts[{index}]"
+        if not isinstance(contract, dict):
+            errors.append(f"{label} must be a mapping")
+            continue
+        for field in ["id", "name", "type", "version", "status", "owner", "path"]:
+            if field not in contract:
+                errors.append(f"{label} missing '{field}'")
+            elif contract.get(field) in {None, ""}:
+                errors.append(f"{label}.{field} must not be empty")
+        contract_id = contract.get("id")
+        if not isinstance(contract_id, str) or not contract_id:
+            errors.append(f"{label} has invalid id")
+        elif contract_id in contract_ids:
+            errors.append(f"{path}: duplicate contract id '{contract_id}'")
+        else:
+            contract_ids.add(contract_id)
+
     by_id: dict[str, dict] = {}
     for index, package in enumerate(packages):
         label = f"{path}: work_packages[{index}]"
-        for field in ["id", "owner", "status", "depends_on", "supports", "required_tests"]:
+        if not isinstance(package, dict):
+            errors.append(f"{label} must be a mapping")
+            continue
+        for field in ["id", "title", "description", "area", "owner", "status", "depends_on", "supports", "required_tests"]:
             if field not in package:
                 errors.append(f"{label} missing '{field}'")
+        for field in ["id", "title", "description", "area", "owner", "status"]:
+            if package.get(field) in {None, ""}:
+                errors.append(f"{label}.{field} must not be empty")
         package_id = package.get("id")
         if not isinstance(package_id, str) or not package_id:
             errors.append(f"{label} has invalid id")
@@ -169,6 +190,13 @@ def check_execution_plan(path: Path, errors: list[str]):
         for field in ["depends_on", "supports", "required_tests"]:
             if not isinstance(package.get(field), list):
                 errors.append(f"{label}.{field} must be a list")
+        if story_ids is not None and isinstance(package.get("supports"), list):
+            for story_id in package["supports"]:
+                if story_id not in story_ids:
+                    errors.append(f"{label}.supports references unknown '{story_id}'")
+        for test_id in package.get("required_tests", []) if isinstance(package.get("required_tests"), list) else []:
+            if test_id not in test_ids:
+                errors.append(f"{label}.required_tests references unknown '{test_id}'")
 
     graph: dict[str, list[str]] = {}
     for package_id, package in by_id.items():
@@ -201,6 +229,71 @@ def check_execution_plan(path: Path, errors: list[str]):
         visit(node)
 
 
+def check_parseable_initiative(path: Path, errors: list[str]):
+    try:
+        metadata, _ = read_markdown(path)
+    except (ArtifactError, OSError) as error:
+        errors.append(f"{path}: {error}")
+        return
+    for field in ["schema_version", "initiative_id", "title", "revision", "status"]:
+        if field not in metadata:
+            errors.append(f"{path}: frontmatter missing '{field}'")
+        elif metadata.get(field) in {None, ""}:
+            errors.append(f"{path}: frontmatter '{field}' must not be empty")
+    if metadata.get("schema_version") != 2:
+        errors.append(f"{path}: schema_version must be 2")
+
+
+def check_parseable_slice(path: Path, errors: list[str]) -> set[str]:
+    try:
+        metadata, body = read_markdown(path)
+    except (ArtifactError, OSError) as error:
+        errors.append(f"{path}: {error}")
+        return set()
+    for field in sorted(REQUIRED_SLICE_METADATA):
+        if field not in metadata:
+            errors.append(f"{path}: frontmatter missing '{field}'")
+    for field in ["initiative_id", "slice_id", "title", "status", "priority"]:
+        if metadata.get(field) in {None, ""}:
+            errors.append(f"{path}: frontmatter '{field}' must not be empty")
+    if metadata.get("schema_version") != 2:
+        errors.append(f"{path}: schema_version must be 2")
+    if metadata.get("slice_id") != path.stem:
+        errors.append(f"{path}: slice_id must match filename")
+    if not isinstance(metadata.get("dependencies"), list):
+        errors.append(f"{path}: dependencies must be a list")
+    stories = parse_stories(body)
+    if not stories:
+        errors.append(f"{path}: no parseable 'US-* — title' stories")
+        return set()
+    story_ids: set[str] = set()
+    for story in stories:
+        if story["id"] in story_ids:
+            errors.append(f"{path}: duplicate story id '{story['id']}'")
+        story_ids.add(story["id"])
+        if not story["acceptanceCriteria"]:
+            errors.append(f"{path}: story '{story['id']}' has no parseable acceptance criteria")
+    return story_ids
+
+
+def check_report(path: Path, test_ids: set[str], errors: list[str]):
+    try:
+        _, body = read_markdown(path)
+    except (ArtifactError, OSError) as error:
+        errors.append(f"{path}: {error}")
+        return
+    seen: set[str] = set()
+    for index, row in enumerate(parse_table(markdown_section(body, "CLI test evidence"))):
+        test_id = row.get("Test ID", "").strip(" `")
+        if not test_id:
+            errors.append(f"{path}: CLI evidence row {index + 1} has no Test ID")
+        elif test_id in seen:
+            errors.append(f"{path}: duplicate Test ID '{test_id}'")
+        elif test_id not in test_ids:
+            errors.append(f"{path}: unknown Test ID '{test_id}'")
+        seen.add(test_id)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("product_root", type=Path)
@@ -212,7 +305,10 @@ def main() -> int:
     base = root / "docs" / "meta-pds"
     errors: list[str] = []
 
-    check_markdown(base / "initiative.md", REQUIRED_INITIATIVE_HEADINGS, errors)
+    initiative_path = base / "initiative.md"
+    check_markdown(initiative_path, REQUIRED_INITIATIVE_HEADINGS, errors)
+    if initiative_path.exists():
+        check_parseable_initiative(initiative_path, errors)
 
     decisions_path = base / "decision-log.yaml"
     state_path = base / "delivery-state.yaml"
@@ -226,6 +322,7 @@ def main() -> int:
                 "initiative_status",
                 "active_planning_slice",
                 "active_execution_slice",
+                "slice_states",
                 "blockers",
                 "next_recommended_action",
             ],
@@ -235,13 +332,34 @@ def main() -> int:
             errors.append(f"missing artifact: {path}")
             continue
         check_required(top_level_keys(path.read_text()), fields, path, errors)
+        try:
+            document = read_yaml(path)
+            if document.get("schema_version") != 2:
+                errors.append(f"{path}: schema_version must be 2")
+        except (ArtifactError, OSError) as error:
+            errors.append(f"{path}: {error}")
 
     if args.slice_id:
         slice_path = base / "slices" / f"{args.slice_id}.md"
         check_markdown(slice_path, REQUIRED_SLICE_HEADINGS, errors)
+        story_ids: set[str] = set()
+        if slice_path.exists():
+            story_ids = check_parseable_slice(slice_path, errors)
         execution_path = base / "execution" / f"{args.slice_id}.yaml"
         if args.require_execution_plan or execution_path.exists():
-            check_execution_plan(execution_path, errors)
+            check_execution_plan(execution_path, errors, story_ids)
+        report_path = base / "reports" / f"{args.slice_id}.md"
+        if report_path.exists() and execution_path.exists():
+            try:
+                execution = read_yaml(execution_path)
+                test_ids = {
+                    str(item.get("id"))
+                    for item in execution.get("test_cases", [])
+                    if isinstance(item, dict) and item.get("id")
+                }
+                check_report(report_path, test_ids, errors)
+            except (ArtifactError, OSError) as error:
+                errors.append(f"{execution_path}: {error}")
 
     if errors:
         for error in errors:

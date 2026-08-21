@@ -65,6 +65,12 @@ Inspect the repository, freeze or cite the technical contract, then define:
 - integration, compatibility, migration, merge, deploy, feature-flag,
   observability, and rollback order.
 
+Use the exact structured fields in the execution-plan template. Give every
+contract, test case, and work package a stable ID; packages cite stories through
+`supports`, dependencies through `depends_on`, and test cases through
+`required_tests`. Update package and development-test state in this existing
+plan rather than creating status summaries for the dashboard.
+
 Treat the product root as one Git repository. Assign work through isolated
 `frontend/` and `backend/` owned paths. Do not create nested repositories or
 submodules, and do not introduce direct source-code imports between those

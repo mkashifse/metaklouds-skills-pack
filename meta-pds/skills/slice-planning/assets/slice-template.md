@@ -1,10 +1,16 @@
 ---
+schema_version: 2
 initiative_id: INIT-0001
 initiative_revision: 1
 slice_id: SLICE-0001
+title: ""
 slice_revision: 1
 status: DRAFT
+order: 1
+priority: P1
+dependencies: []
 capability_family: ""
+source_commit: ""
 ---
 
 # Fat Slice

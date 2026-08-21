@@ -1,9 +1,21 @@
-(function () {
+(async function () {
   "use strict";
 
-  const data = window.META_PDS_DASHBOARD_DATA;
-  if (!data) {
-    document.body.innerHTML = "<main class='empty-state'>Dashboard data is unavailable.</main>";
+  const safeError = (value) => String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+  let data;
+  try {
+    if (location.protocol === "file:") throw new Error("Launch the Meta PDS dashboard service from the product root; direct file access cannot read canonical artifacts.");
+    const response = await fetch("/api/dashboard", { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Canonical artifact parsing failed.");
+    data = payload;
+  } catch (error) {
+    document.body.innerHTML = `<main class="empty-state"><strong>Dashboard unavailable</strong><p>${safeError(error.message || error)}</p></main>`;
     return;
   }
 
@@ -19,15 +31,14 @@
     .replaceAll("_", " ")
     .toLowerCase()
     .replace(/\b\w/g, (character) => character.toUpperCase());
-  const percent = (passed, total) => total ? Math.round((passed / total) * 100) : 0;
   const time = (value) => new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
   const dateTime = (value) => new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
   const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
 
   function tone(status) {
-    if (["RELEASED", "OUTCOME_VALIDATED", "DONE", "LOCKED", "PASSED"].includes(status)) return "released";
+    if (["RELEASED", "OUTCOME_VALIDATED", "DONE", "LOCKED", "PASSED", "ON_TRACK"].includes(status)) return "released";
     if (["IN_PROGRESS", "VERIFYING", "HUMAN_REVIEW", "TESTING"].includes(status)) return "active";
-    if (["BLOCKED", "REWORK_REQUIRED", "REVERIFY_REQUIRED", "FAILED"].includes(status)) return "blocked";
+    if (["BLOCKED", "REWORK_REQUIRED", "REVERIFY_REQUIRED", "FAILED", "AT_RISK", "OFF_TRACK"].includes(status)) return "blocked";
     if (["READY", "READY_FOR_DEVELOPMENT", "EXECUTION_READY", "RELEASE_READY"].includes(status)) return "ready";
     return "draft";
   }
@@ -60,11 +71,16 @@
   }
 
   function storyProgress(stories) {
-    const totals = stories.reduce((result, story) => ({
-      passed: result.passed + story.acceptance.passed,
-      total: result.total + story.acceptance.total
-    }), { passed: 0, total: 0 });
-    return { ...totals, percent: percent(totals.passed, totals.total) };
+    return stories.reduce((result, story) => ({
+      verified: result.verified + (story.acceptance.evidenceStatus === "VERIFIED" ? 1 : 0),
+      stories: result.stories + 1,
+      criteria: result.criteria + story.acceptance.total
+    }), { verified: 0, stories: 0, criteria: 0 });
+  }
+
+  function acceptanceLabel(story) {
+    if (story.acceptance.evidenceStatus === "VERIFIED") return `${story.acceptance.total}/${story.acceptance.total} verified`;
+    return `${story.acceptance.total} criteria`;
   }
 
   function renderHeader() {
@@ -73,6 +89,7 @@
     setText("#initiative-id", initiative.id);
     setText("#initiative-phase", pretty(initiative.phase));
     setText("#initiative-health", pretty(initiative.health));
+    $("#initiative-health").className = `state-badge ${tone(initiative.health)}`;
     setText("#updated-at", `Updated ${dateTime(data.projection.generatedAt)}`);
     setText("#slice-count", data.slices.length);
     setText("#decision-count", data.decisions.length);
@@ -153,7 +170,7 @@
             <div class="story-row">
               <span class="task-id">${esc(story.id)}</span>
               <span class="story-name"><strong>${esc(story.title)}</strong><span>${esc((story.acceptanceCriteria || []).length)} explicit criteria</span></span>
-              <span>${story.acceptance.passed}/${story.acceptance.total} · ${percent(story.acceptance.passed, story.acceptance.total)}%</span>
+              <span>${esc(acceptanceLabel(story))}</span>
               <span class="mini-packages">${story.workPackageIds.map((id) => `<i class="mini-package">${esc(id)}</i>`).join("")}</span>
               ${badge(story.status)}
             </div>
@@ -203,7 +220,7 @@
         </div>
         ${activeTaskRows(tasks)}
         <div class="slice-actions">
-          <div class="slice-actions-left">Acceptance ${acceptance.passed}/${acceptance.total} · Contracts ${lockedContracts}/${contracts.length} locked</div>
+          <div class="slice-actions-left">Acceptance ${acceptance.criteria} criteria · ${acceptance.verified}/${acceptance.stories} stories verified · Contracts ${lockedContracts}/${contracts.length} locked</div>
           <div class="slice-actions-right">
             <button class="text-button" type="button" data-toggle-slice="${esc(slice.id)}"><span class="chevron">⌄</span>${expanded ? "Hide stories" : "Show stories"}</button>
             <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}">Open full details</button>
@@ -241,12 +258,12 @@
   }
 
   function renderDecisions() {
-    $("#decision-list").innerHTML = data.decisions.map((decision) => `
+    $("#decision-list").innerHTML = data.decisions.length ? data.decisions.map((decision) => `
       <article class="simple-item">
         <span class="simple-code">${esc(decision.id)} · r${esc(decision.revision)}</span>
         <div class="simple-copy"><h3>${esc(decision.title)}</h3><p>${esc(decision.summary)} · Affects ${esc(decision.affects.join(", "))}</p></div>
         ${badge(decision.status)}
-      </article>`).join("");
+      </article>`).join("") : '<div class="empty-state">No decisions are recorded.</div>';
   }
 
   function renderPrototype() {
@@ -265,12 +282,12 @@
   }
 
   function renderActivity() {
-    $("#activity-list").innerHTML = data.activity.map((item) => `
+    $("#activity-list").innerHTML = data.activity.length ? data.activity.map((item) => `
       <article class="simple-item">
         <span class="simple-code">${esc(time(item.at))}</span>
         <div class="simple-copy"><h3>${esc(item.title)}</h3><p>${esc(item.detail)}</p></div>
         <span class="state-badge ${item.kind === "blocked" ? "blocked" : item.kind === "completed" ? "released" : "active"}">${esc(pretty(item.kind))}</span>
-      </article>`).join("");
+      </article>`).join("") : '<div class="empty-state">No durable delivery events are recorded.</div>';
   }
 
   let modalSliceId = null;
@@ -322,7 +339,7 @@
     const tests = sliceTests(slice.id);
     const storyText = stories.map((story) => [
       `### ${story.id} — ${story.title}`,
-      `**State:** ${pretty(story.status)} · **Acceptance:** ${story.acceptance.passed}/${story.acceptance.total}`,
+      `**State:** ${pretty(story.status)} · **Acceptance:** ${acceptanceLabel(story)}`,
       "**Acceptance criteria:**",
       ...(story.acceptanceCriteria || ["See the canonical slice artifact."]).map((criterion) => `- ${criterion}`)
     ].join("\n")).join("\n\n");
@@ -450,7 +467,7 @@
           </section>
           <section class="issue-section linked-section">
             <header><h3>Linked user stories</h3><span>${stories.length}</span></header>
-            ${stories.map((story) => `<article class="linked-story"><div><small>${esc(story.id)}</small><strong>${esc(story.title)}</strong></div><span>${story.acceptance.passed}/${story.acceptance.total} accepted</span>${badge(story.status)}</article>`).join("")}
+            ${stories.map((story) => `<article class="linked-story"><div><small>${esc(story.id)}</small><strong>${esc(story.title)}</strong></div><span>${esc(acceptanceLabel(story))}</span>${badge(story.status)}</article>`).join("")}
           </section>
         </div>
         ${taskProperties(task, slice)}

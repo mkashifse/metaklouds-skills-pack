@@ -1,4 +1,5 @@
 ---
+schema_version: 2
 initiative_id: INIT-0001
 slice_id: SLICE-0001
 slice_revision: 1
@@ -21,8 +22,8 @@ status: VERIFYING
 
 ## CLI test evidence
 
-| Test class | Command | Revision/environment | Result | Report/evidence |
-| --- | --- | --- | --- | --- |
+| Test ID | Test class | Supports | Command | Revision/environment | Result | Report/evidence |
+| --- | --- | --- | --- | --- | --- | --- |
 
 ## Security, accessibility, and migration evidence
 

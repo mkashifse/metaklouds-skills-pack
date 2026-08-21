@@ -42,8 +42,6 @@ docs/meta-pds/delivery-events.jsonl              # optional append-only audit
 docs/meta-pds/slices/<slice-id>.md
 docs/meta-pds/execution/<slice-id>.yaml
 docs/meta-pds/reports/<slice-id>.md
-docs/meta-pds/dashboard/index.html
-docs/meta-pds/dashboard/dashboard-data.js
 prototypes/<initiative-id>/
 ```
 
@@ -67,7 +65,7 @@ Each functional skill provides its owned artifact template.
 | execution plan | Development Lead | QA reads; PM controls gate |
 | production code/tests | Assigned Development worker | other roles inspect only |
 | delivery report | Development Lead + independent QA evidence | PM records final gate |
-| dashboard projection | Product Manager | all functions supply structured evidence |
+| dashboard runtime view | derived in memory from canonical artifacts | no function edits it |
 
 Under Meta PDS control, only the Product Manager changes canonical gate status.
 Functional leads provide evidence-backed recommendations.
@@ -83,8 +81,9 @@ Functional leads provide evidence-backed recommendations.
 
 The prototype is evidence, never product authority. `delivery-state.yaml` is a
 current-state ledger, not a narrative activity log. Use the optional JSONL file
-for append-only history. The dashboard is a read-only projection and never
-overrides a canonical artifact or verified runtime evidence.
+for append-only history. The dashboard is a read-only in-memory view and never
+overrides a canonical artifact or verified runtime evidence. Never persist a
+separate dashboard data file.
 
 ## Revisions and traceability
 

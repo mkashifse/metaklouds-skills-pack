@@ -78,6 +78,11 @@ docs/meta-pds/slices/<slice-id>.md
 
 Use [assets/slice-template.md](assets/slice-template.md).
 
+Preserve the template's parseable frontmatter and story grammar. Story headings
+must use `### US-<id> — <title>`, followed by `**Story:**` and
+`**Acceptance criteria:**` with bullet items. Do not create a separate story
+index or dashboard summary.
+
 When a filled artifact would materially clarify the required depth, inspect
 [assets/authentication-slice-example.md](assets/authentication-slice-example.md)
 as a structural example. Never inherit its product decisions, scope, risks, or

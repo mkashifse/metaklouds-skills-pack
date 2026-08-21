@@ -4,15 +4,19 @@ The Meta PDS dashboard is the Human's concise, read-only delivery cockpit. It
 projects canonical artifacts and verified evidence without becoming another
 place to manage work.
 
-## Installation and source
+## Runtime and source
 
-Copy `assets/dashboard/` to `docs/meta-pds/dashboard/` when an initiative starts
-or when the Human requests the dashboard. The folder is directly openable from
-`index.html` and has no external runtime dependency.
+Do not create a dashboard folder, projection file, database, or duplicated
+dashboard data inside a product repository. The installed skill owns the reusable
+UI and parser. Launch it from the product root with:
 
-`dashboard-data.js` contains the projection consumed by `app.js`. Replace the
-included demonstration data with initiative data; preserve the schema shape.
-Canonical sources remain:
+```text
+python3 <installed-meta-pds>/scripts/serve_dashboard.py <product-root>
+```
+
+The local service binds to `127.0.0.1:8765` by default, reparses canonical files
+for every dashboard request, and keeps the assembled view only in memory. The
+Human refreshes the page to see the current files. Canonical sources are:
 
 - `initiative.md` for purpose, outcomes, and roadmap;
 - `decision-log.yaml` for proposed, testing, locked, and superseded decisions;
@@ -24,11 +28,26 @@ Canonical sources remain:
 - optional `delivery-events.jsonl` for the recent activity timeline.
 
 Never infer a successful gate, test, release, or Human approval merely to fill
-the display. Show unknown or missing evidence explicitly.
+the display. Show unknown or missing evidence explicitly. Parse or validation
+errors must be visible; never fall back to stale or invented data.
+
+## Parseable conventions
+
+- Markdown artifacts use YAML frontmatter for identity, revision, priority,
+  order, state, and dependencies.
+- Slice stories use `### US-<id> — <title>` headings, followed by `**Story:**`
+  and `**Acceptance criteria:**` with ordinary bullet items.
+- Initiative roadmap rows use the columns in `initiative-template.md`.
+- Execution plans contain structured `integration_contracts`, `test_cases`, and
+  `work_packages`; package `supports`, `depends_on`, and `required_tests` values
+  join records by stable IDs.
+- Delivery state owns current slice status, active work, Human attention, and
+  next action. Counts, active agents, blockers, test totals, and progress are
+  derived in memory and never copied back into artifacts.
 
 ## Update rhythm
 
-Refresh the projection at meaningful checkpoints:
+Update canonical artifacts at meaningful checkpoints:
 
 - a prototype checkpoint or Human review;
 - a decision status change;
@@ -37,8 +56,8 @@ Refresh the projection at meaningful checkpoints:
 - a QA, release, rollback, or outcome result;
 - pause, resume, or recommended-next-action change.
 
-Do not update on every keystroke. A stale dashboard must display its last update
-time rather than pretending to be live.
+Do not write a separate projection at any checkpoint. The displayed generation
+time states when the files were last parsed, not when delivery evidence changed.
 
 ## Required views
 

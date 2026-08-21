@@ -1,4 +1,4 @@
-schema_version: 1
+schema_version: 2
 initiative_id: INIT-0001
 slice_id: SLICE-0001
 slice_revision: 1
@@ -21,7 +21,14 @@ code_areas:
     path: backend/
     direct_frontend_source_dependencies_allowed: false
 
-integration_contracts: []
+integration_contracts:
+  - id: CON-0001
+    name: ""
+    type: ""
+    version: v1
+    status: EXPECTED
+    owner: ""
+    path: ""
 
 critical_path: []
 
@@ -37,13 +44,27 @@ feature_flags: []
 observability_checks: []
 rollback_sequence: []
 
+test_cases:
+  - id: TC-0001
+    title: ""
+    type: CLI
+    owner: ""
+    status: READY
+    supports: [US-0001]
+    command: ""
+    evidence: ""
+
 work_packages:
   - id: WP-0001
     title: ""
+    description: ""
+    area: ""
     owner: ""
+    owner_initials: ""
     status: BLOCKED
+    blocker: ""
     contract_version: v1
-    supports: []
+    supports: [US-0001]
     depends_on: []
     inputs: []
     produces: []
@@ -51,7 +72,7 @@ work_packages:
     forbidden_paths: []
     entry_checks: []
     exit_checks: []
-    required_tests: []
+    required_tests: [TC-0001]
     integration_owner: ""
 
 validation:

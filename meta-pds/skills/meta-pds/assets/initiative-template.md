@@ -1,7 +1,10 @@
 ---
+schema_version: 2
 initiative_id: INIT-0001
+title: ""
 revision: 1
 status: DISCOVERING
+human_owner: ""
 authority_envelope: ""
 ---
 
@@ -33,8 +36,8 @@ authority_envelope: ""
 
 ## Fat-slice roadmap overview
 
-| Order | Slice ID | Capability outcome | Dependencies | Status |
-| --- | --- | --- | --- | --- |
+| Order | Slice ID | Slice | Capability outcome | Priority | Dependencies | Status |
+| --- | --- | --- | --- | --- | --- | --- |
 
 ## Human approval
 

@@ -1,9 +1,14 @@
 ---
+schema_version: 2
 initiative_id: INIT-0042
 initiative_revision: 3
 slice_id: SLICE-AUTH-001
+title: Authentication
 slice_revision: 1
 status: READY_FOR_DEVELOPMENT
+order: 1
+priority: P0
+dependencies: []
 capability_family: Authentication and account access
 source_commit: sample
 ---

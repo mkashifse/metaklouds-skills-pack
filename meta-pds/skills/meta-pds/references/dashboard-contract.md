@@ -106,7 +106,8 @@ Keep the interface list-first, compact, and progressively populated:
    clicking the card header toggles the card while clicking its title opens
    full slice detail;
 4. currently active or blocked work packages and assigned agents directly under
-   each slice;
+   each slice, rendered seamlessly on the card surface without a nested panel
+   fill, enclosing border, or rounded container;
 5. collapsible user-story rows in slice detail for acceptance and work-package
    tracing;
 6. collapsible slice test-case rows showing level, method, owner, linked stories,

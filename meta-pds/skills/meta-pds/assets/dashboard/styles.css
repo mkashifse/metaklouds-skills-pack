@@ -95,9 +95,13 @@ h1, h2, h3, p { margin: 0; }
 .state-dot.active { background: var(--orange); box-shadow: 0 0 0 3px var(--orange-soft); }
 .state-dot.blocked { background: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
 .state-dot.ready { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
-.slice-title-row h2 { font-size: 16px; font-weight: 570; }
+.slice-card-title { font-size: 20px; font-weight: 570; letter-spacing: -.015em; line-height: 1.2; }
+.slice-card-title button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; letter-spacing: inherit; cursor: pointer; }
+.slice-card-title button:hover { color: var(--orange); }
+.slice-card-title .lucide-icon { width: 17px; height: 17px; color: var(--faint); transition: color .15s ease, transform .15s ease; }
+.slice-card-title button:hover .lucide-icon { color: var(--orange); transform: translateX(2px); }
 .slice-code { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.slice-outcome { max-width: 760px; color: var(--muted); font-size: 14px; }
+.slice-outcome { max-width: 900px; margin-top: 8px; color: var(--muted); font-size: 14px; }
 .slice-outcome strong { color: var(--soft); font-weight: 520; }
 .slice-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; color: var(--faint); font-size: 12px; }
 .slice-meta span { display: flex; align-items: center; gap: 4px; }
@@ -119,11 +123,6 @@ h1, h2, h3, p { margin: 0; }
 .assignee { display: flex; align-items: center; gap: 6px; color: var(--muted); }
 .assignee i { display: grid; width: 23px; height: 23px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #323232; color: var(--soft); font-style: normal; font-size: 10px; }
 .task-blocked { color: var(--red); }
-
-.text-button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
-.text-button:hover { border-color: var(--border); background: #242424; color: var(--text); }
-.text-button.primary { border-color: var(--border); background: #222; color: var(--soft); }
-.button-icon { width: 14px; height: 14px; }
 
 .state-badge { display: inline-flex; min-height: 24px; align-items: center; padding: 4px 8px; border: 1px solid #393939; border-radius: 999px; background: #282828; color: #999; font-size: 11px; font-weight: 620; letter-spacing: .035em; text-transform: uppercase; white-space: nowrap; }
 .state-badge.on-track, .state-badge.released, .state-badge.done, .state-badge.locked, .state-badge.passed { border-color: rgba(118,183,138,.25); background: var(--green-soft); color: var(--green); }

@@ -106,7 +106,6 @@ h1, h2, h3, p { margin: 0; }
 .slice-collapse-summary > span:not(.state-badge) { padding-left: 14px; border-left: 1px solid var(--border-soft); }
 .slice-collapse-summary strong { color: var(--soft); font-weight: 560; }
 .slice-collapse-summary .compact-blockers { color: var(--red); }
-.slice-collapse-summary > .state-badge { min-height: 0; padding: 0; border: 0; background: transparent; }
 .slice-collapse-toggle { position: absolute; top: 14px; right: 14px; display: grid; width: 30px; height: 30px; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); cursor: pointer; }
 .slice-collapse-toggle:hover { color: var(--text); }
 .slice-collapse-toggle .lucide-icon { width: 16px; height: 16px; transition: transform .15s ease; }
@@ -138,14 +137,13 @@ h1, h2, h3, p { margin: 0; }
 .assignee i { display: grid; width: 23px; height: 23px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #323232; color: var(--soft); font-style: normal; font-size: 10px; }
 .task-blocked { color: var(--red); }
 
-.state-badge { display: inline-flex; min-height: 24px; align-items: center; padding: 4px 8px; border: 1px solid #393939; border-radius: 999px; background: #282828; color: #999; font-size: 11px; font-weight: 620; letter-spacing: .035em; text-transform: uppercase; white-space: nowrap; }
-.state-badge.released { border-color: rgba(118,183,138,.25); background: var(--green-soft); color: var(--green); }
-.state-badge.active { border-color: rgba(232,120,50,.26); background: var(--orange-soft); color: #dc925d; }
-.state-badge.verifying { border-color: rgba(125,158,205,.25); background: var(--blue-soft); color: var(--blue); }
-.state-badge.ready { border-color: rgba(200,163,105,.22); background: var(--amber-soft); color: var(--amber); }
-.state-badge.blocked { border-color: rgba(199,119,113,.25); background: var(--red-soft); color: var(--red); }
-.state-badge.draft { border-color: #393939; background: #282828; color: #999; }
-.task-line > .state-badge, .slice-status-bar > .state-badge { min-height: 0; padding: 0; border: 0; background: transparent; }
+.state-badge { display: inline-flex; align-items: center; color: #999; font-size: 11px; font-weight: 620; letter-spacing: .035em; text-transform: uppercase; white-space: nowrap; }
+.state-badge.released { color: var(--green); }
+.state-badge.active { color: #dc925d; }
+.state-badge.verifying { color: var(--blue); }
+.state-badge.ready { color: var(--amber); }
+.state-badge.blocked { color: var(--red); }
+.state-badge.draft { color: #999; }
 .task-line > .state-badge { justify-self: end; }
 
 .simple-list, .prototype-card { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); }

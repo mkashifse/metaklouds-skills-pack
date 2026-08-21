@@ -66,9 +66,9 @@ dashboard and all detail dialogs. Use the same semantic colors everywhere:
 - blocked, failed, at risk, and rework states: red;
 - draft, planned, proposed, paused, and unknown states: neutral.
 
-Compact task rows and slice footers may render color-coded text without a pill;
-detail views may use a quiet badge. The label and semantic color must not change
-between those contexts.
+Render every status as color-coded text without a pill, border, or background,
+including main lists, headers, properties, accordions, and detail dialogs. The
+label and semantic color must not change between contexts.
 
 ## Update rhythm
 

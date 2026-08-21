@@ -64,14 +64,6 @@
     return (data.testCases || []).filter((test) => test.sliceId === sliceId);
   }
 
-  function storyProgress(stories) {
-    return stories.reduce((result, story) => ({
-      verified: result.verified + (story.acceptance.evidenceStatus === "VERIFIED" ? 1 : 0),
-      stories: result.stories + 1,
-      criteria: result.criteria + story.acceptance.total
-    }), { verified: 0, stories: 0, criteria: 0 });
-  }
-
   function acceptanceLabel(story) {
     if (story.acceptance.evidenceStatus === "VERIFIED") return `${story.acceptance.total}/${story.acceptance.total} verified`;
     return `${story.acceptance.total} criteria`;
@@ -109,8 +101,6 @@
   }
 
   let sliceFilter = "ALL";
-  const expandedSlices = new Set(data.slices.filter((slice) => slice.active).map((slice) => slice.id));
-
   function matchesFilter(slice) {
     if (sliceFilter === "ALL") return true;
     if (sliceFilter === "ACTIVE") return ["IN_PROGRESS", "VERIFYING"].includes(slice.status);
@@ -154,41 +144,17 @@
       </div>`;
   }
 
-  function storyDrawer(slice) {
-    const stories = sliceStories(slice.id);
-    if (!stories.length) return `<div class="story-drawer"><div class="empty-state">Stories have not been defined for this slice.</div></div>`;
-    return `
-      <div class="story-drawer">
-        <div class="story-table">
-          <div class="story-row header"><span>ID</span><span>User story</span><span>Acceptance</span><span>Work packages</span><span>State</span></div>
-          ${stories.map((story) => `
-            <div class="story-row">
-              <span class="task-id">${esc(story.id)}</span>
-              <span class="story-name"><strong>${esc(story.title)}</strong><span>${esc((story.acceptanceCriteria || []).length)} explicit criteria</span></span>
-              <span>${esc(acceptanceLabel(story))}</span>
-              <span class="mini-packages">${story.workPackageIds.map((id) => `<i class="mini-package">${esc(id)}</i>`).join("")}</span>
-              ${badge(story.status)}
-            </div>
-          `).join("")}
-        </div>
-      </div>`;
-  }
-
   function sliceCard(slice) {
     const stories = sliceStories(slice.id);
     const tasks = sliceTasks(slice.id);
-    const contracts = sliceContracts(slice.id);
     const tests = sliceTests(slice.id);
     const passedTests = tests.filter((test) => test.status === "PASSED").length;
-    const acceptance = storyProgress(stories);
     const doneTasks = tasks.filter((task) => task.status === "DONE").length;
     const blockers = tasks.filter((task) => task.status === "BLOCKED");
     const dependencies = slice.dependencies.length ? slice.dependencies.join(", ") : "None";
-    const expanded = expandedSlices.has(slice.id);
-    const lockedContracts = contracts.filter((contract) => contract.status === "LOCKED").length;
 
     return `
-      <article class="slice-item ${expanded ? "is-expanded" : ""}" data-slice-id="${esc(slice.id)}">
+      <article class="slice-item" data-slice-id="${esc(slice.id)}">
         <div class="slice-main">
           <div>
             <div class="slice-title-row">
@@ -205,7 +171,10 @@
             </div>
           </div>
           <div class="slice-side">
-            <div class="slice-state-line">${badge(slice.status)}<span class="slice-code">${slice.progress}%</span></div>
+            <div class="slice-state-line">
+              ${badge(slice.status)}
+              <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}" aria-label="Open ${esc(slice.title)} details">${icon("external-link", "button-icon")}Details</button>
+            </div>
             <div class="progress-line"><div class="progress-track"><i style="width:${Number(slice.progress)}%"></i></div><span>${slice.progress}%</span></div>
             <div class="slice-facts">
               <div class="slice-fact"><span>Stories</span><strong>${stories.length}</strong></div>
@@ -215,14 +184,6 @@
           </div>
         </div>
         ${activeTaskRows(tasks)}
-        <div class="slice-actions">
-          <div class="slice-actions-left">Acceptance ${acceptance.criteria} criteria · ${acceptance.verified}/${acceptance.stories} stories verified · Contracts ${lockedContracts}/${contracts.length} locked</div>
-          <div class="slice-actions-right">
-            <button class="text-button" type="button" data-toggle-slice="${esc(slice.id)}"><span class="chevron">${icon("chevron-down")}</span>${expanded ? "Hide stories" : "Show stories"}</button>
-            <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}">${icon("external-link", "button-icon")}Open full details</button>
-          </div>
-        </div>
-        ${storyDrawer(slice)}
       </article>`;
   }
 
@@ -241,13 +202,6 @@
       renderSlices();
     });
     $("#slice-list").addEventListener("click", (event) => {
-      const toggle = event.target.closest("[data-toggle-slice]");
-      if (toggle) {
-        const id = toggle.dataset.toggleSlice;
-        expandedSlices.has(id) ? expandedSlices.delete(id) : expandedSlices.add(id);
-        renderSlices();
-        return;
-      }
       const open = event.target.closest("[data-open-slice]");
       if (open) openModal(open.dataset.openSlice);
     });

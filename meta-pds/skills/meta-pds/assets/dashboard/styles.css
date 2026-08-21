@@ -100,7 +100,8 @@ h1, h2, h3, p { margin: 0; }
 .slice-card-title .lucide-icon { width: 17px; height: 17px; color: var(--faint); transition: color .15s ease, transform .15s ease; }
 .slice-card-title button:hover .lucide-icon { color: var(--orange); transform: translateX(2px); }
 .slice-code { flex: 0 0 auto; color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; white-space: nowrap; }
-.slice-outcome { max-width: 900px; margin-top: 12px; color: var(--muted); font-size: 14px; }
+.slice-body-copy { grid-row: 2; grid-column: 1 / 4; padding-left: 4px; }
+.slice-outcome { max-width: 900px; margin-top: 8px; color: var(--muted); font-size: 14px; }
 .slice-outcome strong { color: var(--soft); font-weight: 520; }
 .slice-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; color: var(--faint); font-size: 12px; }
 .slice-meta span { display: flex; align-items: center; gap: 4px; }
@@ -129,7 +130,7 @@ h1, h2, h3, p { margin: 0; }
 .slice-item.is-collapsed .slice-title-row { margin: 0; }
 .slice-item.is-collapsed .slice-card-title button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slice-item.is-collapsed .slice-card-title .lucide-icon { display: none; }
-.slice-item.is-collapsed .slice-outcome, .slice-item.is-collapsed .slice-meta, .slice-item.is-collapsed .slice-content { display: none; }
+.slice-item.is-collapsed .slice-body-copy, .slice-item.is-collapsed .slice-content { display: none; }
 .slice-item.is-collapsed .slice-status-summary { align-self: center; padding-top: 0; }
 
 .active-work { margin: 0 18px 16px; border: 1px solid var(--border-soft); border-radius: 8px; background: #191919; }
@@ -298,6 +299,7 @@ h1, h2, h3, p { margin: 0; }
   .initiative-context #initiative-id, .context-separator, .header-meta #updated-at { display: none; }
   .slice-main { grid-template-columns: 28px minmax(0, 1fr) 30px; }
   .slice-status-summary { grid-row: 2; grid-column: 2 / 4; justify-content: flex-end; padding-top: 0; }
+  .slice-body-copy { grid-row: 3; grid-column: 1 / 4; }
   .slice-collapse-toggle { grid-row: 1; grid-column: 3; }
   .slice-item.is-collapsed .slice-code { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .slice-status-summary { gap: 9px; }

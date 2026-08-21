@@ -98,7 +98,8 @@ Keep the interface list-first, compact, and progressively populated:
    card expands or collapses; keep status dot, slice ID, and title together as
    a persistent first-row identity with unchanged position and typography; a
    collapsed card becomes one row showing the summary beside that identity;
-   use the same Layers entity
+   align expanded outcome and metadata copy to the same left content edge as
+   the work-package panel below it; use the same Layers entity
    icon for a slice in its card and detail header; show progress everywhere as
    ten small vertical segments with exact partial fill plus the numeric percent;
    clicking the card header toggles the card while clicking its title opens

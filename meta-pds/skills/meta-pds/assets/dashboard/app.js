@@ -156,7 +156,7 @@
     if (!visible.length) return "";
     return `
       <div class="active-work">
-        <div class="active-work-label"><span>${tasks.some((task) => task.status !== "DONE") ? "Current development work" : "Recently completed work"}</span><span>${visible.length} shown</span></div>
+        <div class="active-work-label"><span>Work packages</span><span>${Math.min(visible.length, 4)} of ${visible.length} shown</span></div>
         ${visible.slice(0, 4).map((task) => `
           <div class="task-line">
             <span class="task-id">${esc(task.id)}</span>

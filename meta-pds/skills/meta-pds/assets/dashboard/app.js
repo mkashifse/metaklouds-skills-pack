@@ -104,6 +104,7 @@
   }
 
   let sliceFilter = "ALL";
+  const collapsedSlices = new Set();
   function matchesFilter(slice) {
     if (sliceFilter === "ALL") return true;
     if (sliceFilter === "ACTIVE") return ["IN_PROGRESS", "VERIFYING"].includes(slice.status);
@@ -155,11 +156,12 @@
     const doneTasks = tasks.filter((task) => task.status === "DONE").length;
     const blockers = tasks.filter((task) => task.status === "BLOCKED");
     const dependencies = slice.dependencies.length ? slice.dependencies.join(", ") : "None";
+    const collapsed = collapsedSlices.has(slice.id);
 
     return `
-      <article class="slice-item" data-slice-id="${esc(slice.id)}">
+      <article class="slice-item ${collapsed ? "is-collapsed" : ""}" data-slice-id="${esc(slice.id)}">
         <header class="slice-main">
-          <div>
+          <div class="slice-heading-copy">
             <div class="slice-title-row">
               <span class="state-dot ${tone(slice.status)}"></span>
               <span class="slice-code">${String(slice.order).padStart(2, "0")} · ${esc(slice.id)}</span>
@@ -173,6 +175,13 @@
               ${blockers.length ? `<span class="task-blocked">${blockers.length} blocker${blockers.length > 1 ? "s" : ""}</span>` : ""}
             </div>
           </div>
+          <div class="slice-collapse-summary" aria-hidden="${collapsed ? "false" : "true"}">
+            ${badge(slice.status)}
+            <span class="compact-progress">${slice.progress}%</span>
+            <span class="compact-tasks">Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
+            ${blockers.length ? `<span class="compact-blockers">${blockers.length} blocked</span>` : ""}
+          </div>
+          <button class="slice-collapse-toggle" type="button" data-toggle-slice-card="${esc(slice.id)}" aria-expanded="${collapsed ? "false" : "true"}" aria-label="${collapsed ? "Expand" : "Collapse"} ${esc(slice.title)} slice">${icon("chevron-down")}</button>
         </header>
         <div class="slice-content">
           ${activeTaskRows(tasks)}
@@ -204,6 +213,13 @@
       renderSlices();
     });
     $("#slice-list").addEventListener("click", (event) => {
+      const toggle = event.target.closest("[data-toggle-slice-card]");
+      if (toggle) {
+        const id = toggle.dataset.toggleSliceCard;
+        collapsedSlices.has(id) ? collapsedSlices.delete(id) : collapsedSlices.add(id);
+        renderSlices();
+        return;
+      }
       const open = event.target.closest("[data-open-slice]");
       if (open) openModal(open.dataset.openSlice);
     });

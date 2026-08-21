@@ -1,0 +1,390 @@
+schema_version: 2
+initiative_id: INIT-0042
+slice_id: SLICE-AUTH-001
+slice_revision: 1
+status: EXECUTING
+contract_version: auth-v1
+source_commit: sample-execution-r1
+
+repository:
+  model: single
+  root: "."
+  remote: "https://github.com/example/learning-platform.git"
+  nested_repositories_allowed: false
+  submodules_allowed: false
+
+code_areas:
+  frontend:
+    path: frontend/
+    direct_backend_source_dependencies_allowed: false
+  backend:
+    path: backend/
+    direct_frontend_source_dependencies_allowed: false
+
+integration_contracts:
+  - id: CON-AUTH-API
+    name: Authentication HTTP API
+    type: OpenAPI
+    version: v1
+    status: LOCKED
+    owner: Backend Engineer
+    path: backend/contracts/authentication-v1.md
+  - id: CON-AUTH-SESSION
+    name: Session lifecycle
+    type: Security protocol
+    version: v1
+    status: LOCKED
+    owner: Security Engineer
+    path: docs/contracts/session-lifecycle-v1.md
+  - id: CON-AUTH-DATA
+    name: Authentication data schema
+    type: Database schema
+    version: v1
+    status: LOCKED
+    owner: Database Engineer
+    path: backend/contracts/authentication-data-v1.md
+  - id: CON-AUTH-EMAIL
+    name: Transactional email adapter
+    type: Adapter interface
+    version: v1
+    status: VERIFYING
+    owner: Integration Engineer
+    path: backend/contracts/transactional-email-v1.md
+
+critical_path: [WP-AUTH-01, WP-AUTH-02, WP-AUTH-03, WP-AUTH-06, WP-AUTH-07]
+
+execution_waves:
+  - id: WAVE-1
+    purpose: Freeze security, API, data, and adapter boundaries
+    work_packages: [WP-AUTH-01]
+  - id: WAVE-2
+    purpose: Build persistence and parallel application surfaces
+    work_packages: [WP-AUTH-02, WP-AUTH-04, WP-AUTH-05]
+  - id: WAVE-3
+    purpose: Complete backend lifecycle services
+    work_packages: [WP-AUTH-03]
+  - id: WAVE-4
+    purpose: Integrate the complete authentication lifecycle
+    work_packages: [WP-AUTH-06]
+  - id: WAVE-5
+    purpose: Verify the releasable slice through CLI suites
+    work_packages: [WP-AUTH-07]
+
+integration_sequence:
+  - Lock auth-v1 contracts and threat boundaries
+  - Apply and verify authentication migrations
+  - Integrate backend lifecycle services with the email adapter
+  - Connect frontend journeys to the locked API
+  - Run lifecycle integration and Playwright CLI suites
+merge_sequence:
+  - WP-AUTH-01
+  - WP-AUTH-02
+  - WP-AUTH-05
+  - WP-AUTH-03
+  - WP-AUTH-04
+  - WP-AUTH-06
+  - WP-AUTH-07
+deployment_sequence:
+  - Apply backward-compatible database migrations
+  - Deploy backend with authentication-v1 disabled
+  - Deploy frontend routes hidden behind authentication-v1
+  - Enable internal cohort and verify telemetry
+feature_flags:
+  - authentication-v1 defaults off outside approved internal accounts
+observability_checks:
+  - Verify registration, verification, sign-in, refresh, recovery, and revocation events
+  - Verify throttling, replay, email delivery, and revocation failure alerts
+rollback_sequence:
+  - Disable authentication-v1 entry points and new session issuance
+  - Preserve accounts, token hashes, revocations, and audit records
+  - Roll back application code only after compatibility verification
+
+work_packages:
+  - id: WP-AUTH-01
+    title: Freeze authentication contracts and threat boundaries
+    description: Lock API behavior, session rules, privacy-safe errors, token handling, adapter boundaries, and security invariants before implementation fans out.
+    area: architecture-security
+    owner: Development Lead
+    owner_initials: DL
+    status: DONE
+    blocker: ""
+    contract_version: auth-v1
+    supports: [US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06]
+    depends_on: []
+    inputs:
+      - SLICE-AUTH-001 revision 1
+      - Locked decisions DEC-003, DEC-006, and DEC-009
+      - Authentication prototype checkpoint 07
+    produces:
+      - Locked Authentication HTTP API v1 contract
+      - Locked session lifecycle and threat-boundary contract
+      - Locked data and email-adapter expectations
+    owned_paths:
+      - docs/contracts/authentication-v1.md
+      - docs/contracts/session-lifecycle-v1.md
+      - backend/contracts/authentication-data-v1.md
+      - backend/contracts/transactional-email-v1.md
+    forbidden_paths:
+      - frontend/src/
+      - backend/src/
+      - backend/migrations/
+    entry_checks:
+      - Initiative and slice revisions are current
+      - Security and privacy decisions are locked
+      - Development Intake returned FEASIBLE
+    exit_checks:
+      - All four integration contracts have stable versions and owners
+      - Privacy-safe errors and token rules are explicit
+      - Frontend and backend can implement without cross-area source imports
+    required_tests: [TC-AUTH-08]
+    integration_owner: Development Lead
+
+  - id: WP-AUTH-02
+    title: Build authentication persistence and migrations
+    description: Implement accounts, password credentials, verification and recovery challenges, refresh-session chains, revocation state, and security audit persistence with reversible migrations.
+    area: database
+    owner: Database Engineer
+    owner_initials: DB
+    status: VERIFYING
+    blocker: ""
+    contract_version: auth-v1
+    supports: [US-AUTH-01, US-AUTH-02, US-AUTH-04, US-AUTH-05, US-AUTH-06]
+    depends_on: [WP-AUTH-01]
+    inputs:
+      - CON-AUTH-DATA v1
+      - Existing backend migration conventions
+      - Locked password, token, expiry, and revocation rules
+    produces:
+      - Forward authentication migration
+      - Backward-compatible rollback migration
+      - Persistence repositories and concurrency constraints
+      - Migration and repository test evidence
+    owned_paths:
+      - backend/migrations/authentication/
+      - backend/src/auth/persistence/
+      - backend/tests/auth/persistence/
+    forbidden_paths:
+      - frontend/
+      - backend/src/auth/http/
+      - backend/src/integrations/email/
+    entry_checks:
+      - WP-AUTH-01 is DONE
+      - CON-AUTH-DATA v1 is locked
+      - Production data retention constraints are known
+    exit_checks:
+      - Forward and rollback migrations pass from supported database states
+      - Raw credentials and tokens are never persisted or logged
+      - Refresh rotation and replay constraints hold under concurrency
+      - Repository tests and migration tests pass through CLI
+    required_tests: [TC-AUTH-04, TC-AUTH-09]
+    integration_owner: Backend Engineer
+
+  - id: WP-AUTH-03
+    title: Implement authentication lifecycle services and API
+    description: Implement registration, verification, resend, sign-in, refresh, recovery, reset, current-session sign-out, and all-session sign-out against the locked contracts.
+    area: backend
+    owner: Backend Engineer
+    owner_initials: BE
+    status: IN_PROGRESS
+    blocker: ""
+    contract_version: auth-v1
+    supports: [US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06]
+    depends_on: [WP-AUTH-01, WP-AUTH-02]
+    inputs:
+      - CON-AUTH-API v1
+      - CON-AUTH-SESSION v1
+      - Verified persistence interfaces from WP-AUTH-02
+      - Email adapter interface from CON-AUTH-EMAIL v1
+    produces:
+      - Authentication domain services
+      - HTTP handlers and privacy-safe error mapping
+      - Throttling, audit, token, rotation, and revocation behavior
+      - Backend unit, contract, and integration evidence
+    owned_paths:
+      - backend/src/auth/domain/
+      - backend/src/auth/http/
+      - backend/src/auth/security/
+      - backend/tests/auth/api/
+    forbidden_paths:
+      - frontend/
+      - backend/migrations/
+      - backend/src/integrations/email/provider/
+    entry_checks:
+      - WP-AUTH-01 is DONE
+      - WP-AUTH-02 exit checks pass
+      - API, session, and data contracts remain auth-v1
+    exit_checks:
+      - Every API operation satisfies privacy-safe response rules
+      - Token consumption, refresh rotation, and revocation are atomic
+      - Throttling and audit events cover success and failure paths
+      - Backend unit, contract, security, and integration suites pass
+    required_tests: [TC-AUTH-01, TC-AUTH-02, TC-AUTH-03, TC-AUTH-04, TC-AUTH-06, TC-AUTH-07, TC-AUTH-08, TC-AUTH-11]
+    integration_owner: Integration Engineer
+
+  - id: WP-AUTH-04
+    title: Build accessible authentication journeys
+    description: Build registration, verification, sign-in, expiry, intended-destination restoration, recovery, reset, and sign-out interfaces against generated or locked client contracts.
+    area: frontend
+    owner: Frontend Engineer
+    owner_initials: FE
+    status: IN_PROGRESS
+    blocker: ""
+    contract_version: auth-v1
+    supports: [US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06]
+    depends_on: [WP-AUTH-01]
+    inputs:
+      - CON-AUTH-API v1
+      - Manually reviewed prototype checkpoint 07
+      - Locked accessibility and safe-destination requirements
+    produces:
+      - Authentication routes, forms, and session state
+      - Accessible loading, success, failure, expiry, and recovery states
+      - Frontend component and route test evidence
+    owned_paths:
+      - frontend/src/features/auth/
+      - frontend/src/routes/auth/
+      - frontend/tests/auth/
+    forbidden_paths:
+      - backend/
+      - frontend/src/generated/auth-client/
+      - frontend/src/features/admin/
+    entry_checks:
+      - WP-AUTH-01 is DONE
+      - Generated client matches CON-AUTH-API v1
+      - Prototype findings and Human decisions are cited
+    exit_checks:
+      - All six stories have complete visible UI states
+      - Keyboard, focus, names, errors, and contrast requirements pass
+      - Unsafe intended destinations fall back safely
+      - Frontend component and route tests pass through CLI
+    required_tests: [TC-AUTH-01, TC-AUTH-03, TC-AUTH-05, TC-AUTH-06, TC-AUTH-10]
+    integration_owner: Integration Engineer
+
+  - id: WP-AUTH-05
+    title: Implement provider-neutral transactional email delivery
+    description: Implement verification, recovery, and recovery-complete messages through the locked adapter with local deterministic fixtures, correlation IDs, bounded retry, and safe delivery evidence.
+    area: integration
+    owner: Integration Engineer
+    owner_initials: IE
+    status: VERIFYING
+    blocker: ""
+    contract_version: auth-v1
+    supports: [US-AUTH-01, US-AUTH-02, US-AUTH-05]
+    depends_on: [WP-AUTH-01]
+    inputs:
+      - CON-AUTH-EMAIL v1
+      - Verification and recovery message requirements
+      - Local email fixture and delivery-event conventions
+    produces:
+      - Provider-neutral email adapter implementation
+      - Local deterministic email fixture
+      - Delivery retry, correlation, and failure telemetry
+      - Adapter contract-test evidence
+    owned_paths:
+      - backend/src/integrations/email/
+      - backend/tests/integrations/email/
+      - backend/fixtures/email/
+    forbidden_paths:
+      - frontend/
+      - backend/src/auth/domain/
+      - production provider credentials
+    entry_checks:
+      - WP-AUTH-01 is DONE
+      - Adapter contract is auth-v1
+      - No production provider choice is required for local verification
+    exit_checks:
+      - All three message types satisfy the adapter contract
+      - Retry and failure states emit safe correlation evidence
+      - Fixtures contain no live credentials or personal data
+      - Adapter contract tests pass through CLI
+    required_tests: [TC-AUTH-02, TC-AUTH-06, TC-AUTH-11]
+    integration_owner: Backend Engineer
+
+  - id: WP-AUTH-06
+    title: Integrate and harden the complete authentication lifecycle
+    description: Join frontend, backend, persistence, and email behavior in the integrated development environment; verify recovery, expiry, replay, throttling, accessibility, observability, flags, and rollback boundaries.
+    area: full-stack-integration
+    owner: Integration Engineer
+    owner_initials: IE
+    status: BLOCKED
+    blocker: WP-AUTH-03 and WP-AUTH-04 exit checks are incomplete
+    contract_version: auth-v1
+    supports: [US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06]
+    depends_on: [WP-AUTH-02, WP-AUTH-03, WP-AUTH-04, WP-AUTH-05]
+    inputs:
+      - Integrated outputs from WP-AUTH-02 through WP-AUTH-05
+      - authentication-v1 feature-flag configuration
+      - Local deterministic users, tokens, sessions, and email fixtures
+    produces:
+      - Integrated authentication lifecycle
+      - Cross-area contract and recovery evidence
+      - Observability, feature-flag, deployment, and rollback evidence
+      - Bounded defects for any failed boundary
+    owned_paths:
+      - frontend/tests/integration/auth/
+      - backend/tests/integration/auth/
+      - scripts/verify-authentication.sh
+      - docs/runbooks/authentication-v1.md
+    forbidden_paths:
+      - frontend/src/features/auth/
+      - backend/src/auth/domain/
+      - backend/migrations/
+    entry_checks:
+      - WP-AUTH-02 through WP-AUTH-05 are DONE
+      - All locked contracts remain auth-v1
+      - Integrated environment and deterministic fixtures are available
+    exit_checks:
+      - Primary, alternate, failure, expiry, recovery, and sign-out paths pass
+      - Contract, concurrency, security, accessibility, and observability checks pass
+      - Feature-flag enable, disable, and rollback procedures are verified
+      - No cross-area source import or unexplained scope drift exists
+    required_tests: [TC-AUTH-01, TC-AUTH-02, TC-AUTH-03, TC-AUTH-04, TC-AUTH-05, TC-AUTH-06, TC-AUTH-07, TC-AUTH-08, TC-AUTH-09, TC-AUTH-10, TC-AUTH-11]
+    integration_owner: Development Lead
+
+  - id: WP-AUTH-07
+    title: Build and run the authentication Playwright CLI suite
+    description: Commit deterministic browser journeys and run them only through the Playwright CLI against the integrated environment; collect reports, traces, screenshots, and videos as files for QA handoff.
+    area: end-to-end-testing
+    owner: Frontend Engineer
+    owner_initials: FE
+    status: BLOCKED
+    blocker: WP-AUTH-06 integrated lifecycle is not ready
+    contract_version: auth-v1
+    supports: [US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06]
+    depends_on: [WP-AUTH-06]
+    inputs:
+      - Integrated environment from WP-AUTH-06
+      - Deterministic learner, token, session, and email fixtures
+      - Slice Test IDs TC-AUTH-01 through TC-AUTH-12
+    produces:
+      - Committed Playwright authentication specifications
+      - CLI commands and machine-readable reports
+      - Trace, screenshot, and video evidence files for failures
+      - Whole-slice verification handoff to independent QA
+    owned_paths:
+      - frontend/e2e/authentication/
+      - frontend/playwright.config.ts
+      - frontend/test-results/authentication/
+    forbidden_paths:
+      - backend/src/
+      - frontend/src/
+      - interactive browser-control tooling
+    entry_checks:
+      - WP-AUTH-06 is DONE
+      - Test environment and deterministic fixtures are healthy
+      - No agent-controlled interactive browser session is used
+    exit_checks:
+      - Required Playwright CLI journeys pass or have exact failure evidence
+      - Retry count and flaky behavior remain within policy
+      - Reports, traces, screenshots, and videos are stored as files
+      - QA receives exact commands, revisions, environment, and evidence paths
+    required_tests: [TC-AUTH-01, TC-AUTH-03, TC-AUTH-05, TC-AUTH-06, TC-AUTH-10, TC-AUTH-12]
+    integration_owner: Development Lead
+
+validation:
+  dependency_graph: passed
+  development_lead: approved
+  product_manager_gate: EXECUTION_READY
+  open_blockers:
+    - WP-AUTH-06 waits for WP-AUTH-03 and WP-AUTH-04
+    - WP-AUTH-07 waits for WP-AUTH-06

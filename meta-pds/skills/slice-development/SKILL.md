@@ -55,6 +55,12 @@ docs/meta-pds/execution/<slice-id>.yaml
 
 Use [assets/execution-plan-template.yaml](assets/execution-plan-template.yaml).
 
+When a filled artifact would materially clarify package depth, dependency
+waves, ownership, paths, checks, and Test ID assignment, inspect
+[assets/authentication-execution-example.yaml](assets/authentication-execution-example.yaml)
+as a structural example. Never inherit its product decisions, architecture,
+paths, sequencing, or assignments without repository and slice evidence.
+
 Inspect the repository, freeze or cite the technical contract, then define:
 
 - bounded work packages and explicit owners;

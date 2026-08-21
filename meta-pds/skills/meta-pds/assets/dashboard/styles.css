@@ -252,6 +252,16 @@ h1, h2, h3, p { margin: 0; }
 .test-command { display: block; padding: 9px 10px; overflow-x: auto; border: 1px solid var(--border-soft); border-radius: 6px; background: #171717; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; white-space: pre-wrap; }
 .tab-pane.story-accordion { margin-top: 0; }
 .work-package-accordion-body > p { margin-bottom: 16px; }
+.work-package-blocker { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; margin: 14px 0; padding: 10px 12px; border: 1px solid rgba(199,119,113,.24); border-radius: 7px; background: var(--red-soft); color: var(--red); font-size: 12px; }
+.work-package-blocker strong { font-weight: 580; }
+.work-package-control-grid { margin-top: -10px; }
+.work-package-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; margin-top: 20px; }
+.work-package-detail-group { min-width: 0; }
+.work-package-detail-group h4 { margin-top: 0; }
+.work-package-detail-group ul { margin-bottom: 0; }
+.work-package-detail-group li { overflow-wrap: anywhere; }
+.work-package-detail-group.path-group li { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.work-package-detail-group.wide-group { grid-column: 1 / -1; }
 .open-detail-button { display: inline-flex; min-height: 34px; align-items: center; gap: 7px; margin-top: 16px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--soft); font-size: 12px; cursor: pointer; }
 .open-detail-button:hover { border-color: #4a4a4a; background: #272727; color: var(--text); }
 .open-detail-button .lucide-icon { width: 14px; height: 14px; }
@@ -338,6 +348,9 @@ h1, h2, h3, p { margin: 0; }
   .test-case-properties { grid-template-columns: 1fr 1fr; }
   .test-case-properties > div:nth-child(2) { border-right: 0; }
   .test-case-properties > div:nth-child(-n+2) { border-bottom: 1px solid var(--border-soft); }
+  .work-package-details-grid { grid-template-columns: 1fr; }
+  .work-package-detail-group.wide-group { grid-column: auto; }
+  .work-package-blocker { grid-template-columns: 1fr; gap: 3px; }
   .modal-tabs { overflow-x: auto; padding: 0 10px; }
   .modal-tab { flex: 0 0 auto; }
   .issue-properties { padding: 14px 12px 28px; }

@@ -461,6 +461,12 @@ def build_dashboard_data(
                 test["command"] = report_result.get("Command") or test.get("command") or ""
             raw_tests.append(test)
         tests_by_id = {str(item.get("id")): item for item in raw_tests if item.get("id")}
+        wave_by_package: dict[str, str] = {}
+        for wave in list_value(execution.get("execution_waves")):
+            if not isinstance(wave, dict):
+                continue
+            for package_id in list_value(wave.get("work_packages")):
+                wave_by_package[str(package_id)] = str(wave.get("id") or "")
         parsed_packages: list[dict[str, Any]] = []
         for item in list_value(execution.get("work_packages")):
             if not isinstance(item, dict) or not item.get("id"):
@@ -477,8 +483,18 @@ def build_dashboard_data(
                 "area": str(item.get("area") or "unassigned"),
                 "owner": owner,
                 "ownerInitials": str(item.get("owner_initials") or owner_initials(owner)),
+                "wave": wave_by_package.get(str(item["id"]), ""),
+                "contractVersion": str(item.get("contract_version") or execution.get("contract_version") or ""),
                 "storyIds": [str(value) for value in list_value(item.get("supports"))],
                 "dependsOn": [str(value) for value in list_value(item.get("depends_on"))],
+                "inputs": [str(value) for value in list_value(item.get("inputs"))],
+                "produces": [str(value) for value in list_value(item.get("produces"))],
+                "ownedPaths": [str(value) for value in list_value(item.get("owned_paths"))],
+                "forbiddenPaths": [str(value) for value in list_value(item.get("forbidden_paths"))],
+                "entryChecks": [str(value) for value in list_value(item.get("entry_checks"))],
+                "exitChecks": [str(value) for value in list_value(item.get("exit_checks"))],
+                "requiredTestIds": required_tests,
+                "integrationOwner": str(item.get("integration_owner") or "Unassigned"),
                 "tests": {
                     "passed": sum(status(test.get("status")) == "PASSED" for test in test_records),
                     "total": len(required_tests),
@@ -713,21 +729,22 @@ def prepare_demo_root(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
     runtime = tempfile.TemporaryDirectory(prefix="meta-pds-dashboard-demo-")
     base = Path(runtime.name) / "docs" / "meta-pds"
     (base / "slices").mkdir(parents=True)
+    (base / "execution").mkdir(parents=True)
 
     initiative = (skill_root / "assets" / "initiative-template.md").read_text(encoding="utf-8")
     initiative = initiative.replace("INIT-0001", "INIT-0042").replace('title: ""', 'title: "Learning Platform V1"')
     (base / "initiative.md").write_text(initiative, encoding="utf-8")
 
     delivery = (skill_root / "assets" / "delivery-state-template.yaml").read_text(encoding="utf-8")
-    delivery = delivery.replace("INIT-0001", "INIT-0042").replace("initiative_status: DISCOVERING", "initiative_status: INITIATIVE_READY")
-    delivery = delivery.replace("health: UNKNOWN", "health: ON_TRACK").replace("active_planning_slice: null", "active_planning_slice: SLICE-AUTH-001")
+    delivery = delivery.replace("INIT-0001", "INIT-0042").replace("initiative_status: DISCOVERING", "initiative_status: EXECUTING")
+    delivery = delivery.replace("health: UNKNOWN", "health: ON_TRACK").replace("active_execution_slice: null", "active_execution_slice: SLICE-AUTH-001")
     delivery = delivery.replace(
         "slice_states: []",
-        "slice_states:\n  - slice_id: SLICE-AUTH-001\n    status: READY_FOR_DEVELOPMENT\n    current_gate: READY_FOR_DEVELOPMENT\n    updated_at: \"2026-08-21T23:00:00+05:00\"",
+        "slice_states:\n  - slice_id: SLICE-AUTH-001\n    status: IN_PROGRESS\n    current_gate: EXECUTION_READY\n    updated_at: \"2026-08-22T00:30:00+05:00\"",
     )
-    delivery = delivery.replace('title: ""', 'title: "Review the Authentication slice"')
-    delivery = delivery.replace('detail: ""', 'detail: "This preview is parsed from the bundled slice example."')
-    delivery = delivery.replace('impact: ""', 'impact: "Verify the dashboard layout before initializing a product."')
+    delivery = delivery.replace('title: ""', 'title: "Complete active Authentication work packages"')
+    delivery = delivery.replace('detail: ""', 'detail: "Backend and frontend packages are active; integration remains dependency-blocked."')
+    delivery = delivery.replace('impact: ""', 'impact: "Unblocks complete lifecycle integration and Playwright CLI verification."')
     (base / "delivery-state.yaml").write_text(delivery, encoding="utf-8")
 
     decisions = (skill_root / "assets" / "decision-log-template.yaml").read_text(encoding="utf-8").replace("INIT-0001", "INIT-0042")
@@ -735,6 +752,8 @@ def prepare_demo_root(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
 
     slice_example = skill_root.parent / "slice-planning" / "assets" / "authentication-slice-example.md"
     (base / "slices" / "SLICE-AUTH-001.md").write_text(slice_example.read_text(encoding="utf-8"), encoding="utf-8")
+    execution_example = skill_root.parent / "slice-development" / "assets" / "authentication-execution-example.yaml"
+    (base / "execution" / "SLICE-AUTH-001.yaml").write_text(execution_example.read_text(encoding="utf-8"), encoding="utf-8")
     return runtime
 
 
@@ -756,7 +775,7 @@ def main() -> int:
     demo_runtime = prepare_demo_root(skill_root) if args.demo else None
     product_root = Path(demo_runtime.name).resolve() if demo_runtime else args.product_root.resolve()
     projection_kind = "bundled-example" if args.demo else "live-canonical"
-    projection_source = "Bundled Authentication slice example" if args.demo else "Canonical Meta PDS artifacts"
+    projection_source = "Bundled Authentication slice and execution examples" if args.demo else "Canonical Meta PDS artifacts"
     if not (product_root / "docs" / "meta-pds").is_dir():
         parser.error(f"not a Meta PDS product root: {product_root}")
     if args.print_json:
@@ -769,7 +788,7 @@ def main() -> int:
         handler_for(product_root, asset_root, projection_kind, projection_source),
     )
     print(f"Meta PDS dashboard: http://{args.host}:{server.server_port}")
-    print("Reading the bundled Authentication example in memory." if args.demo else f"Reading canonical artifacts from: {product_root}")
+    print("Reading the bundled Authentication slice and execution examples in memory." if args.demo else f"Reading canonical artifacts from: {product_root}")
     print("Refresh the page to reparse current files. Press Ctrl-C to stop.")
     try:
         server.serve_forever()

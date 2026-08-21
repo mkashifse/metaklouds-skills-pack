@@ -94,7 +94,8 @@ Keep the interface list-first, compact, and progressively populated:
    revision, priority, dependency, gate, progress, story, task, test, and
    contract summaries; a collapsed card becomes one row showing only identity,
    status, progress, task completion, and blockers; use the same Layers entity
-   icon for a slice in its card and detail header;
+   icon for a slice in its card and detail header; show collapsed progress as
+   ten small vertical segments with exact partial fill plus the numeric percent;
 4. currently active or blocked work packages and assigned agents directly under
    each slice;
 5. collapsible user-story rows in slice detail for acceptance and work-package

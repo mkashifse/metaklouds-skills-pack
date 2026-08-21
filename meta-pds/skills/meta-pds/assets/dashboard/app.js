@@ -53,6 +53,17 @@
     return `<span class="state-badge ${tone(status)}">${esc(label)}</span>`;
   }
 
+  function segmentedProgress(value, status, label) {
+    const numeric = Number(value);
+    const progress = Number.isFinite(numeric) ? Math.min(100, Math.max(0, numeric)) : 0;
+    const progressTone = progress === 100 ? "released" : tone(status);
+    const segments = Array.from({ length: 10 }, (_, index) => {
+      const fill = Math.min(100, Math.max(0, (progress - (index * 10)) * 10));
+      return `<i aria-hidden="true" style="--segment-fill:${fill}%"></i>`;
+    }).join("");
+    return `<span class="progress-steps ${progressTone}" role="progressbar" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}">${segments}</span>`;
+  }
+
   function sliceStories(sliceId) {
     return data.stories.filter((story) => story.sliceId === sliceId);
   }
@@ -178,7 +189,7 @@
           </div>
           <div class="slice-collapse-summary" aria-hidden="${collapsed ? "false" : "true"}">
             ${badge(slice.status)}
-            <span class="compact-progress">${slice.progress}%</span>
+            <span class="compact-progress">${segmentedProgress(slice.progress, slice.status, `${slice.title} completion`)}<strong>${slice.progress}%</strong></span>
             <span class="compact-tasks">Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
             ${blockers.length ? `<span class="compact-blockers">${blockers.length} blocked</span>` : ""}
           </div>

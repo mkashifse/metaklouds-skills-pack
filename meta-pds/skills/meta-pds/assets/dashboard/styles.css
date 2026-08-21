@@ -108,6 +108,15 @@ h1, h2, h3, p { margin: 0; }
 .slice-collapse-summary > span:not(.state-badge) { padding-left: 14px; border-left: 1px solid var(--border-soft); }
 .slice-collapse-summary strong { color: var(--soft); font-weight: 560; }
 .slice-collapse-summary .compact-blockers { color: var(--red); }
+.compact-progress { display: inline-flex; align-items: center; gap: 8px; }
+.progress-steps { display: inline-flex; height: 15px; align-items: stretch; gap: 3px; color: var(--faint); }
+.progress-steps i { display: block; width: 3px; height: 15px; border-radius: 2px; background: linear-gradient(to top, currentColor 0 var(--segment-fill), #343434 var(--segment-fill) 100%); }
+.progress-steps.released { color: var(--green); }
+.progress-steps.active { color: var(--orange); }
+.progress-steps.verifying { color: var(--blue); }
+.progress-steps.ready { color: var(--amber); }
+.progress-steps.blocked { color: var(--red); }
+.progress-steps.draft { color: var(--faint); }
 .slice-collapse-toggle { position: absolute; top: 14px; right: 14px; display: grid; width: 30px; height: 30px; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); cursor: pointer; }
 .slice-collapse-toggle:hover { color: var(--text); }
 .slice-collapse-toggle .lucide-icon { width: 16px; height: 16px; transition: transform .15s ease; }

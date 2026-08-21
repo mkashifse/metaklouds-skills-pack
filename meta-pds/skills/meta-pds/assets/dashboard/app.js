@@ -334,22 +334,14 @@
     return output.join("");
   }
 
-  function sliceMarkdown(slice) {
-    const stories = sliceStories(slice.id);
+  function sliceIntroMarkdown(slice) {
+    return ["## Capability outcome", slice.outcome].join("\n\n");
+  }
+
+  function sliceEvidenceMarkdown(slice) {
     const contracts = sliceContracts(slice.id);
     const tests = sliceTests(slice.id);
-    const storyText = stories.map((story) => [
-      `### ${story.id} — ${story.title}`,
-      `**State:** ${pretty(story.status)} · **Acceptance:** ${acceptanceLabel(story)}`,
-      "**Acceptance criteria:**",
-      ...(story.acceptanceCriteria || ["See the canonical slice artifact."]).map((criterion) => `- ${criterion}`)
-    ].join("\n")).join("\n\n");
-
     return [
-      "## Capability outcome",
-      slice.outcome,
-      "## User stories and acceptance",
-      storyText,
       "## Dependencies",
       `- Upstream slices: ${slice.dependencies.join(", ") || "None"}`,
       `- Source artifact: \`${slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`}\``,
@@ -358,6 +350,24 @@
       "## Test cases",
       ...(tests.length ? tests.map((test) => `- **${test.id}** — ${test.title} · ${test.type} · ${pretty(test.status)}`) : ["- No test cases recorded."])
     ].join("\n\n");
+  }
+
+  function storyAccordion(story) {
+    const criteria = story.acceptanceCriteria || [];
+    return `
+      <details class="story-accordion-item">
+        <summary>
+          <span class="story-accordion-dot"><i class="state-dot ${tone(story.status)}"></i></span>
+          <span class="story-accordion-copy"><small>${esc(story.id)} · ${esc(pretty(story.status))}</small><strong>${esc(story.title)}</strong></span>
+          <span class="story-accordion-count">${esc(acceptanceLabel(story))}</span>
+          <span class="story-accordion-chevron">⌄</span>
+        </summary>
+        <div class="story-accordion-body">
+          ${story.description ? `<p>${esc(story.description)}</p>` : ""}
+          <h4>Acceptance criteria</h4>
+          <ul>${criteria.length ? criteria.map((criterion) => `<li>${esc(criterion)}</li>`).join("") : "<li>See the canonical slice artifact.</li>"}</ul>
+        </div>
+      </details>`;
   }
 
   function taskMarkdown(task) {
@@ -423,12 +433,18 @@
 
   function sliceIssueDetail(slice) {
     const tasks = sliceTasks(slice.id);
+    const stories = sliceStories(slice.id);
     return `
       <div class="issue-layout">
         <div class="issue-main">
           <section class="issue-section">
             <header><h3>Description</h3><span>Markdown</span></header>
-            <div class="markdown-body">${renderMarkdown(sliceMarkdown(slice))}</div>
+            <div class="markdown-body">${renderMarkdown(sliceIntroMarkdown(slice))}</div>
+            <section class="story-accordion">
+              <header><div><h2>User stories and acceptance</h2><span>${stories.length} stories</span></div><span>Click a story to expand</span></header>
+              <div class="story-accordion-list">${stories.length ? stories.map(storyAccordion).join("") : '<div class="empty-state">No stories are defined.</div>'}</div>
+            </section>
+            <div class="markdown-body supporting-markdown">${renderMarkdown(sliceEvidenceMarkdown(slice))}</div>
           </section>
           <section class="issue-section child-section">
             <header><h3>Tasks</h3><span>${tasks.length}</span></header>

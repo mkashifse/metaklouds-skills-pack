@@ -1,7 +1,7 @@
 {
   "name": "meta-pds",
   "displayName": "Meta Product Delivery System",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "entrySkill": "meta-pds",
   "skills": [
     "meta-pds",

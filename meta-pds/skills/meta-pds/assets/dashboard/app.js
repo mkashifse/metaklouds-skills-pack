@@ -38,7 +38,8 @@
 
   function tone(status) {
     if (["RELEASED", "OUTCOME_VALIDATED", "DONE", "LOCKED", "PASSED", "ON_TRACK"].includes(status)) return "released";
-    if (["IN_PROGRESS", "VERIFYING", "HUMAN_REVIEW", "TESTING"].includes(status)) return "active";
+    if (["VERIFYING", "TESTING"].includes(status)) return "verifying";
+    if (["IN_PROGRESS", "HUMAN_REVIEW"].includes(status)) return "active";
     if (["BLOCKED", "REWORK_REQUIRED", "REVERIFY_REQUIRED", "FAILED", "AT_RISK", "OFF_TRACK"].includes(status)) return "blocked";
     if (["READY", "READY_FOR_DEVELOPMENT", "EXECUTION_READY", "RELEASE_READY"].includes(status)) return "ready";
     return "draft";

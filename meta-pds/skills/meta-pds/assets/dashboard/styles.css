@@ -87,6 +87,7 @@ h1, h2, h3, p { margin: 0; }
 .state-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--faint); box-shadow: 0 0 0 3px rgba(98,98,94,.1); }
 .state-dot.released { background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
 .state-dot.active { background: var(--orange); box-shadow: 0 0 0 3px var(--orange-soft); }
+.state-dot.verifying { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .state-dot.blocked { background: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
 .state-dot.ready { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .slice-card-title { font-size: 20px; font-weight: 570; letter-spacing: -.015em; line-height: 1.2; }
@@ -120,7 +121,8 @@ h1, h2, h3, p { margin: 0; }
 
 .state-badge { display: inline-flex; min-height: 24px; align-items: center; padding: 4px 8px; border: 1px solid #393939; border-radius: 999px; background: #282828; color: #999; font-size: 11px; font-weight: 620; letter-spacing: .035em; text-transform: uppercase; white-space: nowrap; }
 .state-badge.on-track, .state-badge.released, .state-badge.done, .state-badge.locked, .state-badge.passed { border-color: rgba(118,183,138,.25); background: var(--green-soft); color: var(--green); }
-.state-badge.active, .state-badge.in-progress, .state-badge.verifying, .state-badge.testing { border-color: rgba(232,120,50,.26); background: var(--orange-soft); color: #dc925d; }
+.state-badge.active, .state-badge.in-progress { border-color: rgba(232,120,50,.26); background: var(--orange-soft); color: #dc925d; }
+.state-badge.verifying, .state-badge.testing { border-color: rgba(125,158,205,.25); background: var(--blue-soft); color: var(--blue); }
 .state-badge.ready { border-color: rgba(125,158,205,.25); background: var(--blue-soft); color: var(--blue); }
 .state-badge.blocked, .state-badge.failed { border-color: rgba(199,119,113,.25); background: var(--red-soft); color: var(--red); }
 .state-badge.draft, .state-badge.proposed, .state-badge.superseded, .state-badge.not-ready { border-color: rgba(200,163,105,.22); background: var(--amber-soft); color: var(--amber); }

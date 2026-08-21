@@ -261,10 +261,9 @@ h1, h2, h3, p { margin: 0; }
 .tab-pane.story-accordion { margin-top: 0; }
 .work-package-accordion-item summary { grid-template-columns: 18px minmax(0, 1fr) 150px auto 16px; }
 .work-package-accordion-item summary > .state-badge { justify-self: end; }
-.work-package-body-header { display: flex; justify-content: flex-end; padding-top: 10px; }
-.open-detail-button { display: inline-flex; min-height: 28px; align-items: center; gap: 5px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: #222; color: var(--muted); font-size: 11px; cursor: pointer; }
-.open-detail-button:hover { border-color: #4a4a4a; background: #272727; color: var(--text); }
-.open-detail-button .lucide-icon { width: 12px; height: 12px; }
+.work-package-title-link { display: block; width: 100%; padding: 0; overflow: hidden; border: 0; background: transparent; color: var(--soft); font: inherit; font-size: 14px; font-weight: 560; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.work-package-title-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.work-package-title-link:focus-visible { border-radius: 3px; outline: 2px solid var(--orange); outline-offset: 3px; }
 .work-package-markdown { font-size: 14px; }
 .work-package-markdown h2 { margin: 22px 0 6px; font-size: 14px; font-weight: 580; }
 .work-package-markdown h2:first-child { margin-top: 6px; }

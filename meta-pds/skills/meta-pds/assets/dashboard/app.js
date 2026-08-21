@@ -462,15 +462,12 @@
       <details class="story-accordion-item work-package-accordion-item">
         <summary>
           <span class="story-accordion-dot"><i class="state-dot ${tone(task.status)}"></i></span>
-          <span class="story-accordion-copy"><small>${esc(task.id)} · ${esc(pretty(task.area))}</small><strong>${esc(task.title)}</strong></span>
+          <span class="story-accordion-copy"><small>${esc(task.id)} · ${esc(pretty(task.area))}</small><button class="work-package-title-link" type="button" data-open-task="${esc(task.id)}" aria-label="Open full detail for ${esc(task.title)}">${esc(task.title)}</button></span>
           <span class="story-accordion-count">${esc(task.owner)}</span>
           ${badge(task.status)}
           <span class="story-accordion-chevron">${icon("chevron-down")}</span>
         </summary>
         <div class="story-accordion-body work-package-accordion-body">
-          <div class="work-package-body-header">
-            <button class="open-detail-button" type="button" data-open-task="${esc(task.id)}" aria-label="Open full detail for ${esc(task.title)}">${icon("external-link")}Details</button>
-          </div>
           <div class="markdown-body work-package-markdown">${renderMarkdown(taskMarkdown(task))}</div>
         </div>
       </details>`;
@@ -647,7 +644,7 @@
     $("#slice-modal").addEventListener("click", (event) => { if (event.target === $("#slice-modal")) closeModal(); });
     $("#slice-modal").addEventListener("click", (event) => {
       const task = event.target.closest("[data-open-task]");
-      if (task) { modalTaskId = task.dataset.openTask; modalContractId = null; modalEntity = "task"; renderModal(); return; }
+      if (task) { event.preventDefault(); modalTaskId = task.dataset.openTask; modalContractId = null; modalEntity = "task"; renderModal(); return; }
       const contract = event.target.closest("[data-open-contract]");
       if (contract) { modalContractId = contract.dataset.openContract; modalTaskId = null; modalEntity = "contract"; renderModal(); return; }
       const tab = event.target.closest("[data-modal-tab]");

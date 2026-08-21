@@ -78,6 +78,11 @@ docs/meta-pds/slices/<slice-id>.md
 
 Use [assets/slice-template.md](assets/slice-template.md).
 
+When a filled artifact would materially clarify the required depth, inspect
+[assets/authentication-slice-example.md](assets/authentication-slice-example.md)
+as a structural example. Never inherit its product decisions, scope, risks, or
+acceptance criteria into another initiative without authoritative evidence.
+
 ## Change and deficiency handling
 
 Do not silently reinterpret locked upstream artifacts. When information is

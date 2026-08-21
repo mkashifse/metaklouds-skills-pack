@@ -21,10 +21,10 @@ window.META_PDS_DASHBOARD_DATA = {
     humanOwner: "Human Product Owner",
     currentRevision: 3,
     nextAction: {
-      title: "Review password recovery prototype",
-      detail: "Confirm the recovery route before Slice 02 planning locks.",
+      title: "Review the Authentication slice hierarchy",
+      detail: "Open Authentication to inspect its six stories, nested work packages, contracts, and tests.",
       owner: "Human review",
-      impact: "Unblocks 2 work items"
+      impact: "Validates the dashboard projection"
     }
   },
   attention: [
@@ -79,7 +79,7 @@ window.META_PDS_DASHBOARD_DATA = {
       status: "LOCKED",
       revision: 2,
       updatedAt: "2026-08-21T20:05:00+05:00",
-      affects: ["SLICE-01", "SLICE-02"]
+      affects: ["SLICE-AUTH-001", "SLICE-02"]
     },
     {
       id: "DEC-006",
@@ -88,7 +88,7 @@ window.META_PDS_DASHBOARD_DATA = {
       status: "LOCKED",
       revision: 1,
       updatedAt: "2026-08-21T20:48:00+05:00",
-      affects: ["SLICE-01", "SLICE-03"]
+      affects: ["SLICE-AUTH-001", "SLICE-03"]
     },
     {
       id: "DEC-008",
@@ -106,7 +106,7 @@ window.META_PDS_DASHBOARD_DATA = {
       status: "PROPOSED",
       revision: 1,
       updatedAt: "2026-08-21T22:18:00+05:00",
-      affects: ["SLICE-01"]
+      affects: ["SLICE-AUTH-001"]
     },
     {
       id: "DEC-010",
@@ -124,22 +124,23 @@ window.META_PDS_DASHBOARD_DATA = {
       status: "SUPERSEDED",
       revision: 2,
       updatedAt: "2026-08-20T17:15:00+05:00",
-      affects: ["SLICE-01"]
+      affects: ["SLICE-AUTH-001"]
     }
   ],
   slices: [
     {
-      id: "SLICE-01",
+      id: "SLICE-AUTH-001",
       order: 1,
-      title: "Identity and secure access",
-      outcome: "A learner can create, verify, and securely access an account.",
-      status: "RELEASED",
-      progress: 100,
-      revision: 4,
+      title: "Authentication",
+      outcome: "A learner can register, verify, sign in, continue or restore a session, recover a forgotten password, and sign out without staff assistance.",
+      status: "IN_PROGRESS",
+      progress: 64,
+      revision: 1,
       priority: "P0",
       dependencies: [],
-      stories: 5,
-      active: false
+      stories: 6,
+      active: true,
+      artifactPath: "skills/slice-planning/assets/authentication-slice-example.md"
     },
     {
       id: "SLICE-02",
@@ -150,9 +151,9 @@ window.META_PDS_DASHBOARD_DATA = {
       progress: 58,
       revision: 2,
       priority: "P0",
-      dependencies: ["SLICE-01"],
+      dependencies: ["SLICE-AUTH-001"],
       stories: 4,
-      active: true
+      active: false
     },
     {
       id: "SLICE-03",
@@ -163,7 +164,7 @@ window.META_PDS_DASHBOARD_DATA = {
       progress: 26,
       revision: 3,
       priority: "P1",
-      dependencies: ["SLICE-01"],
+      dependencies: ["SLICE-AUTH-001"],
       stories: 6,
       active: false
     },
@@ -196,46 +197,104 @@ window.META_PDS_DASHBOARD_DATA = {
   ],
   workPackages: [
     {
-      id: "WP-BE-08",
-      sliceId: "SLICE-01",
-      title: "Session and refresh-token lifecycle",
-      description: "Issue, rotate, revoke, and audit authenticated sessions.",
+      id: "WP-AUTH-01",
+      sliceId: "SLICE-AUTH-001",
+      title: "Freeze authentication contracts and threat boundaries",
+      description: "Lock HTTP errors, session rotation, token purposes, destination safety, rate limits, and audit events.",
       status: "DONE",
+      area: "integration",
+      owner: "Development Lead",
+      ownerInitials: "DL",
+      storyIds: ["US-AUTH-01", "US-AUTH-02", "US-AUTH-03", "US-AUTH-04", "US-AUTH-05", "US-AUTH-06"],
+      dependsOn: [],
+      tests: { passed: 12, total: 12 },
+      critical: true
+    },
+    {
+      id: "WP-AUTH-02",
+      sliceId: "SLICE-AUTH-001",
+      title: "Authentication persistence and migrations",
+      description: "Create account, credential, challenge, refresh-session, revocation, and security-event persistence.",
+      status: "DONE",
+      area: "database",
+      owner: "Database Engineer",
+      ownerInitials: "DB",
+      storyIds: ["US-AUTH-01", "US-AUTH-02", "US-AUTH-04", "US-AUTH-05", "US-AUTH-06"],
+      dependsOn: ["WP-AUTH-01"],
+      tests: { passed: 19, total: 19 },
+      critical: true
+    },
+    {
+      id: "WP-AUTH-03",
+      sliceId: "SLICE-AUTH-001",
+      title: "Registration and email verification services",
+      description: "Implement privacy-safe registration, verification, resend, throttling, and audit behavior.",
+      status: "VERIFYING",
       area: "backend",
       owner: "Backend Engineer",
       ownerInitials: "BE",
-      storyIds: ["US-101", "US-103"],
-      dependsOn: [],
-      tests: { passed: 18, total: 18 },
+      storyIds: ["US-AUTH-01", "US-AUTH-02"],
+      dependsOn: ["WP-AUTH-01", "WP-AUTH-02"],
+      tests: { passed: 21, total: 23 },
       critical: true
     },
     {
-      id: "WP-FE-09",
-      sliceId: "SLICE-01",
-      title: "Accessible sign-in states",
-      description: "Render validation, loading, failure, and session-expired states.",
-      status: "DONE",
+      id: "WP-AUTH-04",
+      sliceId: "SLICE-AUTH-001",
+      title: "Accessible authentication journeys",
+      description: "Build registration, verification, sign-in, recovery, expiry, and sign-out states in the frontend.",
+      status: "IN_PROGRESS",
       area: "frontend",
       owner: "Frontend Engineer",
       ownerInitials: "FE",
-      storyIds: ["US-101", "US-103"],
-      dependsOn: ["WP-BE-08"],
-      tests: { passed: 14, total: 14 },
+      storyIds: ["US-AUTH-01", "US-AUTH-02", "US-AUTH-03", "US-AUTH-04", "US-AUTH-05", "US-AUTH-06"],
+      dependsOn: ["WP-AUTH-01"],
+      tests: { passed: 16, total: 24 },
       critical: false
     },
     {
-      id: "WP-QA-10",
-      sliceId: "SLICE-01",
-      title: "Identity lifecycle verification",
-      description: "Verify registration, verification, sign-in, expiry, and sign-out.",
-      status: "DONE",
-      area: "integration",
-      owner: "Slice QA",
-      ownerInitials: "QA",
-      storyIds: ["US-101", "US-102", "US-103"],
-      dependsOn: ["WP-BE-08", "WP-FE-09"],
-      tests: { passed: 11, total: 11 },
+      id: "WP-AUTH-05",
+      sliceId: "SLICE-AUTH-001",
+      title: "Sign-in, refresh rotation, and revocation",
+      description: "Implement verified-account sign-in, refresh rotation, replay detection, safe destination restoration, and sign-out.",
+      status: "IN_PROGRESS",
+      area: "backend",
+      owner: "Security Engineer",
+      ownerInitials: "SE",
+      storyIds: ["US-AUTH-03", "US-AUTH-04", "US-AUTH-06"],
+      dependsOn: ["WP-AUTH-01", "WP-AUTH-02"],
+      tests: { passed: 27, total: 34 },
       critical: true
+    },
+    {
+      id: "WP-AUTH-06",
+      sliceId: "SLICE-AUTH-001",
+      title: "Forgotten-password recovery lifecycle",
+      description: "Implement privacy-safe requests, hashed single-use tokens, password reset, session revocation, and notification.",
+      status: "BLOCKED",
+      area: "backend",
+      owner: "Backend Engineer",
+      ownerInitials: "BE",
+      storyIds: ["US-AUTH-05"],
+      dependsOn: ["WP-AUTH-01", "WP-AUTH-02"],
+      tests: { passed: 11, total: 18 },
+      critical: true,
+      blocker: "Local email-adapter fixture is awaiting contract verification"
+    },
+    {
+      id: "WP-AUTH-07",
+      sliceId: "SLICE-AUTH-001",
+      title: "Authentication lifecycle integration and Playwright CLI suite",
+      description: "Verify the complete registration-to-sign-out lifecycle, failure recovery, accessibility, security, and rollback evidence.",
+      status: "BLOCKED",
+      area: "integration",
+      owner: "Integration Engineer",
+      ownerInitials: "IE",
+      storyIds: ["US-AUTH-01", "US-AUTH-02", "US-AUTH-03", "US-AUTH-04", "US-AUTH-05", "US-AUTH-06"],
+      dependsOn: ["WP-AUTH-03", "WP-AUTH-04", "WP-AUTH-05", "WP-AUTH-06"],
+      tests: { passed: 8, total: 31 },
+      critical: true,
+      blocker: "Dependent authentication packages are incomplete"
     },
     {
       id: "WP-DB-11",
@@ -326,40 +385,88 @@ window.META_PDS_DASHBOARD_DATA = {
   ],
   stories: [
     {
-      id: "US-101",
-      sliceId: "SLICE-01",
-      title: "Sign in with a verified account",
-      status: "DONE",
-      workPackageIds: ["WP-BE-08", "WP-FE-09", "WP-QA-10"],
-      acceptance: { passed: 7, total: 7 },
+      id: "US-AUTH-01",
+      sliceId: "SLICE-AUTH-001",
+      title: "Register an account",
+      status: "VERIFYING",
+      workPackageIds: ["WP-AUTH-01", "WP-AUTH-02", "WP-AUTH-03", "WP-AUTH-04", "WP-AUTH-07"],
+      acceptance: { passed: 3, total: 4 },
       acceptanceCriteria: [
-        "Verified credentials create an authenticated session.",
-        "Invalid credentials reveal no account-existence information.",
-        "Keyboard and screen-reader users receive accessible error feedback."
+        "A valid email and compliant password create one unverified learner account.",
+        "Known and unknown emails receive privacy-safe responses.",
+        "Password requirements and field errors are accessible.",
+        "Repeated requests are rate-limited with a safe retry time."
       ]
     },
     {
-      id: "US-102",
-      sliceId: "SLICE-01",
-      title: "Verify a newly registered email",
-      status: "DONE",
-      workPackageIds: ["WP-QA-10"],
-      acceptance: { passed: 5, total: 5 },
+      id: "US-AUTH-02",
+      sliceId: "SLICE-AUTH-001",
+      title: "Verify email ownership",
+      status: "VERIFYING",
+      workPackageIds: ["WP-AUTH-01", "WP-AUTH-02", "WP-AUTH-03", "WP-AUTH-04", "WP-AUTH-07"],
+      acceptance: { passed: 3, total: 4 },
       acceptanceCriteria: [
-        "A valid verification link activates the learner account.",
-        "Expired and previously used links are rejected safely."
+        "A valid unexpired link activates exactly one account.",
+        "A consumed link cannot create duplicate verification events.",
+        "An expired link offers a rate-limited resend path.",
+        "Audit events contain no raw verification token."
       ]
     },
     {
-      id: "US-103",
-      sliceId: "SLICE-01",
-      title: "Recover from an expired session",
-      status: "DONE",
-      workPackageIds: ["WP-BE-08", "WP-FE-09", "WP-QA-10"],
-      acceptance: { passed: 6, total: 6 },
+      id: "US-AUTH-03",
+      sliceId: "SLICE-AUTH-001",
+      title: "Sign in securely",
+      status: "IN_PROGRESS",
+      workPackageIds: ["WP-AUTH-01", "WP-AUTH-04", "WP-AUTH-05", "WP-AUTH-07"],
+      acceptance: { passed: 2, total: 4 },
       acceptanceCriteria: [
-        "An expired session returns the learner to sign-in.",
-        "Successful sign-in restores the intended safe destination."
+        "Verified credentials create an access and rotated refresh session.",
+        "Invalid, unknown, and unverified accounts use privacy-safe failures.",
+        "Repeated failures trigger the locked throttling policy.",
+        "Loading, failure, focus, keyboard, and screen-reader states are accessible."
+      ]
+    },
+    {
+      id: "US-AUTH-04",
+      sliceId: "SLICE-AUTH-001",
+      title: "Continue or restore an authenticated journey",
+      status: "IN_PROGRESS",
+      workPackageIds: ["WP-AUTH-01", "WP-AUTH-02", "WP-AUTH-04", "WP-AUTH-05", "WP-AUTH-07"],
+      acceptance: { passed: 2, total: 4 },
+      acceptanceCriteria: [
+        "A valid refresh session rotates atomically.",
+        "Expired, revoked, or replayed sessions cannot create access.",
+        "Reauthentication restores only a permitted same-origin destination.",
+        "Concurrent refreshes cannot create multiple valid chains."
+      ]
+    },
+    {
+      id: "US-AUTH-05",
+      sliceId: "SLICE-AUTH-001",
+      title: "Recover a forgotten password",
+      status: "BLOCKED",
+      workPackageIds: ["WP-AUTH-01", "WP-AUTH-02", "WP-AUTH-04", "WP-AUTH-06", "WP-AUTH-07"],
+      acceptance: { passed: 1, total: 5 },
+      acceptanceCriteria: [
+        "Known and unknown emails receive the same recovery response.",
+        "Recovery tokens are hashed, scoped, expiring, and single-use.",
+        "A valid link sets a compliant password and consumes the token.",
+        "Successful recovery revokes all existing sessions.",
+        "The completion notification contains no credential or token."
+      ]
+    },
+    {
+      id: "US-AUTH-06",
+      sliceId: "SLICE-AUTH-001",
+      title: "Sign out safely",
+      status: "READY",
+      workPackageIds: ["WP-AUTH-01", "WP-AUTH-02", "WP-AUTH-04", "WP-AUTH-05", "WP-AUTH-07"],
+      acceptance: { passed: 1, total: 4 },
+      acceptanceCriteria: [
+        "Current-session sign-out revokes its refresh chain.",
+        "All-session sign-out revokes every account session.",
+        "Revoked sessions cannot refresh after sign-out.",
+        "Local credentials clear even if server revocation temporarily fails."
       ]
     },
     {
@@ -429,23 +536,43 @@ window.META_PDS_DASHBOARD_DATA = {
   contracts: [
     {
       id: "CON-AUTH-API",
-      sliceId: "SLICE-01",
+      sliceId: "SLICE-AUTH-001",
       name: "Authentication HTTP contract",
       type: "OpenAPI",
-      version: "v1.4",
+      version: "v1.0",
       status: "LOCKED",
       owner: "Backend Engineer",
       path: "backend/contracts/auth.openapi.yaml"
     },
     {
       id: "CON-SESSION",
-      sliceId: "SLICE-01",
+      sliceId: "SLICE-AUTH-001",
       name: "Session lifecycle contract",
       type: "Security contract",
-      version: "v2.0",
+      version: "v1.0",
       status: "LOCKED",
       owner: "Security Engineer",
       path: "backend/contracts/session-lifecycle.md"
+    },
+    {
+      id: "CON-AUTH-DATA",
+      sliceId: "SLICE-AUTH-001",
+      name: "Authentication data schema",
+      type: "Database contract",
+      version: "v1.0",
+      status: "LOCKED",
+      owner: "Database Engineer",
+      path: "backend/migrations/041_authentication.sql"
+    },
+    {
+      id: "CON-AUTH-EMAIL",
+      sliceId: "SLICE-AUTH-001",
+      name: "Transactional authentication email adapter",
+      type: "Integration contract",
+      version: "v1.0",
+      status: "VERIFYING",
+      owner: "Integration Engineer",
+      path: "backend/contracts/auth-email-adapter.md"
     },
     {
       id: "CON-RECOVERY-API",
@@ -499,9 +626,14 @@ window.META_PDS_DASHBOARD_DATA = {
     }
   ],
   testCases: [
-    { id: "TC-AUTH-01", sliceId: "SLICE-01", title: "Verified learner signs in", type: "Playwright CLI", status: "PASSED", owner: "Slice QA", evidence: "reports/auth-sign-in.html" },
-    { id: "TC-AUTH-02", sliceId: "SLICE-01", title: "Invalid credentials remain private", type: "API integration", status: "PASSED", owner: "Slice QA", evidence: "reports/auth-privacy.xml" },
-    { id: "TC-AUTH-03", sliceId: "SLICE-01", title: "Expired session restores destination", type: "Playwright CLI", status: "PASSED", owner: "Slice QA", evidence: "reports/session-expiry.html" },
+    { id: "TC-AUTH-01", sliceId: "SLICE-AUTH-001", title: "Registration and duplicate-email privacy", type: "API contract", status: "PASSED", owner: "Backend Engineer", evidence: "reports/auth-registration.xml" },
+    { id: "TC-AUTH-02", sliceId: "SLICE-AUTH-001", title: "Verification expiry, replay, and resend", type: "Integration", status: "VERIFYING", owner: "Integration Engineer", evidence: "reports/auth-verification.xml" },
+    { id: "TC-AUTH-03", sliceId: "SLICE-AUTH-001", title: "Verified sign-in and privacy-safe failures", type: "Playwright CLI", status: "IN_PROGRESS", owner: "Frontend Engineer", evidence: "reports/auth-sign-in.html" },
+    { id: "TC-AUTH-04", sliceId: "SLICE-AUTH-001", title: "Refresh rotation, replay, and concurrent requests", type: "Security integration", status: "IN_PROGRESS", owner: "Security Engineer", evidence: "reports/auth-refresh.xml" },
+    { id: "TC-AUTH-05", sliceId: "SLICE-AUTH-001", title: "Expired session restores a safe destination", type: "Playwright CLI", status: "READY", owner: "Slice QA", evidence: "Pending WP-AUTH-07" },
+    { id: "TC-AUTH-06", sliceId: "SLICE-AUTH-001", title: "Forgotten-password token and revocation lifecycle", type: "Integration", status: "BLOCKED", owner: "Backend Engineer", evidence: "Blocked by WP-AUTH-06" },
+    { id: "TC-AUTH-07", sliceId: "SLICE-AUTH-001", title: "Current and all-session sign-out", type: "API integration", status: "READY", owner: "Security Engineer", evidence: "Pending WP-AUTH-05" },
+    { id: "TC-AUTH-08", sliceId: "SLICE-AUTH-001", title: "Complete authentication lifecycle", type: "Playwright CLI", status: "BLOCKED", owner: "Slice QA", evidence: "Blocked by dependent packages" },
     { id: "TC-REC-01", sliceId: "SLICE-02", title: "Recovery request hides account existence", type: "API contract", status: "PASSED", owner: "Backend Engineer", evidence: "reports/recovery-contract.xml" },
     { id: "TC-REC-02", sliceId: "SLICE-02", title: "Recovery request UI states", type: "Component", status: "IN_PROGRESS", owner: "Frontend Engineer", evidence: "Pending WP-FE-13" },
     { id: "TC-REC-03", sliceId: "SLICE-02", title: "Expired token cannot reset password", type: "Integration", status: "PASSED", owner: "Database Engineer", evidence: "reports/token-expiry.xml" },
@@ -511,13 +643,13 @@ window.META_PDS_DASHBOARD_DATA = {
     { id: "TC-PROG-01", sliceId: "SLICE-04", title: "Progress event schema examples", type: "Schema", status: "DRAFT", owner: "Planning Lead", evidence: "Planning evidence only" }
   ],
   dependencies: {
-    criticalPath: ["WP-DB-11", "WP-BE-12", "WP-FE-14", "WP-INT-15"],
-    currentNode: "WP-BE-12",
+    criticalPath: ["WP-AUTH-01", "WP-AUTH-02", "WP-AUTH-06", "WP-AUTH-07"],
+    currentNode: "WP-AUTH-06",
     risk: "MEDIUM",
-    readyPackages: 2,
+    readyPackages: 0,
     blockedPackages: 2,
-    executionWave: "Wave 2 of 4",
-    nextUnblock: "Approve email provider or record a local-only adapter"
+    executionWave: "Wave 3 of 4",
+    nextUnblock: "Verify the provider-neutral local email adapter contract"
   },
   quality: {
     evidenceCoverage: 74,
@@ -540,8 +672,8 @@ window.META_PDS_DASHBOARD_DATA = {
       { name: "Independent QA evidence", status: "NOT_READY" },
       { name: "Rollout and rollback prepared", status: "READY" }
     ],
-    featureFlag: "account-recovery-v1",
-    rollback: "Disable flag; retain token audit records"
+    featureFlag: "authentication-v1",
+    rollback: "Disable new entry points and session issuance; retain account and security records"
   },
   drift: [
     {
@@ -600,8 +732,8 @@ window.META_PDS_DASHBOARD_DATA = {
     {
       at: "2026-08-21T19:32:00+05:00",
       kind: "completed",
-      title: "SLICE-01 released",
-      detail: "Identity lifecycle passed independent QA and local release evidence."
+      title: "SLICE-AUTH-001 entered development",
+      detail: "The Authentication planning artifact passed Development Intake and seven bounded work packages were mobilized."
     }
   ]
 };

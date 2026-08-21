@@ -334,6 +334,7 @@
             <span class="section-kicker">Slice detail</span>
             <h3>Capability outcome</h3>
             <p>${esc(slice.outcome)}</p>
+            <div class="artifact-source"><span>Source artifact</span><code>${esc(slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`)}</code></div>
           </div>
           <div class="slice-detail-facts">
             <div><span>State</span><strong>${esc(pretty(slice.status))}</strong></div>

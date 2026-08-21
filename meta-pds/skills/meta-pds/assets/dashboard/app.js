@@ -80,9 +80,6 @@
     setText("#source-kind", data.projection.kind === "live-canonical" ? "Live files" : "Example files");
     setText("#slice-count", data.slices.length);
     setText("#decision-count", data.decisions.length);
-    setText("#next-action", initiative.nextAction.title);
-    setText("#next-action-detail", initiative.nextAction.detail);
-    setText("#next-action-owner", initiative.nextAction.owner);
     setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);
   }
 
@@ -91,6 +88,7 @@
     currentView = view;
     $$(".top-tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === view));
     $$(".view-panel").forEach((panel) => panel.classList.toggle("is-active", panel.dataset.panel === view));
+    $("#slice-summary").classList.toggle("is-hidden", view !== "slices");
     if (history.replaceState) history.replaceState(null, "", `#${view}`);
   }
 

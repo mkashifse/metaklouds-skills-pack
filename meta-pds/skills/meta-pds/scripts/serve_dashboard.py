@@ -1555,6 +1555,58 @@ def prepare_demo_root(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
     (base / "delivery-state.yaml").write_text(delivery, encoding="utf-8")
 
     decisions = (skill_root / "assets" / "decision-log-template.yaml").read_text(encoding="utf-8").replace("INIT-0001", "INIT-0042")
+    decisions = decisions.replace(
+        "decisions: []",
+        """decisions:
+  - id: DEC-003
+    revision: 2
+    status: LOCKED
+    question: Which sign-in method ships in the initial learning-platform release?
+    decision: Email and password are the initial sign-in methods.
+    rationale: This supports the approved learner journeys while preserving a bounded path for future identity providers.
+    evidence: [Prototype checkpoint 07, Authentication slice review]
+    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-API, WP-AUTH-03, WP-AUTH-04]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: \"2026-08-21T22:40:00+05:00\"
+    supersedes: \"\"
+  - id: DEC-006
+    revision: 1
+    status: LOCKED
+    question: How are learner and instructor permissions represented?
+    decision: Learner and instructor roles remain explicit.
+    rationale: Explicit roles keep authorization behavior observable and prevent implicit privilege expansion.
+    evidence: [Initiative review, Authentication threat-boundary review]
+    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-SESSION]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: \"2026-08-21T22:48:00+05:00\"
+    supersedes: \"\"
+  - id: DEC-009
+    revision: 2
+    status: LOCKED
+    question: Which destination may be restored after reauthentication?
+    decision: Restore only an authorized same-origin destination; otherwise use learner home.
+    rationale: The learner keeps legitimate context without enabling open redirects or unauthorized navigation.
+    evidence: [Prototype checkpoint 07, Security review]
+    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-SESSION, WP-AUTH-04]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: \"2026-08-21T23:02:00+05:00\"
+    supersedes: \"\"
+  - id: DEC-012
+    revision: 1
+    status: TESTING
+    question: Which transactional email provider should production use?
+    decision: Keep the auth-v1 email adapter provider-neutral while delivery evidence is evaluated.
+    rationale: Provider selection must not block local authentication delivery or leak vendor behavior into the domain contract.
+    evidence: [CON-AUTH-EMAIL v1 verification in progress]
+    affected_artifacts: [CON-AUTH-EMAIL, WP-AUTH-05, WP-AUTH-06]
+    authority: PM
+    approved_by: Product Manager
+    decided_at: \"2026-08-22T00:12:00+05:00\"
+    supersedes: \"\"""",
+    )
     (base / "decision-log.yaml").write_text(decisions, encoding="utf-8")
 
     demo_events = [

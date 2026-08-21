@@ -18,6 +18,8 @@ Before acting, read:
 
 Read [references/artifact-and-state-contract.md](references/artifact-and-state-contract.md)
 before creating, reconciling, or advancing canonical artifacts. Read
+[references/dashboard-contract.md](references/dashboard-contract.md) before
+creating or refreshing the Human-facing delivery dashboard. Read
 [references/testing-and-browser-policy.md](references/testing-and-browser-policy.md)
 before any prototype, development-test, QA, or release-verification launch.
 
@@ -68,7 +70,10 @@ On every invocation:
 
 For a new initiative, capture a short brief and establish an authority envelope
 before launching rapid discovery. Create artifacts from the templates in
-`assets/` only when their lifecycle begins.
+`assets/` only when their lifecycle begins. Copy `assets/dashboard/` to the
+canonical dashboard path at initiative start and replace its demonstration
+projection with the initiative's actual known state; render missing downstream
+evidence as unknown rather than simulated progress.
 
 ## Human interaction
 
@@ -143,4 +148,6 @@ evidence, and the recorded release gate pass. Product outcome is separately
 marked `OUTCOME_VALIDATED` or `REPLAN_REQUIRED` after observation.
 
 At every checkpoint, update `delivery-state.yaml` and return the visibility
-summary defined in the workflow reference.
+summary defined in the workflow reference. Refresh the dashboard projection at
+the same checkpoint when the dashboard exists; never delay canonical state or
+delivery work for dashboard decoration.

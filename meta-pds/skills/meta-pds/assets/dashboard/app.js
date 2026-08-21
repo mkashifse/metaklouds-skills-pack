@@ -290,6 +290,7 @@
   let modalTaskId = null;
   let modalContractId = null;
   let modalEntity = "slice";
+  let modalTab = "overview";
   let modalReturnFocus = null;
 
   function inlineMarkdown(value) {
@@ -332,6 +333,20 @@
 
   function sliceIntroMarkdown(slice) {
     return ["## Capability outcome", slice.outcome].join("\n\n");
+  }
+
+  function renderModalTabs(slice, visible = true) {
+    const tabs = [
+      ["overview", "Overview", null],
+      ["stories", "User Stories", sliceStories(slice.id).length],
+      ["work-packages", "Work Packages", sliceTasks(slice.id).length],
+      ["tests", "Test Cases", sliceTests(slice.id).length],
+    ];
+    $("#modal-tabs").hidden = !visible;
+    $("#modal-tabs").innerHTML = visible ? tabs.map(([id, label, count]) => `
+      <button class="modal-tab ${modalTab === id ? "is-active" : ""}" type="button" role="tab" data-modal-tab="${id}" aria-selected="${modalTab === id}">
+        ${esc(label)}${count === null ? "" : `<span>${count}</span>`}
+      </button>`).join("") : "";
   }
 
   function storyAccordion(story) {
@@ -430,7 +445,7 @@
         </section>
         <section><h3>Delivery</h3>
           ${propertyRow("Stories", stories.length)}
-          ${propertyRow("Tasks", tasks.length)}
+          ${propertyRow("Work packages", tasks.length)}
           ${propertyRow("Active agents", activeAgents.length)}
           ${propertyRow("Contracts", contracts.length)}
           ${propertyRow("Test cases", tests.length)}
@@ -445,41 +460,65 @@
       </aside>`;
   }
 
-  function childTask(task) {
+  function workPackageAccordion(task) {
+    const linkedStories = task.storyIds
+      .map((id) => data.stories.find((story) => story.id === id))
+      .filter(Boolean);
     return `
-      <button class="child-task" type="button" data-open-task="${esc(task.id)}">
-        <span class="child-task-status"><i class="state-dot ${tone(task.status)}"></i></span>
-        <span class="child-task-copy"><small>${esc(task.id)} · ${esc(pretty(task.area))}</small><strong>${esc(task.title)}</strong></span>
-        <span class="child-task-owner"><i>${esc(task.ownerInitials)}</i>${esc(task.owner)}</span>
-        <span class="child-task-tests">${task.tests.passed}/${task.tests.total} tests</span>
-        ${badge(task.status)}
-        <span class="child-task-arrow">${icon("chevron-right")}</span>
-      </button>`;
+      <details class="story-accordion-item work-package-accordion-item">
+        <summary>
+          <span class="story-accordion-dot"><i class="state-dot ${tone(task.status)}"></i></span>
+          <span class="story-accordion-copy"><small>${esc(task.id)} · ${esc(pretty(task.area))}</small><strong>${esc(task.title)}</strong></span>
+          <span class="story-accordion-count">${esc(task.owner)}</span>
+          <span class="story-accordion-chevron">${icon("chevron-down")}</span>
+        </summary>
+        <div class="story-accordion-body work-package-accordion-body">
+          <p>${esc(task.description || "No work-package description recorded.")}</p>
+          <dl class="test-case-properties">
+            <div><dt>Status</dt><dd>${badge(task.status)}</dd></div>
+            <div><dt>Assignee</dt><dd>${esc(task.owner)}</dd></div>
+            <div><dt>Area</dt><dd>${esc(pretty(task.area))}</dd></div>
+            <div><dt>Tests</dt><dd>${task.tests.passed}/${task.tests.total}</dd></div>
+          </dl>
+          <h4>Supports stories</h4>
+          <ul>${linkedStories.length ? linkedStories.map((story) => `<li><code>${esc(story.id)}</code> — ${esc(story.title)}</li>`).join("") : "<li>No linked stories.</li>"}</ul>
+          <h4>Dependencies</h4>
+          <ul>${task.dependsOn.length ? task.dependsOn.map((id) => `<li><code>${esc(id)}</code></li>`).join("") : "<li>None</li>"}</ul>
+          <button class="open-detail-button" type="button" data-open-task="${esc(task.id)}">${icon("external-link")}Open full work-package detail</button>
+        </div>
+      </details>`;
   }
 
   function sliceIssueDetail(slice) {
     const tasks = sliceTasks(slice.id);
     const stories = sliceStories(slice.id);
     const tests = sliceTests(slice.id);
+    const panes = {
+      overview: `
+        <section class="issue-section tab-pane">
+          <header><h3>Description</h3><span>Markdown</span></header>
+          <div class="markdown-body">${renderMarkdown(sliceIntroMarkdown(slice))}</div>
+        </section>`,
+      stories: `
+        <section class="story-accordion tab-pane">
+          <header><div><h2>User stories and acceptance</h2><span>${stories.length} stories</span></div><span>Click a story to expand</span></header>
+          <div class="story-accordion-list">${stories.length ? stories.map(storyAccordion).join("") : '<div class="empty-state">No stories are defined.</div>'}</div>
+        </section>`,
+      "work-packages": `
+        <section class="story-accordion tab-pane work-package-tab">
+          <header><div><h2>Development work packages</h2><span>${tasks.length} assigned packages</span></div><span>Click a package to expand</span></header>
+          <div class="story-accordion-list">${tasks.length ? tasks.map(workPackageAccordion).join("") : '<div class="empty-state"><strong>Not mobilized yet</strong><p>Work packages are created, sequenced, and assigned when Slice Development starts.</p></div>'}</div>
+        </section>`,
+      tests: `
+        <section class="story-accordion test-accordion tab-pane">
+          <header><div><h2>Test cases</h2><span>${tests.length} slice-owned test cases</span></div><span>Click a test to expand</span></header>
+          <div class="story-accordion-list">${tests.length ? tests.map(testCaseAccordion).join("") : '<div class="empty-state">No test cases are defined in this slice.</div>'}</div>
+        </section>`,
+    };
     return `
       <div class="issue-layout">
         <div class="issue-main">
-          <section class="issue-section">
-            <header><h3>Description</h3><span>Markdown</span></header>
-            <div class="markdown-body">${renderMarkdown(sliceIntroMarkdown(slice))}</div>
-            <section class="story-accordion">
-              <header><div><h2>User stories and acceptance</h2><span>${stories.length} stories</span></div><span>Click a story to expand</span></header>
-              <div class="story-accordion-list">${stories.length ? stories.map(storyAccordion).join("") : '<div class="empty-state">No stories are defined.</div>'}</div>
-            </section>
-            <section class="story-accordion test-accordion">
-              <header><div><h2>Test cases</h2><span>${tests.length} slice-owned test cases</span></div><span>Click a test to expand</span></header>
-              <div class="story-accordion-list">${tests.length ? tests.map(testCaseAccordion).join("") : '<div class="empty-state">No test cases are defined in this slice.</div>'}</div>
-            </section>
-          </section>
-          <section class="issue-section child-section">
-            <header><h3>Tasks</h3><span>${tasks.length}</span></header>
-            <div class="child-task-list">${tasks.length ? tasks.map(childTask).join("") : '<div class="empty-state">No tasks have been mobilized.</div>'}</div>
-          </section>
+          ${panes[modalTab] || panes.overview}
         </div>
         ${sliceProperties(slice)}
       </div>`;
@@ -565,12 +604,14 @@
     const task = modalEntity === "task" ? data.workPackages.find((item) => item.id === modalTaskId) : null;
     const contract = modalEntity === "contract" ? data.contracts.find((item) => item.id === modalContractId && item.sliceId === slice.id) : null;
     if (task) {
+      renderModalTabs(slice, false);
       setText("#modal-id", `${task.id} · ${pretty(task.area)}`);
       setText("#modal-title", task.title);
       $("#modal-state").innerHTML = `<span class="state-dot ${tone(task.status)}"></span>`;
       $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.title)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(task.id)}</strong>`;
       $("#modal-content").innerHTML = taskIssueDetail(task, slice);
     } else if (contract) {
+      renderModalTabs(slice, false);
       setText("#modal-id", `${contract.id} · ${contract.version} · ${pretty(contract.type)}`);
       setText("#modal-title", contract.name);
       $("#modal-state").innerHTML = `<span class="state-dot ${tone(contract.status)}"></span>`;
@@ -580,6 +621,7 @@
       modalEntity = "slice";
       modalTaskId = null;
       modalContractId = null;
+      renderModalTabs(slice, true);
       setText("#modal-id", `${slice.id} · ${slice.priority} · revision ${slice.revision}`);
       setText("#modal-title", slice.title);
       $("#modal-state").innerHTML = `<span class="state-dot ${tone(slice.status)}"></span>`;
@@ -594,6 +636,7 @@
     modalTaskId = null;
     modalContractId = null;
     modalEntity = "slice";
+    modalTab = "overview";
     modalReturnFocus = document.activeElement;
     renderModal();
     $("#slice-modal").classList.add("is-open");
@@ -617,6 +660,8 @@
       if (task) { modalTaskId = task.dataset.openTask; modalContractId = null; modalEntity = "task"; renderModal(); return; }
       const contract = event.target.closest("[data-open-contract]");
       if (contract) { modalContractId = contract.dataset.openContract; modalTaskId = null; modalEntity = "contract"; renderModal(); return; }
+      const tab = event.target.closest("[data-modal-tab]");
+      if (tab) { modalTab = tab.dataset.modalTab; modalTaskId = null; modalContractId = null; modalEntity = "slice"; renderModal(); return; }
       if (event.target.closest("[data-modal-slice]")) { modalTaskId = null; modalContractId = null; modalEntity = "slice"; renderModal(); return; }
       if (event.target.closest("[data-modal-root]")) closeModal();
     });

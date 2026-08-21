@@ -82,10 +82,11 @@ Keep the interface list-first, compact, and progressively populated:
 6. collapsible user-story rows for quick acceptance and work-package tracing;
 7. collapsible slice test-case rows showing level, method, owner, linked stories,
    expected result, and available QA evidence;
-8. a large read-only issue-detail dialog with hierarchy breadcrumbs, a spacious
-   rendered-Markdown description and acceptance criteria, child tasks below,
-   and a compact properties rail; selecting a task reuses the same dialog for
-   its description, owner, dependencies, evidence, and breadcrumb return;
+8. a large read-only issue-detail dialog with hierarchy breadcrumbs, a compact
+   properties rail, and separate Overview, User Stories, Work Packages, and
+   Test Cases tabs; work packages use collapsible rows, and selecting their
+   full-detail action reuses the dialog for description, owner, dependencies,
+   evidence, and breadcrumb return;
 9. dependencies and clickable contracts in the slice properties rail; selecting
    a contract reuses the detail dialog and renders its canonical Markdown or
    slice-recorded required behavior;

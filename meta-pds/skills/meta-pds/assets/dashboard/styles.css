@@ -97,8 +97,6 @@ h1, h2, h3, p { margin: 0; }
 .slice-card-title { min-width: 0; flex: 1; font-size: 15px; font-weight: 570; letter-spacing: 0; line-height: 1.2; }
 .slice-card-title button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; letter-spacing: inherit; cursor: pointer; }
 .slice-card-title button:hover { color: var(--orange); }
-.slice-card-title .lucide-icon { width: 17px; height: 17px; color: var(--faint); transition: color .15s ease, transform .15s ease; }
-.slice-card-title button:hover .lucide-icon { color: var(--orange); transform: translateX(2px); }
 .slice-code { flex: 0 0 auto; color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; white-space: nowrap; }
 .slice-body-copy { display: grid; grid-row: 2; grid-column: 1 / 4; grid-template-columns: minmax(0, 1fr) 220px; align-items: start; gap: 28px; padding-left: 4px; }
 .slice-outcome { max-width: 900px; margin-top: 8px; color: var(--muted); font-size: 14px; }
@@ -129,7 +127,6 @@ h1, h2, h3, p { margin: 0; }
 .slice-item.is-collapsed .slice-heading-copy { min-width: 0; }
 .slice-item.is-collapsed .slice-title-row { margin: 0; }
 .slice-item.is-collapsed .slice-card-title button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.slice-item.is-collapsed .slice-card-title .lucide-icon { display: none; }
 .slice-item.is-collapsed .slice-body-copy, .slice-item.is-collapsed .slice-content { display: none; }
 .slice-item.is-collapsed .slice-status-summary { align-self: center; padding-top: 0; }
 

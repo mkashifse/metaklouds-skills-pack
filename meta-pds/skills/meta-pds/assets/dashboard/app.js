@@ -193,13 +193,14 @@
               <span>Priority <strong>${esc(slice.priority)}</strong></span>
               <span>Revision <strong>${esc(slice.revision)}</strong></span>
               <span>Depends on <strong>${esc(dependencies)}</strong></span>
-              ${blockers.length ? `<span class="task-blocked">${blockers.length} blocker${blockers.length > 1 ? "s" : ""}</span>` : ""}
             </div>
           </div>
-          <div class="slice-collapse-summary" aria-hidden="${collapsed ? "false" : "true"}">
+          <div class="slice-status-summary">
             ${badge(slice.status)}
             ${progressDisplay(slice.progress, slice.status, `${slice.title} completion`, "compact-progress")}
+            <span class="compact-stories">Stories <strong>${stories.length}</strong></span>
             <span class="compact-tasks">Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
+            <span class="compact-tests">Tests <strong>${passedTests}/${tests.length}</strong></span>
             ${blockers.length ? `<span class="compact-blockers">${blockers.length} blocked</span>` : ""}
           </div>
           <button class="slice-collapse-toggle" type="button" data-toggle-slice-card="${esc(slice.id)}" aria-expanded="${collapsed ? "false" : "true"}" aria-label="${collapsed ? "Expand" : "Collapse"} ${esc(slice.title)} slice">${icon("chevron-down")}</button>
@@ -207,15 +208,6 @@
         <div class="slice-content">
           ${activeTaskRows(tasks)}
         </div>
-        <footer class="slice-status-bar">
-          ${badge(slice.status)}
-          <div class="slice-status-progress">${progressDisplay(slice.progress, slice.status, `${slice.title} completion`)}</div>
-          <div class="slice-status-metrics">
-            <span>Stories <strong>${stories.length}</strong></span>
-            <span>Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
-            <span>Tests <strong>${passedTests}/${tests.length}</strong></span>
-          </div>
-        </footer>
       </article>`;
   }
 

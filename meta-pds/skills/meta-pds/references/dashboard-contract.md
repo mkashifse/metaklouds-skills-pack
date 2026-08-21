@@ -93,8 +93,10 @@ Keep the interface list-first, compact, and progressively populated:
 2. decisions grouped by status and affected slices;
 3. a primary slice list with separate collapsible cards containing outcome,
    revision, priority, dependency, gate, progress, story, task, test, and
-   contract summaries; a collapsed card becomes one row showing only identity,
-   status, progress, task completion, and blockers; use the same Layers entity
+   contract summaries; keep one persistent header summary for status, progress,
+   story, task, test, and blocker counts so those metrics do not move when the
+   card expands or collapses; a collapsed card becomes one row showing that
+   summary beside its identity; use the same Layers entity
    icon for a slice in its card and detail header; show progress everywhere as
    ten small vertical segments with exact partial fill plus the numeric percent;
    clicking the card header toggles the card while clicking its title opens

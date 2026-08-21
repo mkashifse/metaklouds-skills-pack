@@ -288,6 +288,7 @@
 
   let modalSliceId = null;
   let modalTaskId = null;
+  let modalContractId = null;
   let modalEntity = "slice";
   let modalReturnFocus = null;
 
@@ -309,7 +310,7 @@
     lines.forEach((rawLine) => {
       const line = rawLine.trim();
       if (!line) { closeList(); return; }
-      const heading = line.match(/^(#{2,4})\s+(.+)$/);
+      const heading = line.match(/^(#{1,4})\s+(.+)$/);
       if (heading) {
         closeList();
         const level = heading[1].length;
@@ -331,17 +332,6 @@
 
   function sliceIntroMarkdown(slice) {
     return ["## Capability outcome", slice.outcome].join("\n\n");
-  }
-
-  function sliceEvidenceMarkdown(slice) {
-    const contracts = sliceContracts(slice.id);
-    return [
-      "## Dependencies",
-      `- Upstream slices: ${slice.dependencies.join(", ") || "None"}`,
-      `- Source artifact: \`${slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`}\``,
-      "## Contracts",
-      ...(contracts.length ? contracts.map((contract) => `- **${contract.id}** — ${contract.name} · ${contract.version} · ${pretty(contract.status)}`) : ["- No contracts recorded."])
-    ].join("\n\n");
   }
 
   function storyAccordion(story) {
@@ -416,6 +406,14 @@
     return `<div class="property-row"><span>${esc(label)}</span><strong>${value}</strong></div>`;
   }
 
+  function contractLink(contract) {
+    return `
+      <button class="property-contract" type="button" data-open-contract="${esc(contract.id)}">
+        <span><small>${esc(contract.id)} · ${esc(contract.version)}</small><strong>${esc(contract.name)}</strong></span>
+        ${icon("chevron-right")}
+      </button>`;
+  }
+
   function sliceProperties(slice) {
     const stories = sliceStories(slice.id);
     const tasks = sliceTasks(slice.id);
@@ -429,7 +427,6 @@
           ${propertyRow("Priority", esc(slice.priority))}
           ${propertyRow("Revision", `r${esc(slice.revision)}`)}
           ${propertyRow("Progress", `${esc(slice.progress)}%`)}
-          ${propertyRow("Dependencies", esc(slice.dependencies.join(", ") || "None"))}
         </section>
         <section><h3>Delivery</h3>
           ${propertyRow("Stories", stories.length)}
@@ -437,6 +434,12 @@
           ${propertyRow("Active agents", activeAgents.length)}
           ${propertyRow("Contracts", contracts.length)}
           ${propertyRow("Test cases", tests.length)}
+        </section>
+        <section><h3>Dependencies</h3>
+          ${propertyRow("Upstream", esc(slice.dependencies.join(", ") || "None"))}
+        </section>
+        <section><h3>Contracts</h3>
+          <div class="property-contract-list">${contracts.length ? contracts.map(contractLink).join("") : '<div class="property-empty">No contracts recorded.</div>'}</div>
         </section>
         <section><h3>Source</h3><code class="property-code">${esc(slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`)}</code></section>
       </aside>`;
@@ -472,7 +475,6 @@
               <header><div><h2>Test cases</h2><span>${tests.length} slice-owned test cases</span></div><span>Click a test to expand</span></header>
               <div class="story-accordion-list">${tests.length ? tests.map(testCaseAccordion).join("") : '<div class="empty-state">No test cases are defined in this slice.</div>'}</div>
             </section>
-            <div class="markdown-body supporting-markdown">${renderMarkdown(sliceEvidenceMarkdown(slice))}</div>
           </section>
           <section class="issue-section child-section">
             <header><h3>Tasks</h3><span>${tasks.length}</span></header>
@@ -519,19 +521,65 @@
       </div>`;
   }
 
+  function contractMarkdown(contract) {
+    if (contract.markdown) return contract.markdown;
+    return [
+      "## Required behavior",
+      contract.description || "No detailed contract behavior has been recorded yet.",
+      contract.path ? `## Canonical source\n\`${contract.path}\`` : "",
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function contractProperties(contract, slice) {
+    return `
+      <aside class="issue-properties">
+        <section><h3>Properties</h3>
+          ${propertyRow("Status", badge(contract.status))}
+          ${propertyRow("Version", esc(contract.version))}
+          ${propertyRow("Type", esc(pretty(contract.type)))}
+          ${propertyRow("Owner", esc(contract.owner))}
+        </section>
+        <section><h3>Hierarchy</h3>
+          ${propertyRow("Parent slice", esc(slice.id))}
+        </section>
+        <section><h3>Source</h3><code class="property-code">${esc(contract.path || slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`)}</code></section>
+      </aside>`;
+  }
+
+  function contractIssueDetail(contract, slice) {
+    return `
+      <div class="issue-layout">
+        <div class="issue-main">
+          <section class="issue-section">
+            <header><h3>Contract detail</h3><span>Markdown</span></header>
+            <div class="markdown-body contract-markdown">${renderMarkdown(contractMarkdown(contract))}</div>
+          </section>
+        </div>
+        ${contractProperties(contract, slice)}
+      </div>`;
+  }
+
   function renderModal() {
     const slice = data.slices.find((item) => item.id === modalSliceId);
     if (!slice) return;
     const task = modalEntity === "task" ? data.workPackages.find((item) => item.id === modalTaskId) : null;
+    const contract = modalEntity === "contract" ? data.contracts.find((item) => item.id === modalContractId && item.sliceId === slice.id) : null;
     if (task) {
       setText("#modal-id", `${task.id} · ${pretty(task.area)}`);
       setText("#modal-title", task.title);
       $("#modal-state").innerHTML = `<span class="state-dot ${tone(task.status)}"></span>`;
       $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.title)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(task.id)}</strong>`;
       $("#modal-content").innerHTML = taskIssueDetail(task, slice);
+    } else if (contract) {
+      setText("#modal-id", `${contract.id} · ${contract.version} · ${pretty(contract.type)}`);
+      setText("#modal-title", contract.name);
+      $("#modal-state").innerHTML = `<span class="state-dot ${tone(contract.status)}"></span>`;
+      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.title)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(contract.id)}</strong>`;
+      $("#modal-content").innerHTML = contractIssueDetail(contract, slice);
     } else {
       modalEntity = "slice";
       modalTaskId = null;
+      modalContractId = null;
       setText("#modal-id", `${slice.id} · ${slice.priority} · revision ${slice.revision}`);
       setText("#modal-title", slice.title);
       $("#modal-state").innerHTML = `<span class="state-dot ${tone(slice.status)}"></span>`;
@@ -544,6 +592,7 @@
   function openModal(sliceId) {
     modalSliceId = sliceId;
     modalTaskId = null;
+    modalContractId = null;
     modalEntity = "slice";
     modalReturnFocus = document.activeElement;
     renderModal();
@@ -565,8 +614,10 @@
     $("#slice-modal").addEventListener("click", (event) => { if (event.target === $("#slice-modal")) closeModal(); });
     $("#slice-modal").addEventListener("click", (event) => {
       const task = event.target.closest("[data-open-task]");
-      if (task) { modalTaskId = task.dataset.openTask; modalEntity = "task"; renderModal(); return; }
-      if (event.target.closest("[data-modal-slice]")) { modalTaskId = null; modalEntity = "slice"; renderModal(); return; }
+      if (task) { modalTaskId = task.dataset.openTask; modalContractId = null; modalEntity = "task"; renderModal(); return; }
+      const contract = event.target.closest("[data-open-contract]");
+      if (contract) { modalContractId = contract.dataset.openContract; modalTaskId = null; modalEntity = "contract"; renderModal(); return; }
+      if (event.target.closest("[data-modal-slice]")) { modalTaskId = null; modalContractId = null; modalEntity = "slice"; renderModal(); return; }
       if (event.target.closest("[data-modal-root]")) closeModal();
     });
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && $("#slice-modal").classList.contains("is-open")) closeModal(); });

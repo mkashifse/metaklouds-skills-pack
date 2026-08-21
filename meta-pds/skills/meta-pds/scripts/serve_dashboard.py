@@ -277,6 +277,7 @@ def parse_contract_table(body: str) -> list[dict[str, Any]]:
             "status": "EXPECTED",
             "owner": row.get("Owner", "Unassigned"),
             "path": "",
+            "description": row.get("Required behavior", ""),
         })
     return contracts
 
@@ -381,6 +382,23 @@ def relative_path(path: Path, root: Path) -> str:
         return str(path.relative_to(root))
     except ValueError:
         return str(path)
+
+
+def contract_markdown(product_root: Path, contract_path: Any) -> str:
+    value = str(contract_path or "").strip()
+    if not value or Path(value).suffix.lower() not in {".md", ".markdown"}:
+        return ""
+    product_root = product_root.resolve()
+    candidate = (product_root / value).resolve()
+    try:
+        candidate.relative_to(product_root)
+    except ValueError:
+        return ""
+    if not candidate.is_file():
+        return ""
+    text = candidate.read_text(encoding="utf-8")
+    match = re.match(r"\A---\s*\n.*?\n---\s*\n?(.*)\Z", text, re.DOTALL)
+    return (match.group(1) if match else text).strip()
 
 
 def build_dashboard_data(
@@ -492,8 +510,11 @@ def build_dashboard_data(
             })
 
         raw_contracts = [item for item in list_value(execution.get("integration_contracts")) if isinstance(item, dict)]
+        expected_by_name = {str(item.get("name", "")).strip().lower(): item for item in expected_contracts}
         selected_contracts = raw_contracts or expected_contracts
         for contract in selected_contracts:
+            expected = expected_by_name.get(str(contract.get("name", "")).strip().lower(), {})
+            path_value = str(contract.get("path") or "")
             contracts.append({
                 "id": str(contract.get("id") or f"CON-{slice_id}-{len(contracts) + 1}"),
                 "sliceId": slice_id,
@@ -502,7 +523,9 @@ def build_dashboard_data(
                 "version": str(contract.get("version") or "Unspecified"),
                 "status": status(contract.get("status"), "EXPECTED"),
                 "owner": str(contract.get("owner") or "Unassigned"),
-                "path": str(contract.get("path") or ""),
+                "path": path_value,
+                "description": str(contract.get("description") or expected.get("description") or ""),
+                "markdown": contract_markdown(product_root, path_value),
             })
 
         for test in raw_tests:

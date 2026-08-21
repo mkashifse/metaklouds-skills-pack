@@ -86,7 +86,10 @@ Keep the interface list-first, compact, and progressively populated:
    rendered-Markdown description and acceptance criteria, child tasks below,
    and a compact properties rail; selecting a task reuses the same dialog for
    its description, owner, dependencies, evidence, and breadcrumb return;
-9. separate top tabs for slices, decisions, prototype checkpoints, and durable
+9. dependencies and clickable contracts in the slice properties rail; selecting
+   a contract reuses the detail dialog and renders its canonical Markdown or
+   slice-recorded required behavior;
+10. separate top tabs for slices, decisions, prototype checkpoints, and durable
    activity.
 
 Hide or label unavailable downstream views during early discovery; do not create

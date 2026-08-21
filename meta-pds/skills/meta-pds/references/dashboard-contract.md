@@ -93,7 +93,8 @@ Keep the interface list-first, compact, and progressively populated:
 3. a primary slice list with separate collapsible cards containing outcome,
    revision, priority, dependency, gate, progress, story, task, test, and
    contract summaries; a collapsed card becomes one row showing only identity,
-   status, progress, task completion, and blockers;
+   status, progress, task completion, and blockers; use the same Layers entity
+   icon for a slice in its card and detail header;
 4. currently active or blocked work packages and assigned agents directly under
    each slice;
 5. collapsible user-story rows in slice detail for acceptance and work-package

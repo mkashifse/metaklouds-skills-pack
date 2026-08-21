@@ -161,6 +161,7 @@
     return `
       <article class="slice-item ${collapsed ? "is-collapsed" : ""}" data-slice-id="${esc(slice.id)}">
         <header class="slice-main">
+          <span class="slice-entity-icon" aria-hidden="true">${icon("layers")}</span>
           <div class="slice-heading-copy">
             <div class="slice-title-row">
               <span class="state-dot ${tone(slice.status)}"></span>
@@ -571,6 +572,7 @@
     const contract = modalEntity === "contract" ? data.contracts.find((item) => item.id === modalContractId && item.sliceId === slice.id) : null;
     if (task) {
       renderModalTabs(slice, false);
+      $("#modal-entity-icon").innerHTML = icon("package");
       setText("#modal-id", `${pretty(task.area)} · ${task.owner || "Unassigned"}`);
       setText("#modal-title", task.title);
       $("#modal-state").innerHTML = badge(task.status);
@@ -578,6 +580,7 @@
       $("#modal-content").innerHTML = taskIssueDetail(task, slice);
     } else if (contract) {
       renderModalTabs(slice, false);
+      $("#modal-entity-icon").innerHTML = icon("git-branch");
       setText("#modal-id", `${contract.version} · ${pretty(contract.type)}`);
       setText("#modal-title", contract.name);
       $("#modal-state").innerHTML = badge(contract.status);
@@ -588,6 +591,7 @@
       modalTaskId = null;
       modalContractId = null;
       renderModalTabs(slice, true);
+      $("#modal-entity-icon").innerHTML = icon("layers");
       setText("#modal-id", `${slice.priority} priority · Revision ${slice.revision}`);
       setText("#modal-title", slice.title);
       $("#modal-state").innerHTML = badge(slice.status);

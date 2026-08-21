@@ -82,7 +82,9 @@ h1, h2, h3, p { margin: 0; }
 
 .slice-list { display: grid; gap: 12px; margin-top: 12px; }
 .slice-item { overflow: hidden; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--panel); }
-.slice-main { position: relative; padding: 17px 58px 15px 18px; }
+.slice-main { position: relative; padding: 17px 58px 15px 58px; }
+.slice-entity-icon { position: absolute; top: 18px; left: 18px; display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); }
+.slice-entity-icon .lucide-icon { width: 15px; height: 15px; }
 .slice-heading-copy { min-width: 0; }
 .slice-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
 .state-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--faint); box-shadow: 0 0 0 3px rgba(98,98,94,.1); }
@@ -111,6 +113,7 @@ h1, h2, h3, p { margin: 0; }
 .slice-collapse-toggle .lucide-icon { width: 16px; height: 16px; transition: transform .15s ease; }
 .slice-item:not(.is-collapsed) .slice-collapse-toggle .lucide-icon { transform: rotate(180deg); }
 .slice-item.is-collapsed .slice-main { display: flex; min-height: 56px; align-items: center; gap: 18px; padding: 10px 12px 10px 14px; }
+.slice-item.is-collapsed .slice-entity-icon { position: static; flex: 0 0 auto; }
 .slice-item.is-collapsed .slice-heading-copy { display: flex; min-width: 0; flex: 1; align-items: center; gap: 12px; }
 .slice-item.is-collapsed .slice-title-row { flex: 0 0 auto; margin: 0; }
 .slice-item.is-collapsed .slice-card-title { min-width: 0; font-size: 15px; letter-spacing: 0; }
@@ -176,7 +179,9 @@ h1, h2, h3, p { margin: 0; }
 .modal-breadcrumbs button:hover { color: var(--text); }
 .modal-breadcrumbs strong { overflow: hidden; color: var(--soft); font-weight: 520; text-overflow: ellipsis; white-space: nowrap; }
 .breadcrumb-icon { width: 13px; height: 13px; color: var(--faint); }
-.modal-heading-row { display: flex; min-width: 0; align-items: flex-start; gap: 10px; margin-top: 6px; }
+.modal-heading-row { display: flex; min-width: 0; align-items: center; gap: 10px; margin-top: 6px; }
+.modal-entity-icon { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border: 1px solid var(--border); border-radius: 8px; background: #222; color: var(--muted); }
+.modal-entity-icon .lucide-icon { width: 17px; height: 17px; }
 .modal-title-block { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .modal-heading-row #modal-id { display: block; overflow: hidden; color: var(--faint); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .modal-heading-row h2 { overflow: hidden; margin: 0; font-size: 20px; font-weight: 560; letter-spacing: -.012em; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
@@ -316,7 +321,7 @@ h1, h2, h3, p { margin: 0; }
   .view-heading { align-items: flex-start; flex-direction: column; }
   .top-view-summary { display: none; }
   .slice-main { padding: 14px 12px 12px; }
-  .slice-item:not(.is-collapsed) .slice-main { padding-right: 50px; }
+  .slice-item:not(.is-collapsed) .slice-main { padding-right: 50px; padding-left: 52px; }
   .slice-item.is-collapsed .slice-main { gap: 9px; padding: 9px 10px 9px 12px; }
   .slice-item.is-collapsed .slice-code { display: none; }
   .slice-item.is-collapsed .compact-progress, .slice-item.is-collapsed .compact-tasks { display: none; }

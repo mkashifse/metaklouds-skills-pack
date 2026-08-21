@@ -48,8 +48,10 @@ h1, h2, h3, p { margin: 0; }
 .top-tab.is-active { color: var(--text); }
 .top-tab.is-active::after { position: absolute; right: 9px; bottom: -1px; left: 9px; height: 2px; border-radius: 2px 2px 0 0; background: var(--orange); content: ""; }
 .top-tab span { min-width: 19px; margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: #292929; color: var(--muted); font-size: 11px; }
-.top-view-summary { display: flex; align-items: center; gap: 5px; margin-left: auto; }
+.header-utilities { display: flex; flex: 0 0 auto; align-items: stretch; gap: 6px; margin-left: auto; }
+.top-view-summary { display: flex; align-items: center; gap: 5px; }
 .top-view-summary.is-hidden { display: none; }
+.prototype-utility { width: 46px; justify-content: center; padding: 0; border-left: 1px solid var(--border-soft); }
 
 .page-shell { width: min(1260px, calc(100% - 40px)); margin: 0 auto; padding: 22px 0 28px; }
 

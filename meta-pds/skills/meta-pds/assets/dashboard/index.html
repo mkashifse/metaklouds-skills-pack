@@ -34,11 +34,13 @@
           <button class="top-tab" type="button" data-view="decisions">
             <svg class="lucide-icon" aria-hidden="true"><use href="#icon-git-branch"></use></svg>Decisions <span id="decision-count">0</span>
           </button>
-          <button class="top-tab" type="button" data-view="prototype">
-            <svg class="lucide-icon" aria-hidden="true"><use href="#icon-flask"></use></svg>Prototype <span>1</span>
-          </button>
           <button class="top-tab" type="button" data-view="activity"><svg class="lucide-icon" aria-hidden="true"><use href="#icon-activity"></use></svg>Activity</button>
-          <div class="top-view-summary" id="slice-summary" aria-label="Slice summary"></div>
+          <div class="header-utilities">
+            <div class="top-view-summary" id="slice-summary" aria-label="Slice summary"></div>
+            <button class="top-tab prototype-utility" type="button" data-view="prototype" aria-label="Prototype" title="Prototype">
+              <svg class="lucide-icon" aria-hidden="true"><use href="#icon-flask"></use></svg>
+            </button>
+          </div>
         </nav>
       </div>
     </header>
@@ -63,9 +65,6 @@
       </section>
 
       <section class="view-panel" id="view-prototype" data-panel="prototype">
-        <div class="view-heading">
-          <div><p class="eyebrow">Rapid discovery</p><h1>Prototype</h1><p>Manual-review checkpoints and the decisions they inform.</p></div>
-        </div>
         <div class="prototype-card" id="prototype-card"></div>
       </section>
 

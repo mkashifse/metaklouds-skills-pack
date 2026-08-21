@@ -155,7 +155,7 @@
 
     return `
       <article class="slice-item" data-slice-id="${esc(slice.id)}">
-        <div class="slice-main">
+        <header class="slice-main">
           <div>
             <div class="slice-title-row">
               <span class="state-dot ${tone(slice.status)}"></span>
@@ -170,8 +170,11 @@
               ${blockers.length ? `<span class="task-blocked">${blockers.length} blocker${blockers.length > 1 ? "s" : ""}</span>` : ""}
             </div>
           </div>
+        </header>
+        <div class="slice-content">
+          ${activeTaskRows(tasks)}
         </div>
-        <div class="slice-status-bar">
+        <footer class="slice-status-bar">
           ${badge(slice.status)}
           <div class="slice-status-progress"><div class="progress-track"><i style="width:${Number(slice.progress)}%"></i></div><span>${slice.progress}%</span></div>
           <div class="slice-status-metrics">
@@ -180,8 +183,7 @@
             <span>Tests <strong>${passedTests}/${tests.length}</strong></span>
           </div>
           <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}" aria-label="Open ${esc(slice.title)} details">${icon("external-link", "button-icon")}Details</button>
-        </div>
-        ${activeTaskRows(tasks)}
+        </footer>
       </article>`;
   }
 

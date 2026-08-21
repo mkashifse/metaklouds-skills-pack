@@ -75,7 +75,7 @@ h1, h2, h3, p { margin: 0; }
 .summary-chip { padding: 6px 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); color: var(--muted); font-size: 12px; }
 .summary-chip strong { margin-left: 4px; color: var(--soft); font-weight: 560; }
 
-.list-tools { display: flex; min-height: 41px; align-items: center; justify-content: space-between; gap: 14px; padding: 0 12px; border: 1px solid var(--border-soft); border-bottom: 0; border-radius: 10px 10px 0 0; background: #191919; }
+.list-tools { display: flex; min-height: 41px; align-items: center; justify-content: space-between; gap: 14px; padding: 0 12px; border: 1px solid var(--border-soft); border-radius: 10px; background: #191919; }
 .filter-group { display: flex; gap: 4px; }
 .filter-button { padding: 6px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
 .filter-button:hover, .filter-button.is-active { background: #292929; color: var(--text); }
@@ -86,8 +86,8 @@ h1, h2, h3, p { margin: 0; }
 .dot.active { background: var(--orange); }
 .dot.blocked { background: var(--red); }
 
-.slice-list { overflow: hidden; border: 1px solid var(--border-soft); border-radius: 0 0 10px 10px; background: var(--panel); }
-.slice-item + .slice-item { border-top: 1px solid var(--border); }
+.slice-list { display: grid; gap: 12px; margin-top: 12px; }
+.slice-item { overflow: hidden; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--panel); }
 .slice-main { padding: 17px 18px 15px; }
 .slice-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
 .state-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--faint); box-shadow: 0 0 0 3px rgba(98,98,94,.1); }
@@ -104,13 +104,13 @@ h1, h2, h3, p { margin: 0; }
 .slice-meta strong { color: var(--muted); font-weight: 530; }
 .progress-track { height: 3px; overflow: hidden; border-radius: 2px; background: #303030; }
 .progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--orange); }
-.slice-status-bar { display: flex; min-height: 46px; align-items: center; gap: 14px; margin: 0 18px 14px; padding: 7px 8px 7px 10px; border: 1px solid var(--border-soft); border-radius: 8px; background: #191919; }
+.slice-status-bar { display: flex; min-height: 46px; align-items: center; gap: 14px; padding: 7px 12px 7px 18px; border-top: 1px solid var(--border-soft); background: #1a1a1a; }
 .slice-status-progress { display: grid; width: 190px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 9px; color: var(--faint); font-size: 11px; }
 .slice-status-metrics { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: flex-end; gap: 0; }
 .slice-status-metrics span { display: flex; min-height: 24px; align-items: center; gap: 5px; padding: 0 14px; border-left: 1px solid var(--border-soft); color: var(--faint); font-size: 10px; letter-spacing: .025em; text-transform: uppercase; }
 .slice-status-metrics strong { color: var(--soft); font-size: 12px; font-weight: 560; letter-spacing: 0; }
 
-.active-work { margin: 0 18px 14px; border: 1px solid var(--border-soft); border-radius: 8px; background: #191919; }
+.active-work { margin: 0 18px 16px; border: 1px solid var(--border-soft); border-radius: 8px; background: #191919; }
 .active-work-label { display: flex; justify-content: space-between; padding: 8px 11px; border-bottom: 1px solid var(--border-soft); color: var(--faint); font-size: 10px; font-weight: 620; letter-spacing: .06em; text-transform: uppercase; }
 .task-line { display: grid; grid-template-columns: 82px minmax(0, 1fr) 175px 115px; align-items: center; gap: 10px; min-height: 46px; padding: 8px 11px; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
 .task-line:last-child { border-bottom: 0; }
@@ -299,7 +299,7 @@ h1, h2, h3, p { margin: 0; }
   .view-heading { align-items: flex-start; flex-direction: column; }
   .view-summary { width: 100%; overflow-x: auto; }
   .slice-main { padding: 14px 12px 12px; }
-  .slice-status-bar { gap: 10px; margin: 0 12px 11px; }
+  .slice-status-bar { gap: 10px; padding: 8px 12px; }
   .slice-status-progress { order: 2; width: 100%; flex-basis: 100%; }
   .slice-status-metrics { flex: 1; justify-content: flex-start; }
   .slice-status-metrics span { padding: 0 8px; }

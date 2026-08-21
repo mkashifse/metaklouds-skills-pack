@@ -36,7 +36,6 @@
     .toLowerCase()
     .replace(/\b\w/g, (character) => character.toUpperCase());
   const time = (value) => new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
-  const dateTime = (value) => new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
   const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
   const icon = (name, className = "") => `<svg class="lucide-icon ${esc(className)}" aria-hidden="true" focusable="false"><use href="#icon-${esc(name)}"></use></svg>`;
 
@@ -99,14 +98,6 @@
   }
 
   function renderHeader() {
-    const initiative = data.initiative;
-    setText("#initiative-name", initiative.name);
-    setText("#initiative-id", initiative.id);
-    setText("#initiative-phase", pretty(initiative.phase));
-    setText("#initiative-health", statusLabel(initiative.health));
-    $("#initiative-health").className = `state-badge ${tone(initiative.health)}`;
-    setText("#updated-at", `Updated ${dateTime(data.projection.generatedAt)}`);
-    setText("#source-kind", data.projection.kind === "live-canonical" ? "Live files" : "Example files");
     setText("#slice-count", data.slices.length);
     setText("#decision-count", data.decisions.length);
     setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);

@@ -25,34 +25,22 @@
       <div class="header-main">
         <a class="brand" href="#slices" aria-label="Meta PDS home">
           <svg class="lucide-icon brand-mark" aria-hidden="true"><use href="#icon-package"></use></svg>
-          <span><strong>Meta PDS</strong><small>Product delivery</small></span>
+          <strong>Meta PDS</strong>
         </a>
-        <div class="initiative-context">
-          <strong id="initiative-name">Learning Platform V1</strong>
-          <span id="initiative-id">INIT-0042</span>
-          <span class="context-separator"></span>
-          <span id="initiative-phase">Prototyping</span>
-          <span class="state-badge released" id="initiative-health">On track</span>
-        </div>
-        <div class="header-meta">
-          <span class="seed-label" id="source-kind">Live files</span>
-          <span id="updated-at">Updated moments ago</span>
-        </div>
+        <nav class="top-tabs" aria-label="Dashboard views">
+          <button class="top-tab is-active" type="button" data-view="slices">
+            <svg class="lucide-icon" aria-hidden="true"><use href="#icon-layers"></use></svg>Slices <span id="slice-count">0</span>
+          </button>
+          <button class="top-tab" type="button" data-view="decisions">
+            <svg class="lucide-icon" aria-hidden="true"><use href="#icon-git-branch"></use></svg>Decisions <span id="decision-count">0</span>
+          </button>
+          <button class="top-tab" type="button" data-view="prototype">
+            <svg class="lucide-icon" aria-hidden="true"><use href="#icon-flask"></use></svg>Prototype <span>1</span>
+          </button>
+          <button class="top-tab" type="button" data-view="activity"><svg class="lucide-icon" aria-hidden="true"><use href="#icon-activity"></use></svg>Activity</button>
+          <div class="top-view-summary" id="slice-summary" aria-label="Slice summary"></div>
+        </nav>
       </div>
-
-      <nav class="top-tabs" aria-label="Dashboard views">
-        <button class="top-tab is-active" type="button" data-view="slices">
-          <svg class="lucide-icon" aria-hidden="true"><use href="#icon-layers"></use></svg>Slices <span id="slice-count">0</span>
-        </button>
-        <button class="top-tab" type="button" data-view="decisions">
-          <svg class="lucide-icon" aria-hidden="true"><use href="#icon-git-branch"></use></svg>Decisions <span id="decision-count">0</span>
-        </button>
-        <button class="top-tab" type="button" data-view="prototype">
-          <svg class="lucide-icon" aria-hidden="true"><use href="#icon-flask"></use></svg>Prototype <span>1</span>
-        </button>
-        <button class="top-tab" type="button" data-view="activity"><svg class="lucide-icon" aria-hidden="true"><use href="#icon-activity"></use></svg>Activity</button>
-        <div class="top-view-summary" id="slice-summary" aria-label="Slice summary"></div>
-      </nav>
     </header>
 
     <main class="page-shell">

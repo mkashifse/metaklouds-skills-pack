@@ -98,8 +98,14 @@ time states when the files were last parsed, not when delivery evidence changed.
 
 Keep the interface list-first, compact, and progressively populated:
 
-1. initiative phase, health, update time, source kind, and visible canonical
-   data-health diagnostics;
+The application header is one compact horizontal row: the package icon and
+`Meta PDS` name followed immediately by the top view tabs. Do not add a product
+tagline, initiative title or ID, phase, health, source label, or update time to
+the header. At narrower widths, keep the brand stable and let the tabs scroll
+horizontally rather than creating a second header row.
+
+1. visible canonical data-health diagnostics, with projection source details
+   kept in the footer rather than the header;
 2. decisions grouped by status and affected slices;
 3. a primary slice list with separate collapsible cards containing outcome,
    revision, priority, dependency, gate, progress, story, task, test, and

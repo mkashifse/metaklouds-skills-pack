@@ -1,0 +1,16 @@
+schema_version: 1
+initiative_id: INIT-0001
+initiative_status: DISCOVERING
+initiative_revision: 1
+active_planning_slice: null
+active_execution_slice: null
+paused_slices: []
+completed_slices: []
+current_gate: null
+authority_envelope: ""
+human_decision_required: null
+blockers: []
+risks: []
+next_recommended_action: ""
+last_verified_at: ""
+evidence: []

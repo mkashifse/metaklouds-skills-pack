@@ -1,0 +1,16 @@
+initiative_id: INIT-0001
+schema_version: 1
+decisions: []
+
+# Decision entry shape:
+# - id: DEC-0001
+#   status: PROPOSED | TESTING | LOCKED | SUPERSEDED
+#   question: ""
+#   decision: ""
+#   rationale: ""
+#   evidence: []
+#   affected_artifacts: []
+#   authority: HUMAN | PM
+#   approved_by: ""
+#   decided_at: ""
+#   supersedes: ""

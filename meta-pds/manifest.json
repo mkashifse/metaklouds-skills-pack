@@ -1,0 +1,13 @@
+{
+  "name": "meta-pds",
+  "displayName": "Meta Product Delivery System",
+  "version": "0.1.0",
+  "entrySkill": "meta-pds",
+  "skills": [
+    "meta-pds",
+    "rapid-prototyping",
+    "slice-planning",
+    "slice-development",
+    "slice-qa"
+  ]
+}

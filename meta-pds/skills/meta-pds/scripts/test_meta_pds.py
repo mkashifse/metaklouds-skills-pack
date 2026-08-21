@@ -47,6 +47,9 @@ class MetaPDSContractTests(unittest.TestCase):
             len(projection["testCases"]),
             len(projection["contracts"]),
         ))
+        self.assertEqual(9, len(projection["activity"]))
+        self.assertEqual("Full-stack integration is blocked", projection["activity"][0]["title"])
+        self.assertEqual("Prototype checkpoint 07 approved", projection["activity"][-1]["title"])
 
     def test_cli_defaults_to_repository_wide_validation(self) -> None:
         validator = Path(__file__).with_name("validate_meta_pds.py")

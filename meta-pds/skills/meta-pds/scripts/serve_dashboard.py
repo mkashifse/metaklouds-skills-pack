@@ -1416,6 +1416,7 @@ def build_dashboard_data(
                 "detail": item.get("detail") or "",
                 "kind": item.get("kind") or "updated",
             })
+    events.sort(key=lambda item: str(item["at"]), reverse=True)
 
     initiative_title = str(initiative_meta.get("title") or first_heading(initiative_body))
     objective = normalized_paragraph(markdown_section(initiative_body, "Goals, objectives, and expected outcomes"))
@@ -1555,6 +1556,67 @@ def prepare_demo_root(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
 
     decisions = (skill_root / "assets" / "decision-log-template.yaml").read_text(encoding="utf-8").replace("INIT-0001", "INIT-0042")
     (base / "decision-log.yaml").write_text(decisions, encoding="utf-8")
+
+    demo_events = [
+        {
+            "at": "2026-08-22T00:42:00+05:00",
+            "kind": "blocked",
+            "title": "Full-stack integration is blocked",
+            "detail": "WP-AUTH-06 is waiting for persistence, backend, frontend, and email-adapter exit checks.",
+        },
+        {
+            "at": "2026-08-22T00:36:00+05:00",
+            "kind": "verifying",
+            "title": "Transactional email adapter entered verification",
+            "detail": "Integration Engineer submitted WP-AUTH-05 evidence against CON-AUTH-EMAIL v1.",
+        },
+        {
+            "at": "2026-08-22T00:30:00+05:00",
+            "kind": "started",
+            "title": "Frontend authentication journeys started",
+            "detail": "Frontend Engineer started WP-AUTH-04 using the locked API contract and approved prototype checkpoint 07.",
+        },
+        {
+            "at": "2026-08-22T00:24:00+05:00",
+            "kind": "started",
+            "title": "Authentication lifecycle API started",
+            "detail": "Backend Engineer started WP-AUTH-03 after the persistence interfaces became available for integration.",
+        },
+        {
+            "at": "2026-08-22T00:18:00+05:00",
+            "kind": "verifying",
+            "title": "Authentication persistence entered verification",
+            "detail": "Database Engineer submitted WP-AUTH-02 migration, rollback, repository, and concurrency evidence.",
+        },
+        {
+            "at": "2026-08-22T00:05:00+05:00",
+            "kind": "completed",
+            "title": "Authentication contracts and threat boundaries locked",
+            "detail": "WP-AUTH-01 completed; API, session, data, and email-adapter boundaries are versioned as auth-v1.",
+        },
+        {
+            "at": "2026-08-21T23:52:00+05:00",
+            "kind": "assigned",
+            "title": "Authentication work packages assigned",
+            "detail": "Seven bounded packages were assigned across development lead, database, backend, frontend, and integration owners.",
+        },
+        {
+            "at": "2026-08-21T23:40:00+05:00",
+            "kind": "approved",
+            "title": "Authentication slice approved for development",
+            "detail": "Human Product Owner approved SLICE-AUTH-001 revision 1 after planning readiness and dependency validation passed.",
+        },
+        {
+            "at": "2026-08-21T23:15:00+05:00",
+            "kind": "approved",
+            "title": "Prototype checkpoint 07 approved",
+            "detail": "Human manual review accepted registration, sign-in, recovery, session restoration, and sign-out behavior.",
+        },
+    ]
+    (base / "delivery-events.jsonl").write_text(
+        "\n".join(json.dumps(event, separators=(",", ":")) for event in demo_events) + "\n",
+        encoding="utf-8",
+    )
 
     slice_example = skill_root.parent / "slice-planning" / "assets" / "authentication-slice-example.md"
     (base / "slices" / "SLICE-AUTH-001.md").write_text(slice_example.read_text(encoding="utf-8"), encoding="utf-8")

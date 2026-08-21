@@ -45,6 +45,12 @@ docs/meta-pds/reports/<slice-id>.md
 prototypes/<initiative-id>/
 ```
 
+Each non-empty `delivery-events.jsonl` line is one JSON object with `at` (ISO
+8601 timestamp), `kind`, `title`, and `detail`. Append only meaningful durable
+changes such as Human approvals, gate changes, assignments, work starts,
+verification handoffs, completions, blockers, and releases. Do not record chat,
+keystroke, or file-save noise. The dashboard orders valid events newest first.
+
 Create artifacts from the suite assets:
 
 - `assets/initiative-template.md`

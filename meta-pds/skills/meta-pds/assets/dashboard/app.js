@@ -279,11 +279,21 @@
   }
 
   function renderActivity() {
+    const activityStatus = (kind) => ({
+      approved: "DONE",
+      completed: "DONE",
+      released: "DONE",
+      verifying: "VERIFYING",
+      assigned: "READY",
+      blocked: "BLOCKED",
+      started: "IN_PROGRESS",
+      updated: "IN_PROGRESS"
+    })[String(kind ?? "").toLowerCase()] || "IN_PROGRESS";
     $("#activity-list").innerHTML = data.activity.length ? data.activity.map((item) => `
       <article class="simple-item">
         <span class="simple-code">${esc(time(item.at))}</span>
         <div class="simple-copy"><h3>${esc(item.title)}</h3><p>${esc(item.detail)}</p></div>
-        ${badge(item.kind === "blocked" ? "BLOCKED" : item.kind === "completed" ? "DONE" : "IN_PROGRESS", pretty(item.kind))}
+        ${badge(activityStatus(item.kind), pretty(item.kind))}
       </article>`).join("") : '<div class="empty-state">No durable delivery events are recorded.</div>';
   }
 

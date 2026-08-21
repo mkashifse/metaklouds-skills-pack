@@ -29,6 +29,11 @@ Human refreshes the page to see the current files. Canonical sources are:
 - delivery reports and runtime evidence for QA and release status;
 - optional `delivery-events.jsonl` for the recent activity timeline.
 
+The activity file is append-only JSON Lines. Each event contains an ISO 8601
+`at`, concise `kind`, `title`, and evidence-bearing `detail`; the dashboard
+renders the newest valid event first. Record durable delivery checkpoints only,
+not low-value agent or editor activity.
+
 For UI preview before a product has canonical artifacts, use `--demo`. Demo mode
 parses the bundled Authentication slice and execution-plan examples into a
 temporary in-memory runtime, writes nothing into a product repository, and must

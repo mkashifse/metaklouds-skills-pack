@@ -462,52 +462,20 @@
   }
 
   function workPackageAccordion(task) {
-    const linkedStories = task.storyIds
-      .map((id) => data.stories.find((story) => story.id === id))
-      .filter(Boolean);
-    const linkedTests = task.requiredTestIds
-      .map((id) => data.testCases.find((test) => test.id === id && test.sliceId === task.sliceId))
-      .filter(Boolean);
-    const detailList = (title, values, className = "") => `
-      <section class="work-package-detail-group ${className}">
-        <h4>${esc(title)}</h4>
-        <ul>${values.length ? values.map((value) => `<li>${esc(value)}</li>`).join("") : "<li>None</li>"}</ul>
-      </section>`;
     return `
       <details class="story-accordion-item work-package-accordion-item">
         <summary>
           <span class="story-accordion-dot"><i class="state-dot ${tone(task.status)}"></i></span>
           <span class="story-accordion-copy"><small>${esc(task.id)} · ${esc(pretty(task.area))}</small><strong>${esc(task.title)}</strong></span>
           <span class="story-accordion-count">${esc(task.owner)}</span>
+          ${badge(task.status)}
           <span class="story-accordion-chevron">${icon("chevron-down")}</span>
         </summary>
         <div class="story-accordion-body work-package-accordion-body">
-          <p>${esc(task.description || "No work-package description recorded.")}</p>
-          ${task.blocker ? `<div class="work-package-blocker"><strong>Current blocker</strong><span>${esc(task.blocker)}</span></div>` : ""}
-          <dl class="test-case-properties">
-            <div><dt>Status</dt><dd>${badge(task.status)}</dd></div>
-            <div><dt>Assignee</dt><dd>${esc(task.owner)}</dd></div>
-            <div><dt>Area</dt><dd>${esc(pretty(task.area))}</dd></div>
-            <div><dt>Tests</dt><dd>${task.tests.passed}/${task.tests.total}</dd></div>
-          </dl>
-          <dl class="test-case-properties work-package-control-grid">
-            <div><dt>Wave</dt><dd>${esc(task.wave || "Unassigned")}</dd></div>
-            <div><dt>Contract</dt><dd>${esc(task.contractVersion || "Unspecified")}</dd></div>
-            <div><dt>Integration owner</dt><dd>${esc(task.integrationOwner || "Unassigned")}</dd></div>
-            <div><dt>Critical path</dt><dd>${task.critical ? "Yes" : "No"}</dd></div>
-          </dl>
-          <div class="work-package-details-grid">
-            <section class="work-package-detail-group"><h4>Supports stories</h4><ul>${linkedStories.length ? linkedStories.map((story) => `<li><code>${esc(story.id)}</code> — ${esc(story.title)}</li>`).join("") : "<li>None</li>"}</ul></section>
-            ${detailList("Dependencies", task.dependsOn)}
-            <section class="work-package-detail-group"><h4>Required tests</h4><ul>${linkedTests.length ? linkedTests.map((test) => `<li><code>${esc(test.id)}</code> — ${esc(test.title)} · ${esc(pretty(test.status))}</li>`).join("") : task.requiredTestIds.map((id) => `<li><code>${esc(id)}</code></li>`).join("") || "<li>None</li>"}</ul></section>
-            ${detailList("Inputs", task.inputs)}
-            ${detailList("Produces", task.produces)}
-            ${detailList("Owned paths", task.ownedPaths, "path-group")}
-            ${detailList("Forbidden paths", task.forbiddenPaths, "path-group")}
-            ${detailList("Entry checks", task.entryChecks)}
-            ${detailList("Exit checks", task.exitChecks, "wide-group")}
+          <div class="work-package-body-header">
+            <button class="open-detail-button" type="button" data-open-task="${esc(task.id)}" aria-label="Open full detail for ${esc(task.title)}">${icon("external-link")}Details</button>
           </div>
-          <button class="open-detail-button" type="button" data-open-task="${esc(task.id)}">${icon("external-link")}Open full work-package detail</button>
+          <div class="markdown-body work-package-markdown">${renderMarkdown(taskMarkdown(task))}</div>
         </div>
       </details>`;
   }

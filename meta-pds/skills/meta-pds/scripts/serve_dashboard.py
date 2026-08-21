@@ -7,6 +7,7 @@ import argparse
 import ast
 import json
 import re
+import tempfile
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -354,7 +355,11 @@ def relative_path(path: Path, root: Path) -> str:
         return str(path)
 
 
-def build_dashboard_data(product_root: Path) -> dict[str, Any]:
+def build_dashboard_data(
+    product_root: Path,
+    projection_kind: str = "live-canonical",
+    projection_source: str = "Canonical Meta PDS artifacts",
+) -> dict[str, Any]:
     product_root = product_root.resolve()
     base = product_root / "docs" / "meta-pds"
     initiative_meta, initiative_body = read_markdown(base / "initiative.md")
@@ -562,7 +567,7 @@ def build_dashboard_data(product_root: Path) -> dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     return {
         "schemaVersion": 2,
-        "projection": {"kind": "live-canonical", "generatedAt": now, "source": "Canonical Meta PDS artifacts", "staleAfterMinutes": 0},
+        "projection": {"kind": projection_kind, "generatedAt": now, "source": projection_source, "staleAfterMinutes": 0},
         "initiative": {
             "id": str(initiative_meta.get("initiative_id") or delivery.get("initiative_id") or "UNKNOWN"),
             "name": initiative_title,
@@ -601,13 +606,21 @@ def build_dashboard_data(product_root: Path) -> dict[str, Any]:
     }
 
 
-def handler_for(product_root: Path, asset_root: Path):
+def handler_for(
+    product_root: Path,
+    asset_root: Path,
+    projection_kind: str = "live-canonical",
+    projection_source: str = "Canonical Meta PDS artifacts",
+):
     class DashboardHandler(BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802
             path = urlparse(self.path).path
             if path == "/api/dashboard":
                 try:
-                    payload = json.dumps(build_dashboard_data(product_root), ensure_ascii=False).encode("utf-8")
+                    payload = json.dumps(
+                        build_dashboard_data(product_root, projection_kind, projection_source),
+                        ensure_ascii=False,
+                    ).encode("utf-8")
                     self.send_response(200)
                 except (ArtifactError, OSError, ValueError) as error:
                     payload = json.dumps({"error": str(error)}).encode("utf-8")
@@ -637,25 +650,67 @@ def handler_for(product_root: Path, asset_root: Path):
     return DashboardHandler
 
 
+def prepare_demo_root(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
+    runtime = tempfile.TemporaryDirectory(prefix="meta-pds-dashboard-demo-")
+    base = Path(runtime.name) / "docs" / "meta-pds"
+    (base / "slices").mkdir(parents=True)
+
+    initiative = (skill_root / "assets" / "initiative-template.md").read_text(encoding="utf-8")
+    initiative = initiative.replace("INIT-0001", "INIT-0042").replace('title: ""', 'title: "Learning Platform V1"')
+    (base / "initiative.md").write_text(initiative, encoding="utf-8")
+
+    delivery = (skill_root / "assets" / "delivery-state-template.yaml").read_text(encoding="utf-8")
+    delivery = delivery.replace("INIT-0001", "INIT-0042").replace("initiative_status: DISCOVERING", "initiative_status: INITIATIVE_READY")
+    delivery = delivery.replace("health: UNKNOWN", "health: ON_TRACK").replace("active_planning_slice: null", "active_planning_slice: SLICE-AUTH-001")
+    delivery = delivery.replace(
+        "slice_states: []",
+        "slice_states:\n  - slice_id: SLICE-AUTH-001\n    status: READY_FOR_DEVELOPMENT\n    current_gate: READY_FOR_DEVELOPMENT\n    updated_at: \"2026-08-21T23:00:00+05:00\"",
+    )
+    delivery = delivery.replace('title: ""', 'title: "Review the Authentication slice"')
+    delivery = delivery.replace('detail: ""', 'detail: "This preview is parsed from the bundled slice example."')
+    delivery = delivery.replace('impact: ""', 'impact: "Verify the dashboard layout before initializing a product."')
+    (base / "delivery-state.yaml").write_text(delivery, encoding="utf-8")
+
+    decisions = (skill_root / "assets" / "decision-log-template.yaml").read_text(encoding="utf-8").replace("INIT-0001", "INIT-0042")
+    (base / "decision-log.yaml").write_text(decisions, encoding="utf-8")
+
+    slice_example = skill_root.parent / "slice-planning" / "assets" / "authentication-slice-example.md"
+    (base / "slices" / "SLICE-AUTH-001.md").write_text(slice_example.read_text(encoding="utf-8"), encoding="utf-8")
+    return runtime
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("product_root", type=Path)
+    parser.add_argument("product_root", type=Path, nargs="?")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--demo", action="store_true", help="Preview the bundled Authentication slice without writing product files")
     parser.add_argument("--print-json", action="store_true", help="Print one in-memory projection and exit")
     args = parser.parse_args()
 
-    product_root = args.product_root.resolve()
+    if args.demo and args.product_root:
+        parser.error("product_root and --demo are mutually exclusive")
+    if not args.demo and not args.product_root:
+        parser.error("product_root is required unless --demo is used")
+
+    skill_root = Path(__file__).resolve().parent.parent
+    demo_runtime = prepare_demo_root(skill_root) if args.demo else None
+    product_root = Path(demo_runtime.name).resolve() if demo_runtime else args.product_root.resolve()
+    projection_kind = "bundled-example" if args.demo else "live-canonical"
+    projection_source = "Bundled Authentication slice example" if args.demo else "Canonical Meta PDS artifacts"
     if not (product_root / "docs" / "meta-pds").is_dir():
         parser.error(f"not a Meta PDS product root: {product_root}")
     if args.print_json:
-        print(json.dumps(build_dashboard_data(product_root), indent=2, ensure_ascii=False))
+        print(json.dumps(build_dashboard_data(product_root, projection_kind, projection_source), indent=2, ensure_ascii=False))
         return 0
 
-    asset_root = Path(__file__).resolve().parent.parent / "assets" / "dashboard"
-    server = ThreadingHTTPServer((args.host, args.port), handler_for(product_root, asset_root))
+    asset_root = skill_root / "assets" / "dashboard"
+    server = ThreadingHTTPServer(
+        (args.host, args.port),
+        handler_for(product_root, asset_root, projection_kind, projection_source),
+    )
     print(f"Meta PDS dashboard: http://{args.host}:{server.server_port}")
-    print(f"Reading canonical artifacts from: {product_root}")
+    print("Reading the bundled Authentication example in memory." if args.demo else f"Reading canonical artifacts from: {product_root}")
     print("Refresh the page to reparse current files. Press Ctrl-C to stop.")
     try:
         server.serve_forever()

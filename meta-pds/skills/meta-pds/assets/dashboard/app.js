@@ -91,6 +91,7 @@
     setText("#initiative-health", pretty(initiative.health));
     $("#initiative-health").className = `state-badge ${tone(initiative.health)}`;
     setText("#updated-at", `Updated ${dateTime(data.projection.generatedAt)}`);
+    setText("#source-kind", data.projection.kind === "live-canonical" ? "Live files" : "Example files");
     setText("#slice-count", data.slices.length);
     setText("#decision-count", data.decisions.length);
     setText("#next-action", initiative.nextAction.title);

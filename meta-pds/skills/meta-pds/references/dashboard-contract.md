@@ -27,6 +27,11 @@ Human refreshes the page to see the current files. Canonical sources are:
 - delivery reports and runtime evidence for QA and release status;
 - optional `delivery-events.jsonl` for the recent activity timeline.
 
+For UI preview before a product has canonical artifacts, use `--demo`. Demo mode
+parses the bundled Authentication slice example into a temporary in-memory
+runtime, writes nothing into a product repository, and must be visibly labelled
+as example data. Never treat it as delivery state.
+
 Never infer a successful gate, test, release, or Human approval merely to fill
 the display. Show unknown or missing evidence explicitly. Parse or validation
 errors must be visible; never fall back to stale or invented data.

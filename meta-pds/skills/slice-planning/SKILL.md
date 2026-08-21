@@ -87,6 +87,16 @@ must use `### US-<id> — <title>`, followed by `**Story:**` and
 The slice is the sole source of test definitions. Do not create a separate
 story index, test registry, or dashboard summary.
 
+Immediately after creating or changing the slice, run:
+
+```text
+python3 <installed-meta-pds>/scripts/validate_meta_pds.py <product-root> --slice-id <slice-id>
+```
+
+Fix owned format or traceability errors before returning Planning Review. Never
+reword structural headings or labelled fields; prose inside those boundaries
+remains ordinary Markdown.
+
 When a filled artifact would materially clarify the required depth, inspect
 [assets/authentication-slice-example.md](assets/authentication-slice-example.md)
 as a structural example. Never inherit its product decisions, scope, risks, or

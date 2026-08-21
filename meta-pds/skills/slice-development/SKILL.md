@@ -84,9 +84,16 @@ submodules, and do not introduce direct source-code imports between those
 areas. Coordinate cross-area behavior through the recorded integration
 contracts.
 
-Run the Meta PDS validator. The Product Manager marks `EXECUTION_READY` only
-when the plan has no cycles, unknown dependencies, unowned packages, missing
-tests, or unresolved entry blockers.
+After every execution-plan change, run:
+
+```text
+python3 <installed-meta-pds>/scripts/validate_meta_pds.py <product-root> --slice-id <slice-id> --require-execution-plan
+```
+
+The Product Manager also runs repository-wide `--all` validation before the
+gate. Mark `EXECUTION_READY` only when the plan has no cycles, duplicate IDs,
+unknown references, unowned packages, missing tests, or unresolved entry
+blockers.
 
 ### Execution
 

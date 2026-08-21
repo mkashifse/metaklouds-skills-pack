@@ -100,6 +100,30 @@ separate dashboard data file.
 
 ## Structural validation
 
-Use `scripts/validate_meta_pds.py` from the installed `meta-pds` skill before
-advancing planning or execution gates. Structural validation supports but does
-not replace Planning, Development Intake, or independent QA judgment.
+The templates, validator, and dashboard share one parsing and validation
+contract. The dashboard does not maintain a second schema or product-side data
+file.
+
+After any owned slice, execution plan, report, decision log, delivery state, or
+initiative change, validate the affected slice. Before every gate or resume,
+validate the entire product:
+
+```text
+python3 <installed-meta-pds>/scripts/validate_meta_pds.py <product-root> --slice-id <slice-id>
+python3 <installed-meta-pds>/scripts/validate_meta_pds.py <product-root> --all
+```
+
+Repository-wide validation discovers every slice, execution plan, report, and
+optional delivery event. It rejects duplicate keys and stable IDs, invalid
+types and statuses, filename/identity or revision drift, unknown references,
+dependency cycles, malformed Markdown grammar, and invalid event records.
+
+YAML artifacts support mappings, lists, inline collections, quoted and plain
+scalars, comments, and literal or folded multiline scalars. Do not use anchors,
+aliases, explicit tags, tabs for indentation, or duplicate keys. These are
+rejected deliberately so agent output stays deterministic.
+
+Structural validation supports but does not replace Planning, Development
+Intake, or independent QA judgment. A failed check blocks only the affected
+gate; preserve valid unrelated artifacts and return each diagnostic to its
+canonical owner.

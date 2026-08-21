@@ -63,9 +63,12 @@ On every invocation:
 2. Read actual Meta PDS artifacts, repository state, and available runtime
    evidence. Never rely on conversation memory as delivery state.
 3. Reconcile contradictions conservatively and record them.
-4. Present current phase, active planning and execution slices, completed and
+4. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
+   gate while any structural error remains; surface the exact file and
+   diagnostic instead of inferring missing data.
+5. Present current phase, active planning and execution slices, completed and
    paused slices, blockers, risks, and one recommended next action.
-5. Continue when the requested route is valid. If the user gave no route,
+6. Continue when the requested route is valid. If the user gave no route,
    recommend the highest-value valid action and concise alternatives.
 
 For a new initiative, capture a short brief and establish an authority envelope
@@ -149,6 +152,8 @@ evidence, and the recorded release gate pass. Product outcome is separately
 marked `OUTCOME_VALIDATED` or `REPLAN_REQUIRED` after observation.
 
 At every checkpoint, update `delivery-state.yaml` and return the visibility
-summary defined in the workflow reference. The dashboard reparses canonical
-artifacts when the Human refreshes it; never write or maintain a separate
-projection.
+summary defined in the workflow reference. After every canonical artifact
+write, run repository-wide validation and correct the owned artifact or return
+the diagnostic to its owner. The dashboard uses this same validation contract,
+reparses canonical artifacts when the Human refreshes it, and keeps its model in
+memory; never write or maintain a separate projection.

@@ -35,8 +35,13 @@ temporary in-memory runtime, writes nothing into a product repository, and must
 be visibly labelled as example data. Never treat it as delivery state.
 
 Never infer a successful gate, test, release, or Human approval merely to fill
-the display. Show unknown or missing evidence explicitly. Parse or validation
-errors must be visible; never fall back to stale or invented data.
+the display. Show unknown or missing evidence explicitly. The dashboard runs
+the same repository-wide contract as the CLI, returns structured diagnostics,
+and shows a persistent data-health banner when errors exist. A malformed
+downstream slice, execution plan, report, or event is quarantined while valid
+unrelated delivery data remains visible. A malformed core initiative or
+delivery artifact may block the projection because identity and state can no
+longer be established. Never fall back to stale or invented data.
 
 ## Parseable conventions
 
@@ -52,7 +57,11 @@ errors must be visible; never fall back to stale or invented data.
   join stories, packages, and slice test definitions by stable IDs.
 - Delivery state owns current slice status, active work, Human attention, and
   next action. Counts, active agents, blockers, test totals, and progress are
-  derived in memory and never copied back into artifacts.
+  derived in memory and never copied back into artifacts. Progress is a derived
+  display estimate, not canonical delivery evidence.
+- Duplicate YAML keys and duplicate slice, story, test, contract, work-package,
+  execution, report, decision, or state IDs are errors rather than last-write
+  wins.
 
 ## Status semantics
 
@@ -89,7 +98,8 @@ time states when the files were last parsed, not when delivery evidence changed.
 
 Keep the interface list-first, compact, and progressively populated:
 
-1. initiative phase, health, update time, and source kind;
+1. initiative phase, health, update time, source kind, and visible canonical
+   data-health diagnostics;
 2. decisions grouped by status and affected slices;
 3. a primary slice list with separate collapsible cards containing outcome,
    revision, priority, dependency, gate, progress, story, task, test, and

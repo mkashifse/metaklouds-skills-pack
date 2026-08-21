@@ -58,6 +58,15 @@ canonical slice. The dashboard joins the slice definition and QA result by
 that ID; do not copy the test definition, task, story, or slice data into the
 report.
 
+After creating or changing the report, run:
+
+```text
+python3 <installed-meta-pds>/scripts/validate_meta_pds.py <product-root> --slice-id <slice-id>
+```
+
+Return malformed, duplicate, unknown, or revision-mismatched evidence to its
+canonical owner before recommending a gate.
+
 Return `RELEASE_READY` only for the complete fat slice. A component, work
 package, passing PR, or partial deployment is not a slice release.
 

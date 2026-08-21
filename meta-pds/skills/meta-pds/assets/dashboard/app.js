@@ -12,7 +12,11 @@
     if (location.protocol === "file:") throw new Error("Launch the Meta PDS dashboard service from the product root; direct file access cannot read canonical artifacts.");
     const response = await fetch("/api/dashboard", { cache: "no-store" });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Canonical artifact parsing failed.");
+    if (!response.ok) {
+      const firstDiagnostic = payload.diagnostics?.[0];
+      const detail = firstDiagnostic ? `${firstDiagnostic.file}: ${firstDiagnostic.message}` : "";
+      throw new Error([payload.error || "Canonical artifact parsing failed.", detail].filter(Boolean).join(" — "));
+    }
     data = payload;
   } catch (error) {
     document.body.innerHTML = `<main class="empty-state"><strong>Dashboard unavailable</strong><p>${safeError(error.message || error)}</p></main>`;
@@ -70,7 +74,7 @@
 
   function progressDisplay(value, status, label, className = "") {
     const progress = normalizeProgress(value);
-    return `<span class="progress-display ${esc(className)}">${segmentedProgress(progress, status, label)}<strong>${progress}%</strong></span>`;
+    return `<span class="progress-display ${esc(className)}" title="Derived from current canonical statuses">${segmentedProgress(progress, status, label)}<strong>${progress}%</strong></span>`;
   }
 
   function sliceStories(sliceId) {
@@ -106,6 +110,22 @@
     setText("#slice-count", data.slices.length);
     setText("#decision-count", data.decisions.length);
     setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);
+  }
+
+  function renderDataHealth() {
+    const health = data.dataHealth || { status: "VALID", errors: 0, warnings: 0, diagnostics: [] };
+    const panel = $("#data-health");
+    if (!health.errors && !health.warnings) {
+      panel.hidden = true;
+      panel.innerHTML = "";
+      return;
+    }
+    panel.hidden = false;
+    panel.innerHTML = `
+      <details>
+        <summary>${icon("triangle-alert")}<strong>Canonical data needs attention</strong><span>Valid artifacts remain visible; unsafe files are quarantined and other issues are flagged.</span><span class="data-health-count">${esc(health.errors)} errors · ${esc(health.warnings)} warnings</span></summary>
+        <ul class="diagnostic-list">${(health.diagnostics || []).map((item) => `<li><code>${esc(item.file)} · ${esc(item.code)}</code><span>${esc(item.message)}</span></li>`).join("")}</ul>
+      </details>`;
   }
 
   let currentView = "slices";
@@ -650,6 +670,7 @@
   }
 
   renderHeader();
+  renderDataHealth();
   renderSlices();
   renderDecisions();
   renderPrototype();

@@ -442,11 +442,7 @@
   }
 
   function sliceProperties(slice) {
-    const stories = sliceStories(slice.id);
-    const tasks = sliceTasks(slice.id);
     const contracts = sliceContracts(slice.id);
-    const tests = sliceTests(slice.id);
-    const activeAgents = [...new Set(tasks.filter((task) => task.status !== "DONE").map((task) => task.owner))];
     return `
       <aside class="issue-properties">
         <section><h3>Properties</h3>
@@ -454,13 +450,6 @@
           ${propertyRow("Priority", esc(slice.priority))}
           ${propertyRow("Revision", `r${esc(slice.revision)}`)}
           ${propertyRow("Progress", `${esc(slice.progress)}%`)}
-        </section>
-        <section><h3>Delivery</h3>
-          ${propertyRow("Stories", stories.length)}
-          ${propertyRow("Work packages", tasks.length)}
-          ${propertyRow("Active agents", activeAgents.length)}
-          ${propertyRow("Contracts", contracts.length)}
-          ${propertyRow("Test cases", tests.length)}
         </section>
         <section><h3>Dependencies</h3>
           ${propertyRow("Upstream", esc(slice.dependencies.join(", ") || "None"))}

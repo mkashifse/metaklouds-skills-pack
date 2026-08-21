@@ -599,27 +599,27 @@
     const contract = modalEntity === "contract" ? data.contracts.find((item) => item.id === modalContractId && item.sliceId === slice.id) : null;
     if (task) {
       renderModalTabs(slice, false);
-      setText("#modal-id", `${task.id} · ${pretty(task.area)}`);
+      setText("#modal-id", `${pretty(task.area)} · ${task.owner || "Unassigned"}`);
       setText("#modal-title", task.title);
-      $("#modal-state").innerHTML = `<span class="state-dot ${tone(task.status)}"></span>`;
-      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.title)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(task.id)}</strong>`;
+      $("#modal-state").innerHTML = badge(task.status);
+      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.id)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(task.id)}</strong>`;
       $("#modal-content").innerHTML = taskIssueDetail(task, slice);
     } else if (contract) {
       renderModalTabs(slice, false);
-      setText("#modal-id", `${contract.id} · ${contract.version} · ${pretty(contract.type)}`);
+      setText("#modal-id", `${contract.version} · ${pretty(contract.type)}`);
       setText("#modal-title", contract.name);
-      $("#modal-state").innerHTML = `<span class="state-dot ${tone(contract.status)}"></span>`;
-      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.title)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(contract.id)}</strong>`;
+      $("#modal-state").innerHTML = badge(contract.status);
+      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.id)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(contract.id)}</strong>`;
       $("#modal-content").innerHTML = contractIssueDetail(contract, slice);
     } else {
       modalEntity = "slice";
       modalTaskId = null;
       modalContractId = null;
       renderModalTabs(slice, true);
-      setText("#modal-id", `${slice.id} · ${slice.priority} · revision ${slice.revision}`);
+      setText("#modal-id", `${slice.priority} priority · Revision ${slice.revision}`);
       setText("#modal-title", slice.title);
-      $("#modal-state").innerHTML = `<span class="state-dot ${tone(slice.status)}"></span>`;
-      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(slice.title)}</strong>`;
+      $("#modal-state").innerHTML = badge(slice.status);
+      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(slice.id)}</strong>`;
       $("#modal-content").innerHTML = sliceIssueDetail(slice);
     }
     $("#modal-content").scrollTop = 0;

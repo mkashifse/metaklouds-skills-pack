@@ -182,10 +182,11 @@ h1, h2, h3, p { margin: 0; }
 .modal-breadcrumbs button:hover { color: var(--text); }
 .modal-breadcrumbs strong { overflow: hidden; color: var(--soft); font-weight: 520; text-overflow: ellipsis; white-space: nowrap; }
 .breadcrumb-icon { width: 13px; height: 13px; color: var(--faint); }
-.modal-heading-row { display: flex; min-width: 0; align-items: center; gap: 11px; margin-top: 6px; }
-.modal-heading-row > div:last-child { min-width: 0; }
-.modal-heading-row #modal-id { display: block; color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.modal-heading-row h2 { overflow: hidden; margin-top: 1px; font-size: 20px; font-weight: 560; letter-spacing: -.012em; text-overflow: ellipsis; white-space: nowrap; }
+.modal-heading-row { display: flex; min-width: 0; align-items: flex-start; gap: 10px; margin-top: 6px; }
+.modal-title-block { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.modal-heading-row #modal-id { display: block; overflow: hidden; color: var(--faint); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.modal-heading-row h2 { overflow: hidden; margin: 0; font-size: 20px; font-weight: 560; letter-spacing: -.012em; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.modal-title-state { flex: 0 0 auto; padding-top: 1px; }
 .icon-button { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid var(--border); border-radius: 8px; background: #222; color: var(--muted); font-size: 19px; cursor: pointer; }
 .icon-button:hover { color: var(--text); }
 .icon-button .lucide-icon { width: 17px; height: 17px; }

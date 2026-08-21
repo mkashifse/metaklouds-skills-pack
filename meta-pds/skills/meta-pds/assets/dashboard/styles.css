@@ -100,11 +100,11 @@ h1, h2, h3, p { margin: 0; }
 .slice-card-title .lucide-icon { width: 17px; height: 17px; color: var(--faint); transition: color .15s ease, transform .15s ease; }
 .slice-card-title button:hover .lucide-icon { color: var(--orange); transform: translateX(2px); }
 .slice-code { flex: 0 0 auto; color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; white-space: nowrap; }
-.slice-body-copy { grid-row: 2; grid-column: 1 / 4; padding-left: 4px; }
+.slice-body-copy { display: grid; grid-row: 2; grid-column: 1 / 4; grid-template-columns: minmax(0, 1fr) 220px; align-items: start; gap: 28px; padding-left: 4px; }
 .slice-outcome { max-width: 900px; margin-top: 8px; color: var(--muted); font-size: 14px; }
 .slice-outcome strong { color: var(--soft); font-weight: 520; }
-.slice-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; color: var(--faint); font-size: 12px; }
-.slice-meta span { display: flex; align-items: center; gap: 4px; }
+.slice-meta { display: grid; gap: 0; margin-top: 8px; padding-left: 18px; border-left: 1px solid var(--border-soft); color: var(--faint); font-size: 12px; }
+.slice-meta span { display: flex; min-height: 23px; align-items: center; justify-content: space-between; gap: 12px; }
 .slice-meta strong { color: var(--muted); font-weight: 530; }
 .slice-status-summary { display: flex; min-width: 0; align-items: center; align-self: start; gap: 14px; padding-top: 5px; color: var(--faint); font-size: 11px; white-space: nowrap; }
 .slice-status-summary > span:not(.state-badge) { padding-left: 14px; border-left: 1px solid var(--border-soft); }
@@ -325,6 +325,9 @@ h1, h2, h3, p { margin: 0; }
   .slice-item.is-collapsed .slice-main { gap: 9px; padding: 9px 12px; }
   .slice-item.is-collapsed .slice-code { display: none; }
   .slice-status-summary .compact-progress, .slice-status-summary .compact-stories, .slice-status-summary .compact-tasks, .slice-status-summary .compact-tests { display: none; }
+  .slice-body-copy { grid-template-columns: 1fr; gap: 10px; }
+  .slice-meta { grid-template-columns: repeat(3, auto); gap: 12px; padding-top: 10px; padding-left: 0; border-top: 1px solid var(--border-soft); border-left: 0; }
+  .slice-meta span { min-height: 0; justify-content: flex-start; }
   .active-work { margin: 0 12px 11px; }
   .task-line { grid-template-columns: 60px minmax(0,1fr); }
   .task-line .assignee { display: none; }

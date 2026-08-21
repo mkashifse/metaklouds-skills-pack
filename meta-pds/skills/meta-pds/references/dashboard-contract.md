@@ -67,7 +67,8 @@ dashboard and all detail dialogs. Use the same semantic colors everywhere:
 - draft, planned, proposed, paused, and unknown states: neutral.
 
 Render every status as color-coded text without a pill, border, or background,
-including main lists, headers, properties, accordions, and detail dialogs. The
+including main lists, properties, accordions, and detail dialogs. Avoid
+duplicating status in a detail header when its properties already show it. The
 label and semantic color must not change between contexts.
 
 ## Update rhythm

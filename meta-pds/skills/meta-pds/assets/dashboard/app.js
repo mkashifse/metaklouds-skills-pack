@@ -598,7 +598,6 @@
       $("#modal-entity-icon").innerHTML = icon("package");
       setText("#modal-id", `${pretty(task.area)} · ${task.owner || "Unassigned"}`);
       setText("#modal-title", task.title);
-      $("#modal-state").innerHTML = badge(task.status);
       $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.id)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(task.id)}</strong>`;
       $("#modal-content").innerHTML = taskIssueDetail(task, slice);
     } else if (contract) {
@@ -606,7 +605,6 @@
       $("#modal-entity-icon").innerHTML = icon("git-branch");
       setText("#modal-id", `${contract.version} · ${pretty(contract.type)}`);
       setText("#modal-title", contract.name);
-      $("#modal-state").innerHTML = badge(contract.status);
       $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.id)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(contract.id)}</strong>`;
       $("#modal-content").innerHTML = contractIssueDetail(contract, slice);
     } else {
@@ -617,7 +615,6 @@
       $("#modal-entity-icon").innerHTML = icon("layers");
       setText("#modal-id", `${slice.priority} priority · Revision ${slice.revision}`);
       setText("#modal-title", slice.title);
-      $("#modal-state").innerHTML = badge(slice.status);
       $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(slice.id)}</strong>`;
       $("#modal-content").innerHTML = sliceIssueDetail(slice);
     }

@@ -95,8 +95,10 @@ Keep the interface list-first, compact, and progressively populated:
    revision, priority, dependency, gate, progress, story, task, test, and
    contract summaries; keep one persistent header summary for status, progress,
    story, task, test, and blocker counts so those metrics do not move when the
-   card expands or collapses; a collapsed card becomes one row showing that
-   summary beside its identity; use the same Layers entity
+   card expands or collapses; keep status dot, slice ID, and title together as
+   a persistent first-row identity with unchanged position and typography; a
+   collapsed card becomes one row showing the summary beside that identity;
+   use the same Layers entity
    icon for a slice in its card and detail header; show progress everywhere as
    ten small vertical segments with exact partial fill plus the numeric percent;
    clicking the card header toggles the card while clicking its title opens

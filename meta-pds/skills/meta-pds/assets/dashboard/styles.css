@@ -87,20 +87,20 @@ h1, h2, h3, p { margin: 0; }
 .slice-entity-icon { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); }
 .slice-entity-icon .lucide-icon { width: 15px; height: 15px; }
 .slice-heading-copy { min-width: 0; }
-.slice-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.slice-title-row { display: flex; min-width: 0; align-items: center; gap: 8px; }
 .state-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--faint); box-shadow: 0 0 0 3px rgba(98,98,94,.1); }
 .state-dot.released { background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
 .state-dot.active { background: var(--orange); box-shadow: 0 0 0 3px var(--orange-soft); }
 .state-dot.verifying { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .state-dot.blocked { background: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
 .state-dot.ready { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); }
-.slice-card-title { font-size: 20px; font-weight: 570; letter-spacing: -.015em; line-height: 1.2; }
+.slice-card-title { min-width: 0; flex: 1; font-size: 15px; font-weight: 570; letter-spacing: 0; line-height: 1.2; }
 .slice-card-title button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; letter-spacing: inherit; cursor: pointer; }
 .slice-card-title button:hover { color: var(--orange); }
 .slice-card-title .lucide-icon { width: 17px; height: 17px; color: var(--faint); transition: color .15s ease, transform .15s ease; }
 .slice-card-title button:hover .lucide-icon { color: var(--orange); transform: translateX(2px); }
-.slice-code { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.slice-outcome { max-width: 900px; margin-top: 8px; color: var(--muted); font-size: 14px; }
+.slice-code { flex: 0 0 auto; color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; white-space: nowrap; }
+.slice-outcome { max-width: 900px; margin-top: 12px; color: var(--muted); font-size: 14px; }
 .slice-outcome strong { color: var(--soft); font-weight: 520; }
 .slice-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; color: var(--faint); font-size: 12px; }
 .slice-meta span { display: flex; align-items: center; gap: 4px; }
@@ -125,9 +125,8 @@ h1, h2, h3, p { margin: 0; }
 .slice-item:not(.is-collapsed) .slice-collapse-toggle .lucide-icon { transform: rotate(180deg); }
 .slice-item.is-collapsed .slice-main { min-height: 56px; align-items: center; padding: 10px 14px; }
 .slice-item.is-collapsed .slice-entity-icon { flex: 0 0 auto; }
-.slice-item.is-collapsed .slice-heading-copy { display: flex; min-width: 0; flex: 1; align-items: center; gap: 12px; }
-.slice-item.is-collapsed .slice-title-row { flex: 0 0 auto; margin: 0; }
-.slice-item.is-collapsed .slice-card-title { min-width: 0; font-size: 15px; letter-spacing: 0; }
+.slice-item.is-collapsed .slice-heading-copy { min-width: 0; }
+.slice-item.is-collapsed .slice-title-row { margin: 0; }
 .slice-item.is-collapsed .slice-card-title button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slice-item.is-collapsed .slice-card-title .lucide-icon { display: none; }
 .slice-item.is-collapsed .slice-outcome, .slice-item.is-collapsed .slice-meta, .slice-item.is-collapsed .slice-content { display: none; }
@@ -300,7 +299,6 @@ h1, h2, h3, p { margin: 0; }
   .slice-main { grid-template-columns: 28px minmax(0, 1fr) 30px; }
   .slice-status-summary { grid-row: 2; grid-column: 2 / 4; justify-content: flex-end; padding-top: 0; }
   .slice-collapse-toggle { grid-row: 1; grid-column: 3; }
-  .slice-item.is-collapsed .slice-heading-copy { gap: 8px; }
   .slice-item.is-collapsed .slice-code { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .slice-status-summary { gap: 9px; }
   .slice-status-summary > span:not(.state-badge) { padding-left: 9px; }

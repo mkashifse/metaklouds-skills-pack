@@ -186,8 +186,8 @@
             <div class="slice-title-row">
               <span class="state-dot ${tone(slice.status)}"></span>
               <span class="slice-code">${String(slice.order).padStart(2, "0")} · ${esc(slice.id)}</span>
+              <h2 class="slice-card-title"><button type="button" data-open-slice="${esc(slice.id)}">${esc(slice.title)}${icon("chevron-right")}</button></h2>
             </div>
-            <h2 class="slice-card-title"><button type="button" data-open-slice="${esc(slice.id)}">${esc(slice.title)}${icon("chevron-right")}</button></h2>
             <p class="slice-outcome"><strong>Outcome:</strong> ${esc(slice.outcome)}</p>
             <div class="slice-meta">
               <span>Priority <strong>${esc(slice.priority)}</strong></span>

@@ -36,16 +36,20 @@
   const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
   const icon = (name, className = "") => `<svg class="lucide-icon ${esc(className)}" aria-hidden="true" focusable="false"><use href="#icon-${esc(name)}"></use></svg>`;
 
-  function tone(status) {
-    if (["RELEASED", "OUTCOME_VALIDATED", "DONE", "LOCKED", "PASSED", "ON_TRACK"].includes(status)) return "released";
-    if (["VERIFYING", "TESTING"].includes(status)) return "verifying";
-    if (["IN_PROGRESS", "HUMAN_REVIEW"].includes(status)) return "active";
-    if (["BLOCKED", "REWORK_REQUIRED", "REVERIFY_REQUIRED", "FAILED", "AT_RISK", "OFF_TRACK"].includes(status)) return "blocked";
-    if (["READY", "READY_FOR_DEVELOPMENT", "EXECUTION_READY", "RELEASE_READY"].includes(status)) return "ready";
-    return "draft";
-  }
+  const STATUS_TONES = Object.freeze({
+    RELEASED: "released", OUTCOME_VALIDATED: "released", DONE: "released", COMPLETED: "released",
+    LOCKED: "released", PASSED: "released", VERIFIED: "released", ON_TRACK: "released",
+    IN_PROGRESS: "active", ACTIVE: "active", EXECUTING: "active", MOBILIZING: "active",
+    VERIFYING: "verifying", TESTING: "verifying", HUMAN_REVIEW: "verifying", IN_REVIEW: "verifying",
+    READY: "ready", READY_FOR_DEVELOPMENT: "ready", EXECUTION_READY: "ready", RELEASE_READY: "ready",
+    BLOCKED: "blocked", REWORK_REQUIRED: "blocked", REVERIFY_REQUIRED: "blocked", FAILED: "blocked",
+    AT_RISK: "blocked", OFF_TRACK: "blocked"
+  });
+  const normalizeStatus = (status) => String(status ?? "").trim().replaceAll("-", "_").replaceAll(" ", "_").toUpperCase();
+  const statusLabel = (status) => pretty(normalizeStatus(status));
+  const tone = (status) => STATUS_TONES[normalizeStatus(status)] || "draft";
 
-  function badge(status, label = pretty(status)) {
+  function badge(status, label = statusLabel(status)) {
     return `<span class="state-badge ${tone(status)}">${esc(label)}</span>`;
   }
 
@@ -75,7 +79,7 @@
     setText("#initiative-name", initiative.name);
     setText("#initiative-id", initiative.id);
     setText("#initiative-phase", pretty(initiative.phase));
-    setText("#initiative-health", pretty(initiative.health));
+    setText("#initiative-health", statusLabel(initiative.health));
     $("#initiative-health").className = `state-badge ${tone(initiative.health)}`;
     setText("#updated-at", `Updated ${dateTime(data.projection.generatedAt)}`);
     setText("#source-kind", data.projection.kind === "live-canonical" ? "Live files" : "Example files");
@@ -234,7 +238,7 @@
       <article class="simple-item">
         <span class="simple-code">${esc(time(item.at))}</span>
         <div class="simple-copy"><h3>${esc(item.title)}</h3><p>${esc(item.detail)}</p></div>
-        <span class="state-badge ${item.kind === "blocked" ? "blocked" : item.kind === "completed" ? "released" : "active"}">${esc(pretty(item.kind))}</span>
+        ${badge(item.kind === "blocked" ? "BLOCKED" : item.kind === "completed" ? "DONE" : "IN_PROGRESS", pretty(item.kind))}
       </article>`).join("") : '<div class="empty-state">No durable delivery events are recorded.</div>';
   }
 
@@ -307,7 +311,7 @@
       <details class="story-accordion-item">
         <summary>
           <span class="story-accordion-dot"><i class="state-dot ${tone(story.status)}"></i></span>
-          <span class="story-accordion-copy"><small>${esc(story.id)} · ${esc(pretty(story.status))}</small><strong>${esc(story.title)}</strong></span>
+          <span class="story-accordion-copy"><small>${esc(story.id)} · ${esc(statusLabel(story.status))}</small><strong>${esc(story.title)}</strong></span>
           <span class="story-accordion-count">${esc(acceptanceLabel(story))}</span>
           <span class="story-accordion-chevron">${icon("chevron-down")}</span>
         </summary>

@@ -54,6 +54,22 @@ errors must be visible; never fall back to stale or invented data.
   next action. Counts, active agents, blockers, test totals, and progress are
   derived in memory and never copied back into artifacts.
 
+## Status semantics
+
+Normalize every displayed status through one shared renderer across the main
+dashboard and all detail dialogs. Use the same semantic colors everywhere:
+
+- complete, released, locked, passed, and validated: green;
+- active, executing, and in progress: orange;
+- verifying, testing, and Human review: blue;
+- ready states: amber;
+- blocked, failed, at risk, and rework states: red;
+- draft, planned, proposed, paused, and unknown states: neutral.
+
+Compact task rows and slice footers may render color-coded text without a pill;
+detail views may use a quiet badge. The label and semantic color must not change
+between those contexts.
+
 ## Update rhythm
 
 Update canonical artifacts at meaningful checkpoints:
@@ -72,27 +88,28 @@ time states when the files were last parsed, not when delivery evidence changed.
 
 Keep the interface list-first, compact, and progressively populated:
 
-1. initiative phase, health, progress, update time, and exact next action;
-2. Human attention items and active prototype checkpoint;
-3. decisions grouped by status and affected slices;
-4. a primary slice list with outcome, revision, priority, dependency, gate,
-   progress, story, task, test, and contract summaries;
-5. currently active or blocked work packages and assigned agents directly under
+1. initiative phase, health, update time, and source kind;
+2. decisions grouped by status and affected slices;
+3. a primary slice list with separate cards containing outcome, revision,
+   priority, dependency, gate, progress, story, task, test, and contract
+   summaries;
+4. currently active or blocked work packages and assigned agents directly under
    each slice;
-6. collapsible user-story rows for quick acceptance and work-package tracing;
-7. collapsible slice test-case rows showing level, method, owner, linked stories,
+5. collapsible user-story rows in slice detail for acceptance and work-package
+   tracing;
+6. collapsible slice test-case rows showing level, method, owner, linked stories,
    expected result, and available QA evidence;
-8. a large read-only issue-detail dialog with hierarchy breadcrumbs, a compact
+7. a large read-only issue-detail dialog with hierarchy breadcrumbs, a compact
    properties rail, and separate Overview, User Stories, Work Packages, and
    Test Cases tabs; work packages use status-bearing collapsible rows with a
    compact detail action and a linear rendered-Markdown body, and selecting
    full detail reuses the dialog for description, owner, dependencies, evidence,
    and breadcrumb return;
-9. dependencies and clickable contracts in the slice properties rail; selecting
+8. dependencies and clickable contracts in the slice properties rail; selecting
    a contract reuses the detail dialog and renders its canonical Markdown or
    slice-recorded required behavior;
-10. separate top tabs for slices, decisions, prototype checkpoints, and durable
-   activity.
+9. separate top tabs for slices, decisions, prototype checkpoints, and durable
+   activity, with compact slice totals integrated into the tabs.
 
 Hide or label unavailable downstream views during early discovery; do not create
 fake progress.

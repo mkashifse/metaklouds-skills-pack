@@ -331,7 +331,12 @@ window.META_PDS_DASHBOARD_DATA = {
       title: "Sign in with a verified account",
       status: "DONE",
       workPackageIds: ["WP-BE-08", "WP-FE-09", "WP-QA-10"],
-      acceptance: { passed: 7, total: 7 }
+      acceptance: { passed: 7, total: 7 },
+      acceptanceCriteria: [
+        "Verified credentials create an authenticated session.",
+        "Invalid credentials reveal no account-existence information.",
+        "Keyboard and screen-reader users receive accessible error feedback."
+      ]
     },
     {
       id: "US-102",
@@ -339,7 +344,11 @@ window.META_PDS_DASHBOARD_DATA = {
       title: "Verify a newly registered email",
       status: "DONE",
       workPackageIds: ["WP-QA-10"],
-      acceptance: { passed: 5, total: 5 }
+      acceptance: { passed: 5, total: 5 },
+      acceptanceCriteria: [
+        "A valid verification link activates the learner account.",
+        "Expired and previously used links are rejected safely."
+      ]
     },
     {
       id: "US-103",
@@ -347,7 +356,11 @@ window.META_PDS_DASHBOARD_DATA = {
       title: "Recover from an expired session",
       status: "DONE",
       workPackageIds: ["WP-BE-08", "WP-FE-09", "WP-QA-10"],
-      acceptance: { passed: 6, total: 6 }
+      acceptance: { passed: 6, total: 6 },
+      acceptanceCriteria: [
+        "An expired session returns the learner to sign-in.",
+        "Successful sign-in restores the intended safe destination."
+      ]
     },
     {
       id: "US-201",
@@ -355,7 +368,12 @@ window.META_PDS_DASHBOARD_DATA = {
       title: "Request account recovery safely",
       status: "IN_PROGRESS",
       workPackageIds: ["WP-DB-11", "WP-BE-12", "WP-FE-13", "WP-INT-15"],
-      acceptance: { passed: 4, total: 7 }
+      acceptance: { passed: 4, total: 7 },
+      acceptanceCriteria: [
+        "The response is identical for known and unknown email addresses.",
+        "Requests are rate-limited without exposing private account state.",
+        "A valid request creates one expiring single-use recovery token."
+      ]
     },
     {
       id: "US-202",
@@ -363,7 +381,12 @@ window.META_PDS_DASHBOARD_DATA = {
       title: "Set a new password from a valid link",
       status: "READY",
       workPackageIds: ["WP-BE-12", "WP-FE-14", "WP-INT-15"],
-      acceptance: { passed: 2, total: 6 }
+      acceptance: { passed: 2, total: 6 },
+      acceptanceCriteria: [
+        "A valid recovery link opens the set-password journey.",
+        "The new password must satisfy the locked password policy.",
+        "Successful recovery invalidates existing authenticated sessions."
+      ]
     },
     {
       id: "US-203",
@@ -371,7 +394,12 @@ window.META_PDS_DASHBOARD_DATA = {
       title: "Reject expired or replayed recovery links",
       status: "VERIFYING",
       workPackageIds: ["WP-DB-11", "WP-FE-14", "WP-INT-15"],
-      acceptance: { passed: 4, total: 6 }
+      acceptance: { passed: 4, total: 6 },
+      acceptanceCriteria: [
+        "Expired recovery tokens cannot update credentials.",
+        "A redeemed token cannot be used again.",
+        "Failure states direct the learner to request a fresh link."
+      ]
     },
     {
       id: "US-204",
@@ -379,7 +407,11 @@ window.META_PDS_DASHBOARD_DATA = {
       title: "Notify the account owner after recovery",
       status: "BLOCKED",
       workPackageIds: ["WP-BE-12", "WP-INT-15"],
-      acceptance: { passed: 0, total: 4 }
+      acceptance: { passed: 0, total: 4 },
+      acceptanceCriteria: [
+        "The account owner receives a recovery-complete notification.",
+        "The notification contains no credential or token value."
+      ]
     },
     {
       id: "US-301",
@@ -387,8 +419,96 @@ window.META_PDS_DASHBOARD_DATA = {
       title: "Browse courses available for enrolment",
       status: "READY",
       workPackageIds: ["WP-CT-16"],
-      acceptance: { passed: 0, total: 5 }
+      acceptance: { passed: 0, total: 5 },
+      acceptanceCriteria: [
+        "Only published and eligible courses appear in the catalogue.",
+        "Course cards expose enough information to make an enrolment decision."
+      ]
     }
+  ],
+  contracts: [
+    {
+      id: "CON-AUTH-API",
+      sliceId: "SLICE-01",
+      name: "Authentication HTTP contract",
+      type: "OpenAPI",
+      version: "v1.4",
+      status: "LOCKED",
+      owner: "Backend Engineer",
+      path: "backend/contracts/auth.openapi.yaml"
+    },
+    {
+      id: "CON-SESSION",
+      sliceId: "SLICE-01",
+      name: "Session lifecycle contract",
+      type: "Security contract",
+      version: "v2.0",
+      status: "LOCKED",
+      owner: "Security Engineer",
+      path: "backend/contracts/session-lifecycle.md"
+    },
+    {
+      id: "CON-RECOVERY-API",
+      sliceId: "SLICE-02",
+      name: "Account recovery API",
+      type: "OpenAPI",
+      version: "v2.1",
+      status: "LOCKED",
+      owner: "Backend Engineer",
+      path: "backend/contracts/recovery.openapi.yaml"
+    },
+    {
+      id: "CON-TOKEN-SCHEMA",
+      sliceId: "SLICE-02",
+      name: "Recovery token persistence",
+      type: "Database schema",
+      version: "v1.0",
+      status: "LOCKED",
+      owner: "Database Engineer",
+      path: "backend/migrations/042_recovery_tokens.sql"
+    },
+    {
+      id: "CON-EMAIL-ADAPTER",
+      sliceId: "SLICE-02",
+      name: "Transactional email adapter",
+      type: "Integration contract",
+      version: "v0.3",
+      status: "PROPOSED",
+      owner: "Integration Engineer",
+      path: "backend/contracts/email-adapter.md"
+    },
+    {
+      id: "CON-COURSE-CATALOGUE",
+      sliceId: "SLICE-03",
+      name: "Course catalogue and eligibility",
+      type: "OpenAPI",
+      version: "v0.8",
+      status: "DRAFT",
+      owner: "Development Lead",
+      path: "backend/contracts/catalogue.openapi.yaml"
+    },
+    {
+      id: "CON-PROGRESS-EVENT",
+      sliceId: "SLICE-04",
+      name: "Learning progress event",
+      type: "Event schema",
+      version: "v0.1",
+      status: "DRAFT",
+      owner: "Planning Lead",
+      path: "docs/meta-pds/contracts/progress-event.md"
+    }
+  ],
+  testCases: [
+    { id: "TC-AUTH-01", sliceId: "SLICE-01", title: "Verified learner signs in", type: "Playwright CLI", status: "PASSED", owner: "Slice QA", evidence: "reports/auth-sign-in.html" },
+    { id: "TC-AUTH-02", sliceId: "SLICE-01", title: "Invalid credentials remain private", type: "API integration", status: "PASSED", owner: "Slice QA", evidence: "reports/auth-privacy.xml" },
+    { id: "TC-AUTH-03", sliceId: "SLICE-01", title: "Expired session restores destination", type: "Playwright CLI", status: "PASSED", owner: "Slice QA", evidence: "reports/session-expiry.html" },
+    { id: "TC-REC-01", sliceId: "SLICE-02", title: "Recovery request hides account existence", type: "API contract", status: "PASSED", owner: "Backend Engineer", evidence: "reports/recovery-contract.xml" },
+    { id: "TC-REC-02", sliceId: "SLICE-02", title: "Recovery request UI states", type: "Component", status: "IN_PROGRESS", owner: "Frontend Engineer", evidence: "Pending WP-FE-13" },
+    { id: "TC-REC-03", sliceId: "SLICE-02", title: "Expired token cannot reset password", type: "Integration", status: "PASSED", owner: "Database Engineer", evidence: "reports/token-expiry.xml" },
+    { id: "TC-REC-04", sliceId: "SLICE-02", title: "Redeemed token rejects replay", type: "Integration", status: "VERIFYING", owner: "Database Engineer", evidence: "reports/token-replay.xml" },
+    { id: "TC-REC-05", sliceId: "SLICE-02", title: "Recovery lifecycle end to end", type: "Playwright CLI", status: "BLOCKED", owner: "Slice QA", evidence: "Blocked by WP-BE-12" },
+    { id: "TC-CAT-01", sliceId: "SLICE-03", title: "Catalogue contract examples", type: "Contract", status: "READY", owner: "Development Lead", evidence: "Pending WP-CT-16" },
+    { id: "TC-PROG-01", sliceId: "SLICE-04", title: "Progress event schema examples", type: "Schema", status: "DRAFT", owner: "Planning Lead", evidence: "Planning evidence only" }
   ],
   dependencies: {
     criticalPath: ["WP-DB-11", "WP-BE-12", "WP-FE-14", "WP-INT-15"],

@@ -2,458 +2,390 @@
   "use strict";
 
   const data = window.META_PDS_DASHBOARD_DATA;
-
   if (!data) {
-    document.body.innerHTML =
-      '<main style="padding:32px;color:#eee;background:#151515;min-height:100vh">' +
-      "<h1>Dashboard data unavailable</h1>" +
-      "<p>Ensure dashboard-data.js is present beside index.html.</p>" +
-      "</main>";
+    document.body.innerHTML = "<main class='empty-state'>Dashboard data is unavailable.</main>";
     return;
   }
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
-  const esc = (value) =>
-    String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+  const esc = (value) => String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+  const pretty = (value) => String(value ?? "")
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+  const percent = (passed, total) => total ? Math.round((passed / total) * 100) : 0;
+  const time = (value) => new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
+  const dateTime = (value) => new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
+  const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
 
-  const pretty = (value) =>
-    String(value ?? "")
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (character) => character.toUpperCase());
+  function tone(status) {
+    if (["RELEASED", "OUTCOME_VALIDATED", "DONE", "LOCKED", "PASSED"].includes(status)) return "released";
+    if (["IN_PROGRESS", "VERIFYING", "HUMAN_REVIEW", "TESTING"].includes(status)) return "active";
+    if (["BLOCKED", "REWORK_REQUIRED", "REVERIFY_REQUIRED", "FAILED"].includes(status)) return "blocked";
+    if (["READY", "READY_FOR_DEVELOPMENT", "EXECUTION_READY", "RELEASE_READY"].includes(status)) return "ready";
+    return "draft";
+  }
 
-  const time = (value) =>
-    new Intl.DateTimeFormat("en", {
-      hour: "numeric",
-      minute: "2-digit"
-    }).format(new Date(value));
+  function badge(status, label = pretty(status)) {
+    return `<span class="state-badge ${tone(status)}">${esc(label)}</span>`;
+  }
 
-  const dateTime = (value) =>
-    new Intl.DateTimeFormat("en", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
-    }).format(new Date(value));
+  function sliceStories(sliceId) {
+    return data.stories.filter((story) => story.sliceId === sliceId);
+  }
 
-  const statusTone = (status) => {
-    const tones = {
-      ON_TRACK: "on-track",
-      RELEASED: "released",
-      OUTCOME_VALIDATED: "released",
-      DONE: "done",
-      LOCKED: "locked",
-      PASSED: "passed",
-      HUMAN_REVIEW: "review",
-      IN_PROGRESS: "in-progress",
-      VERIFYING: "verifying",
-      TESTING: "testing",
-      READY: "ready",
-      READY_FOR_DEVELOPMENT: "ready",
-      EXECUTION_READY: "ready",
-      PROPOSED: "proposed",
-      NOT_READY: "not-ready",
-      PLANNING_REVIEW: "planning",
-      BLOCKED: "blocked",
-      REWORK_REQUIRED: "blocked",
-      REVERIFY_REQUIRED: "blocked",
-      FAILED: "failed",
-      DRAFT: "draft",
-      SUPERSEDED: "superseded",
-      PAUSED: "paused"
-    };
-    return tones[status] || "draft";
-  };
+  function sliceTasks(sliceId) {
+    return data.workPackages.filter((task) => task.sliceId === sliceId);
+  }
 
-  const pill = (status, label = pretty(status)) =>
-    `<span class="status-pill status-${statusTone(status)}">${esc(label)}</span>`;
+  function sliceContracts(sliceId) {
+    return (data.contracts || []).filter((contract) => contract.sliceId === sliceId);
+  }
 
-  const percentage = (passed, total) => (total ? Math.round((passed / total) * 100) : 0);
+  function sliceTests(sliceId) {
+    return (data.testCases || []).filter((test) => test.sliceId === sliceId);
+  }
 
-  const setText = (selector, value) => {
-    const element = $(selector);
-    if (element) element.textContent = value;
-  };
+  function taskTests(tasks) {
+    return tasks.reduce((result, task) => ({
+      passed: result.passed + task.tests.passed,
+      total: result.total + task.tests.total
+    }), { passed: 0, total: 0 });
+  }
 
-  function renderShell() {
-    const { initiative, projection } = data;
-    setText("#sidebar-initiative", initiative.shortName || initiative.name);
-    setText("#sidebar-initiative-id", initiative.id);
-    setText("#initiative-id", initiative.id);
+  function storyProgress(stories) {
+    const totals = stories.reduce((result, story) => ({
+      passed: result.passed + story.acceptance.passed,
+      total: result.total + story.acceptance.total
+    }), { passed: 0, total: 0 });
+    return { ...totals, percent: percent(totals.passed, totals.total) };
+  }
+
+  function renderHeader() {
+    const initiative = data.initiative;
     setText("#initiative-name", initiative.name);
+    setText("#initiative-id", initiative.id);
     setText("#initiative-phase", pretty(initiative.phase));
-    setText("#initiative-objective", initiative.objective);
-    setText("#initiative-progress", `${initiative.progress}%`);
-    setText("#next-action-title", initiative.nextAction.title);
+    setText("#initiative-health", pretty(initiative.health));
+    setText("#updated-at", `Updated ${dateTime(data.projection.generatedAt)}`);
+    setText("#slice-count", data.slices.length);
+    setText("#decision-count", data.decisions.length);
+    setText("#next-action", initiative.nextAction.title);
     setText("#next-action-detail", initiative.nextAction.detail);
     setText("#next-action-owner", initiative.nextAction.owner);
-    setText("#next-action-impact", initiative.nextAction.impact);
-    setText("#topbar-updated", `Updated ${dateTime(projection.generatedAt)}`);
-    setText("#sidebar-updated", `Updated ${dateTime(projection.generatedAt)}`);
-    setText("#footer-source", `${projection.source} · schema v${data.schemaVersion}`);
-
-    const health = $("#initiative-health");
-    health.textContent = pretty(initiative.health);
-    health.className = `status-pill status-${statusTone(initiative.health)}`;
-
-    $("#progress-ring").style.setProperty("--progress", initiative.progress);
-    setText("#nav-prototype-count", data.prototype ? 1 : 0);
-    setText("#nav-slice-count", data.slices.length);
-
-    const activePackages = data.workPackages.filter(
-      (item) => !["DONE", "PAUSED"].includes(item.status)
-    );
-    const blockers = data.workPackages.filter((item) => item.status === "BLOCKED");
-    const completeSlices = data.slices.filter((slice) =>
-      ["RELEASED", "OUTCOME_VALIDATED"].includes(slice.status)
-    );
-
-    setText("#nav-active-count", activePackages.length);
-    setText("#metric-slices", `${completeSlices.length} / ${data.slices.length}`);
-    setText("#metric-active", activePackages.length);
-    setText("#metric-attention", data.attention.length);
-    setText("#metric-coverage", `${data.quality.evidenceCoverage}%`);
-    setText("#metric-blockers", blockers.length);
+    setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);
   }
 
-  function renderAttention() {
-    setText("#attention-count", data.attention.length);
-    $("#attention-list").innerHTML = data.attention
-      .map(
-        (item) => `
-          <article class="attention-item">
-            <span class="attention-marker ${esc(item.kind)}"></span>
-            <div>
-              <h3>${esc(item.title)}</h3>
-              <p>${esc(item.detail)}</p>
+  let currentView = "slices";
+  function showView(view) {
+    currentView = view;
+    $$(".top-tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === view));
+    $$(".view-panel").forEach((panel) => panel.classList.toggle("is-active", panel.dataset.panel === view));
+    if (history.replaceState) history.replaceState(null, "", `#${view}`);
+  }
+
+  function bindTopTabs() {
+    $$(".top-tab").forEach((tab) => tab.addEventListener("click", () => showView(tab.dataset.view)));
+    const requested = location.hash.slice(1);
+    showView(["slices", "decisions", "prototype", "activity"].includes(requested) ? requested : "slices");
+  }
+
+  let sliceFilter = "ALL";
+  const expandedSlices = new Set(data.slices.filter((slice) => slice.active).map((slice) => slice.id));
+
+  function matchesFilter(slice) {
+    if (sliceFilter === "ALL") return true;
+    if (sliceFilter === "ACTIVE") return ["IN_PROGRESS", "VERIFYING"].includes(slice.status);
+    if (sliceFilter === "BLOCKED") return sliceTasks(slice.id).some((task) => task.status === "BLOCKED");
+    if (sliceFilter === "READY") return ["READY", "READY_FOR_DEVELOPMENT", "EXECUTION_READY"].includes(slice.status);
+    if (sliceFilter === "COMPLETE") return ["RELEASED", "OUTCOME_VALIDATED"].includes(slice.status);
+    return true;
+  }
+
+  function renderSliceSummary() {
+    const active = data.slices.filter((slice) => ["IN_PROGRESS", "VERIFYING"].includes(slice.status)).length;
+    const complete = data.slices.filter((slice) => ["RELEASED", "OUTCOME_VALIDATED"].includes(slice.status)).length;
+    const blocked = data.slices.filter((slice) => sliceTasks(slice.id).some((task) => task.status === "BLOCKED")).length;
+    $("#slice-summary").innerHTML = [
+      ["Total", data.slices.length], ["Active", active], ["Complete", complete], ["Blocked", blocked]
+    ].map(([label, value]) => `<span class="summary-chip">${label}<strong>${value}</strong></span>`).join("");
+  }
+
+  function renderSliceFilters() {
+    const filters = ["ALL", "ACTIVE", "READY", "BLOCKED", "COMPLETE"];
+    $("#slice-filters").innerHTML = filters.map((filter) =>
+      `<button class="filter-button ${filter === sliceFilter ? "is-active" : ""}" type="button" data-slice-filter="${filter}">${pretty(filter)}</button>`
+    ).join("");
+  }
+
+  function activeTaskRows(tasks) {
+    let visible = tasks.filter((task) => task.status !== "DONE");
+    if (!visible.length) visible = tasks.filter((task) => task.status === "DONE").slice(-2);
+    if (!visible.length) return "";
+    return `
+      <div class="active-work">
+        <div class="active-work-label"><span>${tasks.some((task) => task.status !== "DONE") ? "Current development work" : "Recently completed work"}</span><span>${visible.length} shown</span></div>
+        ${visible.slice(0, 4).map((task) => `
+          <div class="task-line">
+            <span class="task-id">${esc(task.id)}</span>
+            <span class="task-name">${esc(task.title)}</span>
+            <span class="assignee"><i>${esc(task.ownerInitials)}</i>${esc(task.owner)}</span>
+            ${badge(task.status)}
+          </div>
+        `).join("")}
+      </div>`;
+  }
+
+  function storyDrawer(slice) {
+    const stories = sliceStories(slice.id);
+    if (!stories.length) return `<div class="story-drawer"><div class="empty-state">Stories have not been defined for this slice.</div></div>`;
+    return `
+      <div class="story-drawer">
+        <div class="story-table">
+          <div class="story-row header"><span>ID</span><span>User story</span><span>Acceptance</span><span>Work packages</span><span>State</span></div>
+          ${stories.map((story) => `
+            <div class="story-row">
+              <span class="task-id">${esc(story.id)}</span>
+              <span class="story-name"><strong>${esc(story.title)}</strong><span>${esc((story.acceptanceCriteria || []).length)} explicit criteria</span></span>
+              <span>${story.acceptance.passed}/${story.acceptance.total} · ${percent(story.acceptance.passed, story.acceptance.total)}%</span>
+              <span class="mini-packages">${story.workPackageIds.map((id) => `<i class="mini-package">${esc(id)}</i>`).join("")}</span>
+              ${badge(story.status)}
             </div>
-            <small>${esc(item.age)}</small>
-          </article>
-        `
-      )
-      .join("");
+          `).join("")}
+        </div>
+      </div>`;
   }
 
-  function renderPrototype() {
-    const prototype = data.prototype;
-    setText("#prototype-name", prototype.name);
-    setText("#prototype-description", prototype.description);
+  function sliceCard(slice) {
+    const stories = sliceStories(slice.id);
+    const tasks = sliceTasks(slice.id);
+    const contracts = sliceContracts(slice.id);
+    const tests = taskTests(tasks);
+    const acceptance = storyProgress(stories);
+    const doneTasks = tasks.filter((task) => task.status === "DONE").length;
+    const blockers = tasks.filter((task) => task.status === "BLOCKED");
+    const dependencies = slice.dependencies.length ? slice.dependencies.join(", ") : "None";
+    const expanded = expandedSlices.has(slice.id);
+    const lockedContracts = contracts.filter((contract) => contract.status === "LOCKED").length;
 
-    const status = $("#prototype-status");
-    status.textContent = pretty(prototype.status);
-    status.className = `status-pill status-${statusTone(prototype.status)}`;
-
-    $("#prototype-stats").innerHTML = [
-      `${prototype.journeys.reviewed}/${prototype.journeys.total} journeys reviewed`,
-      `${prototype.assumptionsTested} assumptions tested`,
-      `${prototype.openQuestions} open questions`,
-      prototype.persistence
-    ]
-      .map((value) => `<span class="prototype-stat">${esc(value)}</span>`)
-      .join("");
-
-    $("#prototype-checkpoint").innerHTML = `
-      <span><strong>${esc(prototype.checkpoint)}</strong> · ${esc(prototype.manualReview)}</span>
-      <span>${esc(time(prototype.checkpointAt))}</span>
-    `;
+    return `
+      <article class="slice-item ${expanded ? "is-expanded" : ""}" data-slice-id="${esc(slice.id)}">
+        <div class="slice-main">
+          <div>
+            <div class="slice-title-row">
+              <span class="state-dot ${tone(slice.status)}"></span>
+              <span class="slice-code">${String(slice.order).padStart(2, "0")} · ${esc(slice.id)}</span>
+              <h2>${esc(slice.title)}</h2>
+            </div>
+            <p class="slice-outcome"><strong>Outcome:</strong> ${esc(slice.outcome)}</p>
+            <div class="slice-meta">
+              <span>Priority <strong>${esc(slice.priority)}</strong></span>
+              <span>Revision <strong>${esc(slice.revision)}</strong></span>
+              <span>Depends on <strong>${esc(dependencies)}</strong></span>
+              ${blockers.length ? `<span class="task-blocked">${blockers.length} blocker${blockers.length > 1 ? "s" : ""}</span>` : ""}
+            </div>
+          </div>
+          <div class="slice-side">
+            <div class="slice-state-line">${badge(slice.status)}<span class="slice-code">${slice.progress}%</span></div>
+            <div class="progress-line"><div class="progress-track"><i style="width:${Number(slice.progress)}%"></i></div><span>${slice.progress}%</span></div>
+            <div class="slice-facts">
+              <div class="slice-fact"><span>Stories</span><strong>${stories.length}</strong></div>
+              <div class="slice-fact"><span>Tasks</span><strong>${doneTasks}/${tasks.length}</strong></div>
+              <div class="slice-fact"><span>Tests</span><strong>${tests.passed}/${tests.total}</strong></div>
+            </div>
+          </div>
+        </div>
+        ${activeTaskRows(tasks)}
+        <div class="slice-actions">
+          <div class="slice-actions-left">Acceptance ${acceptance.passed}/${acceptance.total} · Contracts ${lockedContracts}/${contracts.length} locked</div>
+          <div class="slice-actions-right">
+            <button class="text-button" type="button" data-toggle-slice="${esc(slice.id)}"><span class="chevron">⌄</span>${expanded ? "Hide stories" : "Show stories"}</button>
+            <button class="text-button primary" type="button" data-open-slice="${esc(slice.id)}">Open full details</button>
+          </div>
+        </div>
+        ${storyDrawer(slice)}
+      </article>`;
   }
 
-  let decisionFilter = "ALL";
+  function renderSlices() {
+    renderSliceSummary();
+    renderSliceFilters();
+    const slices = data.slices.filter(matchesFilter);
+    $("#slice-list").innerHTML = slices.length ? slices.map(sliceCard).join("") : '<div class="empty-state">No slices match this filter.</div>';
+  }
 
-  function renderDecisionFilters() {
-    const statuses = ["ALL", "LOCKED", "TESTING", "PROPOSED", "SUPERSEDED"];
-    $("#decision-filters").innerHTML = statuses
-      .map((status) => {
-        const count =
-          status === "ALL"
-            ? data.decisions.length
-            : data.decisions.filter((decision) => decision.status === status).length;
-        return `<button class="segment-button ${status === decisionFilter ? "is-active" : ""}" type="button" data-decision-filter="${status}">${pretty(status)} ${count}</button>`;
-      })
-      .join("");
-
-    $$('[data-decision-filter]').forEach((button) => {
-      button.addEventListener("click", () => {
-        decisionFilter = button.dataset.decisionFilter;
-        renderDecisionFilters();
-        renderDecisions();
-      });
+  function bindSliceList() {
+    $("#slice-filters").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-slice-filter]");
+      if (!button) return;
+      sliceFilter = button.dataset.sliceFilter;
+      renderSlices();
+    });
+    $("#slice-list").addEventListener("click", (event) => {
+      const toggle = event.target.closest("[data-toggle-slice]");
+      if (toggle) {
+        const id = toggle.dataset.toggleSlice;
+        expandedSlices.has(id) ? expandedSlices.delete(id) : expandedSlices.add(id);
+        renderSlices();
+        return;
+      }
+      const open = event.target.closest("[data-open-slice]");
+      if (open) openModal(open.dataset.openSlice);
     });
   }
 
   function renderDecisions() {
-    const decisions = data.decisions.filter(
-      (decision) => decisionFilter === "ALL" || decision.status === decisionFilter
-    );
-    $("#decision-list").innerHTML = decisions
-      .map(
-        (decision) => `
-          <article class="decision-card">
-            <div class="decision-card-top">
-              <span class="decision-id">${esc(decision.id)} · r${esc(decision.revision)}</span>
-              ${pill(decision.status)}
-            </div>
-            <h3>${esc(decision.title)}</h3>
-            <p>${esc(decision.summary)}</p>
-            <footer>
-              <span>${esc(decision.affects.join(", "))}</span>
-              <span>${esc(time(decision.updatedAt))}</span>
-            </footer>
-          </article>
-        `
-      )
-      .join("");
+    $("#decision-list").innerHTML = data.decisions.map((decision) => `
+      <article class="simple-item">
+        <span class="simple-code">${esc(decision.id)} · r${esc(decision.revision)}</span>
+        <div class="simple-copy"><h3>${esc(decision.title)}</h3><p>${esc(decision.summary)} · Affects ${esc(decision.affects.join(", "))}</p></div>
+        ${badge(decision.status)}
+      </article>`).join("");
   }
 
-  function renderRoadmap() {
-    $("#roadmap-list").innerHTML = data.slices
-      .map(
-        (slice) => `
-          <article class="roadmap-card ${slice.active ? "is-active" : ""}">
-            <div class="roadmap-order">
-              <span>${String(slice.order).padStart(2, "0")} · ${esc(slice.id)}</span>
-              <span>${esc(slice.priority)}</span>
-            </div>
-            <h3>${esc(slice.title)}</h3>
-            <p>${esc(slice.outcome)}</p>
-            <div class="roadmap-progress"><i style="width:${Number(slice.progress)}%"></i></div>
-            <div class="roadmap-footer">
-              <span>${esc(slice.progress)}%</span>
-              <span>r${esc(slice.revision)} · ${esc(slice.stories)} stories</span>
-            </div>
-            <div style="margin-top:11px">${pill(slice.status)}</div>
-          </article>
-        `
-      )
-      .join("");
-  }
-
-  const kanbanColumns = ["BLOCKED", "READY", "IN_PROGRESS", "VERIFYING", "DONE"];
-  let selectedSlice = "ALL";
-  let selectedArea = "ALL";
-
-  function renderWorkFilters() {
-    const slices = ["ALL", ...new Set(data.workPackages.map((item) => item.sliceId))];
-    const areas = ["ALL", ...new Set(data.workPackages.map((item) => item.area))];
-
-    $("#slice-filter").innerHTML = slices
-      .map((value) => `<option value="${esc(value)}">${value === "ALL" ? "All slices" : esc(value)}</option>`)
-      .join("");
-    $("#area-filter").innerHTML = areas
-      .map((value) => `<option value="${esc(value)}">${value === "ALL" ? "All areas" : esc(pretty(value))}</option>`)
-      .join("");
-
-    $("#slice-filter").value = selectedSlice;
-    $("#area-filter").value = selectedArea;
-
-    $("#slice-filter").addEventListener("change", (event) => {
-      selectedSlice = event.target.value;
-      renderKanban();
-    });
-    $("#area-filter").addEventListener("change", (event) => {
-      selectedArea = event.target.value;
-      renderKanban();
-    });
-  }
-
-  function workCard(item) {
-    const testPercent = percentage(item.tests.passed, item.tests.total);
-    return `
-      <article class="work-card ${item.critical ? "is-critical" : ""}" title="${esc(item.blocker || item.description)}">
-        <div class="work-card-top">
-          <span class="work-id">${esc(item.id)} · ${esc(item.sliceId)}</span>
-          <span class="area-label">${esc(item.area)}</span>
-        </div>
-        <h3>${esc(item.title)}</h3>
-        <p>${esc(item.blocker || item.description)}</p>
-        <div class="work-card-footer">
-          <span class="owner-badge"><i>${esc(item.ownerInitials)}</i>${esc(item.owner)}</span>
-          <span>${testPercent}% tests</span>
-        </div>
-      </article>
-    `;
-  }
-
-  function renderKanban() {
-    const filtered = data.workPackages.filter(
-      (item) =>
-        (selectedSlice === "ALL" || item.sliceId === selectedSlice) &&
-        (selectedArea === "ALL" || item.area === selectedArea)
-    );
-
-    $("#kanban-board").innerHTML = kanbanColumns
-      .map((status) => {
-        const items = filtered.filter((item) => item.status === status);
-        return `
-          <section class="kanban-column" aria-label="${esc(pretty(status))}">
-            <div class="kanban-column-header"><span>${esc(pretty(status))}</span><span>${items.length}</span></div>
-            <div class="kanban-items">
-              ${items.length ? items.map(workCard).join("") : '<div class="empty-column">No work in this state</div>'}
-            </div>
-          </section>
-        `;
-      })
-      .join("");
-  }
-
-  function renderTraceability() {
-    setText("#traceability-summary", `${data.stories.length} stories · acceptance mapped`);
-    $("#traceability-body").innerHTML = data.stories
-      .map((story) => {
-        const acceptancePercent = percentage(story.acceptance.passed, story.acceptance.total);
-        return `
-          <tr>
-            <td class="story-title"><strong>${esc(story.title)}</strong><span>${esc(story.id)}</span></td>
-            <td>${esc(story.sliceId)}</td>
-            <td><div class="package-links">${story.workPackageIds
-              .map((id) => `<span class="package-link">${esc(id)}</span>`)
-              .join("")}</div></td>
-            <td class="acceptance-cell">
-              <div class="acceptance-row"><span>${story.acceptance.passed}/${story.acceptance.total}</span><span>${acceptancePercent}%</span></div>
-              <div class="micro-progress"><i style="width:${acceptancePercent}%"></i></div>
-            </td>
-            <td>${pill(story.status)}</td>
-          </tr>
-        `;
-      })
-      .join("");
-  }
-
-  function renderDependencies() {
-    const dependency = data.dependencies;
-    setText("#dependency-risk", `${pretty(dependency.risk)} risk`);
-    $("#dependency-view").innerHTML = `
-      <div class="critical-path" aria-label="Critical path">
-        ${dependency.criticalPath
-          .map(
-            (node, index) =>
-              `${index ? '<span class="path-arrow">→</span>' : ""}<span class="path-node ${node === dependency.currentNode ? "current" : ""}">${esc(node)}</span>`
-          )
-          .join("")}
+  function renderPrototype() {
+    const prototype = data.prototype;
+    $("#prototype-card").innerHTML = `
+      <div class="prototype-top">
+        <div><span class="simple-code">${esc(prototype.id)} · ${esc(prototype.checkpoint)}</span><h2>${esc(prototype.name)}</h2><p>${esc(prototype.description)}</p></div>
+        ${badge(prototype.status)}
       </div>
-      <div class="detail-list">
-        <div class="detail-row"><span>Execution wave</span><strong>${esc(dependency.executionWave)}</strong></div>
-        <div class="detail-row"><span>Ready packages</span><strong>${esc(dependency.readyPackages)}</strong></div>
-        <div class="detail-row"><span>Blocked packages</span><strong>${esc(dependency.blockedPackages)}</strong></div>
-        <div class="detail-row"><span>Next unblock</span><strong>${esc(dependency.nextUnblock)}</strong></div>
-      </div>
-    `;
-  }
-
-  function renderQuality() {
-    setText("#quality-score", `${data.quality.evidenceCoverage}%`);
-    $("#quality-view").innerHTML = data.quality.suites
-      .map((suite) => {
-        const score = percentage(suite.passed, suite.total);
-        return `
-          <div class="suite-row">
-            <div class="suite-meta"><strong>${esc(suite.name)}</strong><span>${suite.passed}/${suite.total} · ${score}%</span></div>
-            <div class="micro-progress"><i style="width:${score}%"></i></div>
-          </div>
-        `;
-      })
-      .join("");
-  }
-
-  function renderRelease() {
-    const release = data.release;
-    const status = $("#release-status");
-    status.textContent = pretty(release.status);
-    status.className = `status-pill status-${statusTone(release.status)}`;
-    $("#release-view").innerHTML = `
-      <div class="release-gates">
-        ${release.gates
-          .map(
-            (gate) => `
-              <div class="gate-row">
-                <span class="gate-icon ${gate.status === "PASSED" ? "passed" : ""}">${gate.status === "PASSED" ? "✓" : ""}</span>
-                <span>${esc(gate.name)}</span>
-                ${pill(gate.status)}
-              </div>
-            `
-          )
-          .join("")}
-      </div>
-      <div class="detail-list" style="margin-top:17px">
-        <div class="detail-row"><span>Feature flag</span><strong>${esc(release.featureFlag)}</strong></div>
-        <div class="detail-row"><span>Rollback</span><strong>${esc(release.rollback)}</strong></div>
-      </div>
-    `;
-  }
-
-  function renderDrift() {
-    setText("#drift-count", data.drift.length);
-    $("#drift-list").innerHTML = data.drift
-      .map(
-        (item) => `
-          <article class="drift-item">
-            <span class="drift-icon ${esc(item.severity)}">${item.severity === "high" ? "!" : item.severity === "info" ? "i" : "~"}</span>
-            <div><h3>${esc(item.title)}</h3><p>${esc(item.detail)}</p></div>
-            <span>${esc(item.affects)}</span>
-          </article>
-        `
-      )
-      .join("");
+      <div class="prototype-grid">
+        <div class="prototype-stat"><span>Journeys reviewed</span><strong>${prototype.journeys.reviewed}/${prototype.journeys.total}</strong></div>
+        <div class="prototype-stat"><span>Assumptions tested</span><strong>${prototype.assumptionsTested}</strong></div>
+        <div class="prototype-stat"><span>Open questions</span><strong>${prototype.openQuestions}</strong></div>
+        <div class="prototype-stat"><span>Human review</span><strong>${esc(prototype.manualReview)}</strong></div>
+      </div>`;
   }
 
   function renderActivity() {
-    $("#activity-list").innerHTML = data.activity
-      .map(
-        (item) => `
-          <article class="activity-item">
-            <span class="activity-time">${esc(time(item.at))}</span>
-            <span class="timeline-mark ${esc(item.kind)}"></span>
-            <div class="activity-copy"><h3>${esc(item.title)}</h3><p>${esc(item.detail)}</p></div>
-          </article>
-        `
-      )
-      .join("");
+    $("#activity-list").innerHTML = data.activity.map((item) => `
+      <article class="simple-item">
+        <span class="simple-code">${esc(time(item.at))}</span>
+        <div class="simple-copy"><h3>${esc(item.title)}</h3><p>${esc(item.detail)}</p></div>
+        <span class="state-badge ${item.kind === "blocked" ? "blocked" : item.kind === "completed" ? "released" : "active"}">${esc(pretty(item.kind))}</span>
+      </article>`).join("");
   }
 
-  function bindNavigation() {
-    $(".mobile-menu").addEventListener("click", () => {
-      document.body.classList.toggle("menu-open");
-    });
+  let modalSliceId = null;
+  let modalView = "overview";
+  let modalReturnFocus = null;
 
-    $$(".nav-item").forEach((item) => {
-      item.addEventListener("click", () => document.body.classList.remove("menu-open"));
-    });
-
-    if (!("IntersectionObserver" in window)) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
-        $$(".nav-item").forEach((item) => {
-          item.classList.toggle("is-active", item.dataset.section === visible.target.id);
-        });
-      },
-      { rootMargin: "-18% 0px -68% 0px", threshold: [0.01, 0.25] }
-    );
-    $$(".section-anchor").forEach((section) => observer.observe(section));
+  function modalOverview(slice) {
+    const stories = sliceStories(slice.id);
+    const tasks = sliceTasks(slice.id);
+    const contracts = sliceContracts(slice.id);
+    const tests = sliceTests(slice.id);
+    const activeAgents = [...new Set(tasks.filter((task) => task.status !== "DONE").map((task) => task.owner))];
+    const blockers = tasks.filter((task) => task.status === "BLOCKED");
+    return `
+      <div class="modal-grid">
+        <div>
+          <section class="detail-card"><header class="detail-card-header"><h3>Capability outcome</h3></header><div class="detail-card-body"><p class="outcome-text">${esc(slice.outcome)}</p></div></section>
+          <section class="detail-card"><header class="detail-card-header"><h3>Current development work</h3><span class="simple-code">${tasks.length} packages</span></header>
+            ${tasks.length ? `<table class="detail-table"><thead><tr><th>Task</th><th>Area</th><th>Assignee</th><th>Dependencies</th><th>Status</th></tr></thead><tbody>${tasks.map((task) => `<tr><td><strong>${esc(task.id)} · ${esc(task.title)}</strong><small>${esc(task.description)}</small></td><td>${esc(pretty(task.area))}</td><td>${esc(task.owner)}</td><td>${esc(task.dependsOn.join(", ") || "None")}</td><td>${badge(task.status)}</td></tr>`).join("")}</tbody></table>` : '<div class="empty-state">Execution has not been mobilized.</div>'}
+          </section>
+        </div>
+        <aside>
+          <section class="detail-card"><header class="detail-card-header"><h3>Slice state</h3></header><div class="detail-card-body detail-rows">
+            <div class="detail-row"><span>State</span><span>${esc(pretty(slice.status))}</span></div>
+            <div class="detail-row"><span>Priority / revision</span><span>${esc(slice.priority)} / r${esc(slice.revision)}</span></div>
+            <div class="detail-row"><span>Dependencies</span><span>${esc(slice.dependencies.join(", ") || "None")}</span></div>
+            <div class="detail-row"><span>Progress</span><span>${esc(slice.progress)}%</span></div>
+            <div class="detail-row"><span>Stories</span><span>${stories.length}</span></div>
+            <div class="detail-row"><span>Contracts</span><span>${contracts.length}</span></div>
+            <div class="detail-row"><span>Test cases</span><span>${tests.length}</span></div>
+          </div></section>
+          <section class="detail-card"><header class="detail-card-header"><h3>Active agents</h3></header><div class="detail-card-body">${activeAgents.length ? activeAgents.map((agent) => `<div class="detail-row"><span>Assigned</span><span>${esc(agent)}</span></div>`).join("") : '<p class="simple-code">No agent currently assigned.</p>'}</div></section>
+          ${blockers.length ? `<section class="detail-card"><header class="detail-card-header"><h3>Blockers</h3>${badge("BLOCKED")}</header><div class="detail-card-body">${blockers.map((task) => `<div class="detail-row"><span>${esc(task.id)}</span><span>${esc(task.blocker || "Blocked")}</span></div>`).join("")}</div></section>` : ""}
+        </aside>
+      </div>`;
   }
 
-  renderShell();
-  renderAttention();
-  renderPrototype();
-  renderDecisionFilters();
+  function modalStories(slice) {
+    const stories = sliceStories(slice.id);
+    if (!stories.length) return '<div class="empty-state">No user stories have been defined.</div>';
+    return `<section class="detail-card"><table class="detail-table"><thead><tr><th>Story</th><th>Acceptance criteria</th><th>Packages</th><th>Evidence</th><th>Status</th></tr></thead><tbody>${stories.map((story) => `
+      <tr>
+        <td><strong>${esc(story.id)} · ${esc(story.title)}</strong><small>${story.acceptance.passed}/${story.acceptance.total} accepted</small></td>
+        <td><ul class="acceptance-list">${(story.acceptanceCriteria || []).map((criterion) => `<li>${esc(criterion)}</li>`).join("") || "<li>Criteria are recorded in the canonical slice artifact.</li>"}</ul></td>
+        <td><span class="mini-packages">${story.workPackageIds.map((id) => `<i class="mini-package">${esc(id)}</i>`).join("")}</span></td>
+        <td>${percent(story.acceptance.passed, story.acceptance.total)}%</td>
+        <td>${badge(story.status)}</td>
+      </tr>`).join("")}</tbody></table></section>`;
+  }
+
+  function modalTasks(slice) {
+    const tasks = sliceTasks(slice.id);
+    if (!tasks.length) return '<div class="empty-state">Development work has not been mobilized.</div>';
+    return `<section class="detail-card"><table class="detail-table"><thead><tr><th>Work package</th><th>Code area</th><th>Assignee</th><th>Stories</th><th>Dependencies</th><th>Tests</th><th>Status</th></tr></thead><tbody>${tasks.map((task) => `
+      <tr>
+        <td><strong>${esc(task.id)} · ${esc(task.title)}</strong><small>${esc(task.blocker || task.description)}</small></td>
+        <td>${esc(pretty(task.area))}</td><td>${esc(task.owner)}</td><td>${esc(task.storyIds.join(", "))}</td><td>${esc(task.dependsOn.join(", ") || "None")}</td>
+        <td>${task.tests.passed}/${task.tests.total}</td><td>${badge(task.status)}</td>
+      </tr>`).join("")}</tbody></table></section>`;
+  }
+
+  function modalEvidence(slice) {
+    const contracts = sliceContracts(slice.id);
+    const tests = sliceTests(slice.id);
+    return `<div class="modal-grid"><div>
+      <section class="detail-card"><header class="detail-card-header"><h3>Contracts</h3><span class="simple-code">${contracts.length} records</span></header>
+        ${contracts.length ? contracts.map((contract) => `<article class="contract-card"><span>${esc(contract.id)} · ${esc(contract.version)}</span><div><h3>${esc(contract.name)}</h3><p>${esc(contract.type)} · Owner: ${esc(contract.owner)} · ${esc(contract.path)}</p></div>${badge(contract.status)}</article>`).join("") : '<div class="empty-state">No contracts recorded.</div>'}
+      </section></div><div>
+      <section class="detail-card"><header class="detail-card-header"><h3>Test cases and evidence</h3><span class="simple-code">${tests.length} cases</span></header>
+        ${tests.length ? tests.map((test) => `<article class="contract-card"><span>${esc(test.id)}</span><div><h3>${esc(test.title)}</h3><p>${esc(test.type)} · ${esc(test.owner)} · ${esc(test.evidence)}</p></div>${badge(test.status)}</article>`).join("") : '<div class="empty-state">Test cases have not been mapped.</div>'}
+      </section></div></div>`;
+  }
+
+  function renderModal() {
+    const slice = data.slices.find((item) => item.id === modalSliceId);
+    if (!slice) return;
+    setText("#modal-id", `${slice.id} · ${slice.priority} · revision ${slice.revision}`);
+    setText("#modal-title", slice.title);
+    $("#modal-state").innerHTML = `<span class="state-dot ${tone(slice.status)}"></span>`;
+    $$(".modal-tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.modalView === modalView));
+    const renderers = { overview: modalOverview, stories: modalStories, tasks: modalTasks, evidence: modalEvidence };
+    $("#modal-content").innerHTML = renderers[modalView](slice);
+  }
+
+  function openModal(sliceId) {
+    modalSliceId = sliceId;
+    modalView = "overview";
+    modalReturnFocus = document.activeElement;
+    renderModal();
+    $("#slice-modal").classList.add("is-open");
+    $("#slice-modal").setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    $("#modal-close").focus();
+  }
+
+  function closeModal() {
+    $("#slice-modal").classList.remove("is-open");
+    $("#slice-modal").setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (modalReturnFocus) modalReturnFocus.focus();
+  }
+
+  function bindModal() {
+    $("#modal-close").addEventListener("click", closeModal);
+    $("#slice-modal").addEventListener("click", (event) => { if (event.target === $("#slice-modal")) closeModal(); });
+    $$(".modal-tab").forEach((tab) => tab.addEventListener("click", () => { modalView = tab.dataset.modalView; renderModal(); }));
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && $("#slice-modal").classList.contains("is-open")) closeModal(); });
+  }
+
+  renderHeader();
+  renderSlices();
   renderDecisions();
-  renderRoadmap();
-  renderWorkFilters();
-  renderKanban();
-  renderTraceability();
-  renderDependencies();
-  renderQuality();
-  renderRelease();
-  renderDrift();
+  renderPrototype();
   renderActivity();
-  bindNavigation();
+  bindTopTabs();
+  bindSliceList();
+  bindModal();
 })();

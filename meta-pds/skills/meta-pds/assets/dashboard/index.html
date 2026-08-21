@@ -4,316 +4,121 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <meta
-      name="description"
-      content="Meta PDS human-facing product delivery dashboard"
-    />
-    <title>Meta PDS — Delivery cockpit</title>
+    <meta name="description" content="Meta PDS slice delivery view" />
+    <title>Meta PDS — Slices</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to dashboard</a>
+    <header class="app-header">
+      <div class="header-main">
+        <a class="brand" href="#slices" aria-label="Meta PDS home">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span><strong>Meta PDS</strong><small>Product delivery</small></span>
+        </a>
+        <div class="initiative-context">
+          <strong id="initiative-name">Learning Platform V1</strong>
+          <span id="initiative-id">INIT-0042</span>
+          <span class="context-separator"></span>
+          <span id="initiative-phase">Prototyping</span>
+          <span class="state-badge on-track" id="initiative-health">On track</span>
+        </div>
+        <div class="header-meta">
+          <span class="seed-label">Seed data</span>
+          <span id="updated-at">Updated moments ago</span>
+        </div>
+      </div>
 
-    <div class="app-shell">
-      <aside class="sidebar" aria-label="Dashboard navigation">
-        <div class="brand">
-          <div class="brand-mark" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </div>
+      <nav class="top-tabs" aria-label="Dashboard views">
+        <button class="top-tab is-active" type="button" data-view="slices">
+          Slices <span id="slice-count">0</span>
+        </button>
+        <button class="top-tab" type="button" data-view="decisions">
+          Decisions <span id="decision-count">0</span>
+        </button>
+        <button class="top-tab" type="button" data-view="prototype">
+          Prototype <span>1</span>
+        </button>
+        <button class="top-tab" type="button" data-view="activity">Activity</button>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="attention-bar" aria-label="Recommended next action">
+        <span class="attention-icon" aria-hidden="true">→</span>
+        <div>
+          <small>Recommended next action</small>
+          <strong id="next-action">Review password recovery prototype</strong>
+          <span id="next-action-detail">Confirm the recovery route before planning locks.</span>
+        </div>
+        <span class="attention-owner" id="next-action-owner">Human review</span>
+      </section>
+
+      <section class="view-panel is-active" id="view-slices" data-panel="slices">
+        <div class="view-heading">
           <div>
-            <strong>Meta PDS</strong>
-            <span>Delivery system</span>
+            <p class="eyebrow">Capability delivery</p>
+            <h1>Slices</h1>
+            <p>Outcomes, stories, active tasks, agents, tests, and contracts in one list.</p>
+          </div>
+          <div class="view-summary" id="slice-summary"></div>
+        </div>
+
+        <div class="list-tools">
+          <div class="filter-group" id="slice-filters" aria-label="Filter slices"></div>
+          <div class="legend">
+            <span><i class="dot released"></i>Complete</span>
+            <span><i class="dot active"></i>Active</span>
+            <span><i class="dot blocked"></i>Blocked</span>
           </div>
         </div>
 
-        <div class="workspace-switcher">
-          <span class="eyebrow">Workspace</span>
-          <button class="workspace-button" type="button" aria-label="Current workspace">
-            <span class="workspace-icon">LP</span>
-            <span>
-              <strong id="sidebar-initiative">Learning Platform</strong>
-              <small id="sidebar-initiative-id">INIT-0042</small>
-            </span>
-            <span class="chevron" aria-hidden="true">⌄</span>
-          </button>
+        <div class="slice-list" id="slice-list"></div>
+      </section>
+
+      <section class="view-panel" id="view-decisions" data-panel="decisions">
+        <div class="view-heading">
+          <div><p class="eyebrow">Decision memory</p><h1>Decisions</h1><p>What is locked, being tested, proposed, or superseded.</p></div>
         </div>
+        <div class="simple-list" id="decision-list"></div>
+      </section>
 
-        <nav class="nav-list">
-          <a class="nav-item is-active" href="#overview" data-section="overview">
-            <span class="nav-icon" aria-hidden="true">⌂</span><span>Overview</span>
-          </a>
-          <a class="nav-item" href="#prototype" data-section="prototype">
-            <span class="nav-icon" aria-hidden="true">◇</span><span>Prototype</span>
-            <span class="nav-count" id="nav-prototype-count">1</span>
-          </a>
-          <a class="nav-item" href="#roadmap" data-section="roadmap">
-            <span class="nav-icon" aria-hidden="true">◫</span><span>Slice roadmap</span>
-            <span class="nav-count" id="nav-slice-count">0</span>
-          </a>
-          <a class="nav-item" href="#development" data-section="development">
-            <span class="nav-icon" aria-hidden="true">▦</span><span>Development</span>
-            <span class="nav-count" id="nav-active-count">0</span>
-          </a>
-          <a class="nav-item" href="#quality" data-section="quality">
-            <span class="nav-icon" aria-hidden="true">✓</span><span>Quality & release</span>
-          </a>
-          <a class="nav-item" href="#activity" data-section="activity">
-            <span class="nav-icon" aria-hidden="true">≋</span><span>Activity</span>
-          </a>
-        </nav>
-
-        <div class="sidebar-spacer"></div>
-
-        <div class="truth-card">
-          <div class="truth-card-title">
-            <span class="pulse-dot"></span>
-            <span>Projection only</span>
-          </div>
-          <p>Canonical artifacts remain the source of truth.</p>
-          <span id="sidebar-updated">Updated moments ago</span>
+      <section class="view-panel" id="view-prototype" data-panel="prototype">
+        <div class="view-heading">
+          <div><p class="eyebrow">Rapid discovery</p><h1>Prototype</h1><p>Manual-review checkpoints and the decisions they inform.</p></div>
         </div>
+        <div class="prototype-card" id="prototype-card"></div>
+      </section>
 
-        <div class="sidebar-footer">
-          <span class="avatar">MK</span>
-          <span><strong>Human Product Owner</strong><small>Decision authority</small></span>
-          <span class="more" aria-hidden="true">•••</span>
+      <section class="view-panel" id="view-activity" data-panel="activity">
+        <div class="view-heading">
+          <div><p class="eyebrow">Durable history</p><h1>Activity</h1><p>Meaningful checkpoints only—not keystroke noise.</p></div>
         </div>
-      </aside>
+        <div class="simple-list activity-list" id="activity-list"></div>
+      </section>
 
-      <main id="main-content" class="main-content">
-        <header class="topbar">
-          <button class="mobile-menu" type="button" aria-label="Toggle navigation">☰</button>
-          <div class="breadcrumbs" aria-label="Breadcrumb">
-            <span>Meta PDS</span><span>/</span><strong>Delivery cockpit</strong>
+      <footer class="page-footer">
+        <span>Read-only projection · Canonical Meta PDS artifacts remain authoritative</span>
+        <span id="projection-source">Seed demonstration</span>
+      </footer>
+    </main>
+
+    <div class="modal-backdrop" id="slice-modal" aria-hidden="true">
+      <section class="slice-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <header class="modal-header">
+          <div class="modal-title-wrap">
+            <div id="modal-state"></div>
+            <div><span id="modal-id"></span><h2 id="modal-title">Slice details</h2></div>
           </div>
-          <div class="topbar-actions">
-            <span class="seed-badge">Seed demonstration</span>
-            <span class="update-label" id="topbar-updated">Updated moments ago</span>
-          </div>
+          <button class="icon-button" id="modal-close" type="button" aria-label="Close slice details">×</button>
         </header>
-
-        <div class="dashboard-wrap">
-          <section id="overview" class="hero section-anchor">
-            <div class="hero-copy">
-              <div class="hero-meta">
-                <span id="initiative-id">INIT-0042</span>
-                <span class="meta-divider"></span>
-                <span id="initiative-phase">Prototyping</span>
-                <span class="status-pill status-on-track" id="initiative-health">On track</span>
-              </div>
-              <h1 id="initiative-name">Learning Platform V1</h1>
-              <p id="initiative-objective">
-                A focused learning experience from secure access to measurable progress.
-              </p>
-            </div>
-            <div class="hero-progress" aria-label="Initiative progress">
-              <div class="progress-ring" id="progress-ring">
-                <div><strong id="initiative-progress">62%</strong><span>delivery confidence</span></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="next-action" aria-labelledby="next-action-title">
-            <div class="next-action-icon" aria-hidden="true">→</div>
-            <div>
-              <span class="eyebrow">Recommended next action</span>
-              <h2 id="next-action-title">Review password recovery prototype</h2>
-              <p id="next-action-detail">Confirm the recovery route before Slice 02 planning locks.</p>
-            </div>
-            <div class="next-action-meta">
-              <span id="next-action-owner">Human review</span>
-              <small id="next-action-impact">Unblocks 2 work items</small>
-            </div>
-          </section>
-
-          <section class="metrics-grid" aria-label="Delivery summary">
-            <article class="metric-card">
-              <span class="metric-label">Slices</span>
-              <strong id="metric-slices">0 / 0</strong>
-              <span class="metric-detail">released or validated</span>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label">Active work</span>
-              <strong id="metric-active">0</strong>
-              <span class="metric-detail">bounded packages</span>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label">Human attention</span>
-              <strong id="metric-attention">0</strong>
-              <span class="metric-detail">focused decision</span>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label">Evidence coverage</span>
-              <strong id="metric-coverage">0%</strong>
-              <span class="metric-detail">story acceptance</span>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label">Open blockers</span>
-              <strong id="metric-blockers">0</strong>
-              <span class="metric-detail">development impact</span>
-            </article>
-          </section>
-
-          <section id="prototype" class="two-column section-anchor">
-            <article class="panel attention-panel">
-              <div class="panel-header">
-                <div>
-                  <span class="eyebrow">Human in the loop</span>
-                  <h2>Needs your attention</h2>
-                </div>
-                <span class="panel-count" id="attention-count">0</span>
-              </div>
-              <div id="attention-list" class="attention-list"></div>
-            </article>
-
-            <article class="panel prototype-panel">
-              <div class="panel-header">
-                <div>
-                  <span class="eyebrow">Rapid discovery</span>
-                  <h2>Active prototype</h2>
-                </div>
-                <span class="status-pill status-review" id="prototype-status">Human review</span>
-              </div>
-              <div class="prototype-preview">
-                <div class="prototype-window" aria-hidden="true">
-                  <div class="window-bar"><i></i><i></i><i></i><span></span></div>
-                  <div class="prototype-layout">
-                    <div class="prototype-nav"></div>
-                    <div class="prototype-content">
-                      <div></div><div></div><div></div>
-                    </div>
-                  </div>
-                </div>
-                <div class="prototype-info">
-                  <h3 id="prototype-name">Authentication journeys</h3>
-                  <p id="prototype-description">Testing recovery, validation, and session states.</p>
-                  <div class="prototype-stats" id="prototype-stats"></div>
-                </div>
-              </div>
-              <div class="checkpoint" id="prototype-checkpoint"></div>
-            </article>
-          </section>
-
-          <section class="panel decisions-panel">
-            <div class="panel-header">
-              <div>
-                <span class="eyebrow">Decision memory</span>
-                <h2>What is locked—and what is still moving</h2>
-              </div>
-              <div class="segmented-control" id="decision-filters" aria-label="Filter decisions"></div>
-            </div>
-            <div id="decision-list" class="decision-grid"></div>
-          </section>
-
-          <section id="roadmap" class="panel roadmap-panel section-anchor">
-            <div class="panel-header">
-              <div>
-                <span class="eyebrow">Capability sequence</span>
-                <h2>Fat-slice roadmap</h2>
-              </div>
-              <div class="legend">
-                <span><i class="legend-dot released"></i>Complete</span>
-                <span><i class="legend-dot active"></i>Active</span>
-                <span><i class="legend-dot planned"></i>Planned</span>
-              </div>
-            </div>
-            <div id="roadmap-list" class="roadmap-list"></div>
-          </section>
-
-          <section id="development" class="panel development-panel section-anchor">
-            <div class="panel-header development-header">
-              <div>
-                <span class="eyebrow">Bounded execution</span>
-                <h2>Development work</h2>
-              </div>
-              <div class="toolbar">
-                <label class="select-control">
-                  <span>Slice</span>
-                  <select id="slice-filter" aria-label="Filter work by slice"></select>
-                </label>
-                <label class="select-control">
-                  <span>Area</span>
-                  <select id="area-filter" aria-label="Filter work by code area"></select>
-                </label>
-              </div>
-            </div>
-            <div id="kanban-board" class="kanban-board"></div>
-          </section>
-
-          <section class="panel traceability-panel">
-            <div class="panel-header">
-              <div>
-                <span class="eyebrow">End-to-end evidence</span>
-                <h2>Stories, work and tests</h2>
-              </div>
-              <span class="quiet-label" id="traceability-summary">0 stories</span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Story</th>
-                    <th>Slice</th>
-                    <th>Work packages</th>
-                    <th>Acceptance</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="traceability-body"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="quality" class="three-column section-anchor">
-            <article class="panel compact-panel">
-              <div class="panel-header">
-                <div><span class="eyebrow">Flow health</span><h2>Dependencies</h2></div>
-                <span class="risk-label" id="dependency-risk">Low risk</span>
-              </div>
-              <div id="dependency-view" class="dependency-view"></div>
-            </article>
-
-            <article class="panel compact-panel">
-              <div class="panel-header">
-                <div><span class="eyebrow">Independent evidence</span><h2>Quality</h2></div>
-                <span class="quality-score" id="quality-score">0%</span>
-              </div>
-              <div id="quality-view" class="quality-view"></div>
-            </article>
-
-            <article class="panel compact-panel">
-              <div class="panel-header">
-                <div><span class="eyebrow">Gate control</span><h2>Release</h2></div>
-                <span class="status-pill status-not-ready" id="release-status">Not ready</span>
-              </div>
-              <div id="release-view" class="release-view"></div>
-            </article>
-          </section>
-
-          <section class="two-column lower-grid">
-            <article class="panel drift-panel">
-              <div class="panel-header">
-                <div><span class="eyebrow">Guardrails</span><h2>Drift and blockers</h2></div>
-                <span class="panel-count" id="drift-count">0</span>
-              </div>
-              <div id="drift-list" class="drift-list"></div>
-            </article>
-
-            <article id="activity" class="panel activity-panel section-anchor">
-              <div class="panel-header">
-                <div><span class="eyebrow">Durable history</span><h2>Recent activity</h2></div>
-                <span class="quiet-label">Latest first</span>
-              </div>
-              <div id="activity-list" class="activity-list"></div>
-            </article>
-          </section>
-
-          <footer class="dashboard-footer">
-            <p>Meta PDS dashboard · Read-only projection of canonical delivery artifacts</p>
-            <p id="footer-source">Seed demonstration data</p>
-          </footer>
-        </div>
-      </main>
+        <nav class="modal-tabs" aria-label="Slice detail views">
+          <button class="modal-tab is-active" type="button" data-modal-view="overview">Overview</button>
+          <button class="modal-tab" type="button" data-modal-view="stories">Stories & acceptance</button>
+          <button class="modal-tab" type="button" data-modal-view="tasks">Development tasks</button>
+          <button class="modal-tab" type="button" data-modal-view="evidence">Contracts & tests</button>
+        </nav>
+        <div class="modal-content" id="modal-content"></div>
+      </section>
     </div>
 
     <script src="dashboard-data.js"></script>

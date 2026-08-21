@@ -42,17 +42,20 @@ time rather than pretending to be live.
 
 ## Required views
 
-Keep these views compact and progressively populated:
+Keep the interface list-first, compact, and progressively populated:
 
 1. initiative phase, health, progress, update time, and exact next action;
 2. Human attention items and active prototype checkpoint;
 3. decisions grouped by status and affected slices;
-4. slice roadmap with revision, priority, dependency, and gate status;
-5. work-package Kanban using the execution-plan statuses;
-6. story → work package → test/evidence traceability;
-7. dependency, critical-path, blocker, drift, and WIP signals;
-8. QA, release gate, rollout, rollback, and outcome evidence;
-9. recent durable activity and a clear resume point.
+4. a primary slice list with outcome, revision, priority, dependency, gate,
+   progress, story, task, test, and contract summaries;
+5. currently active or blocked work packages and assigned agents directly under
+   each slice;
+6. collapsible user-story rows for quick acceptance and work-package tracing;
+7. a large read-only slice detail dialog for complete stories, acceptance,
+   tasks, dependencies, agents, contracts, test cases, and evidence;
+8. separate top tabs for slices, decisions, prototype checkpoints, and durable
+   activity.
 
 Hide or label unavailable downstream views during early discovery; do not create
 fake progress.

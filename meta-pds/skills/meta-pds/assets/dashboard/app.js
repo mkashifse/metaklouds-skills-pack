@@ -53,15 +53,24 @@
     return `<span class="state-badge ${tone(status)}">${esc(label)}</span>`;
   }
 
-  function segmentedProgress(value, status, label) {
+  function normalizeProgress(value) {
     const numeric = Number(value);
-    const progress = Number.isFinite(numeric) ? Math.min(100, Math.max(0, numeric)) : 0;
+    return Number.isFinite(numeric) ? Math.min(100, Math.max(0, numeric)) : 0;
+  }
+
+  function segmentedProgress(value, status, label) {
+    const progress = normalizeProgress(value);
     const progressTone = progress === 100 ? "released" : tone(status);
     const segments = Array.from({ length: 10 }, (_, index) => {
       const fill = Math.min(100, Math.max(0, (progress - (index * 10)) * 10));
       return `<i aria-hidden="true" style="--segment-fill:${fill}%"></i>`;
     }).join("");
     return `<span class="progress-steps ${progressTone}" role="progressbar" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}">${segments}</span>`;
+  }
+
+  function progressDisplay(value, status, label, className = "") {
+    const progress = normalizeProgress(value);
+    return `<span class="progress-display ${esc(className)}">${segmentedProgress(progress, status, label)}<strong>${progress}%</strong></span>`;
   }
 
   function sliceStories(sliceId) {
@@ -189,7 +198,7 @@
           </div>
           <div class="slice-collapse-summary" aria-hidden="${collapsed ? "false" : "true"}">
             ${badge(slice.status)}
-            <span class="compact-progress">${segmentedProgress(slice.progress, slice.status, `${slice.title} completion`)}<strong>${slice.progress}%</strong></span>
+            ${progressDisplay(slice.progress, slice.status, `${slice.title} completion`, "compact-progress")}
             <span class="compact-tasks">Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
             ${blockers.length ? `<span class="compact-blockers">${blockers.length} blocked</span>` : ""}
           </div>
@@ -200,7 +209,7 @@
         </div>
         <footer class="slice-status-bar">
           ${badge(slice.status)}
-          <div class="slice-status-progress"><div class="progress-track"><i style="width:${Number(slice.progress)}%"></i></div><span>${slice.progress}%</span></div>
+          <div class="slice-status-progress">${progressDisplay(slice.progress, slice.status, `${slice.title} completion`)}</div>
           <div class="slice-status-metrics">
             <span>Stories <strong>${stories.length}</strong></span>
             <span>Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
@@ -436,7 +445,7 @@
           ${propertyRow("Status", badge(slice.status))}
           ${propertyRow("Priority", esc(slice.priority))}
           ${propertyRow("Revision", `r${esc(slice.revision)}`)}
-          ${propertyRow("Progress", `${esc(slice.progress)}%`)}
+          ${propertyRow("Progress", progressDisplay(slice.progress, slice.status, `${slice.title} completion`, "property-progress"))}
         </section>
         <section><h3>Dependencies</h3>
           ${propertyRow("Upstream", esc(slice.dependencies.join(", ") || "None"))}

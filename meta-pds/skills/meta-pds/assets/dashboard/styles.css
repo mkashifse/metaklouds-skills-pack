@@ -109,7 +109,8 @@ h1, h2, h3, p { margin: 0; }
 .slice-collapse-summary > span:not(.state-badge) { padding-left: 14px; border-left: 1px solid var(--border-soft); }
 .slice-collapse-summary strong { color: var(--soft); font-weight: 560; }
 .slice-collapse-summary .compact-blockers { color: var(--red); }
-.compact-progress { display: inline-flex; align-items: center; gap: 8px; }
+.progress-display { display: inline-flex; align-items: center; gap: 8px; color: var(--faint); font-size: 11px; }
+.progress-display > strong { color: var(--soft); font-weight: 560; }
 .progress-steps { display: inline-flex; height: 15px; align-items: stretch; gap: 3px; color: var(--faint); }
 .progress-steps i { display: block; width: 3px; height: 15px; border-radius: 2px; background: linear-gradient(to top, currentColor 0 var(--segment-fill), #343434 var(--segment-fill) 100%); }
 .progress-steps.released { color: var(--green); }
@@ -132,10 +133,8 @@ h1, h2, h3, p { margin: 0; }
 .slice-item.is-collapsed .slice-outcome, .slice-item.is-collapsed .slice-meta, .slice-item.is-collapsed .slice-content, .slice-item.is-collapsed .slice-status-bar { display: none; }
 .slice-item.is-collapsed .slice-collapse-summary { display: flex; }
 .slice-item.is-collapsed .slice-collapse-toggle { position: static; flex: 0 0 auto; }
-.progress-track { height: 3px; overflow: hidden; border-radius: 2px; background: #303030; }
-.progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--orange); }
 .slice-status-bar { display: flex; min-height: 46px; align-items: center; gap: 14px; padding: 7px 12px 7px 18px; border-top: 1px solid var(--border-soft); background: #1a1a1a; }
-.slice-status-progress { display: grid; width: 190px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 9px; color: var(--faint); font-size: 11px; }
+.slice-status-progress { display: flex; align-items: center; }
 .slice-status-metrics { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: flex-end; gap: 0; }
 .slice-status-metrics span { display: flex; min-height: 24px; align-items: center; gap: 5px; padding: 0 14px; border-left: 1px solid var(--border-soft); color: var(--faint); font-size: 10px; letter-spacing: .025em; text-transform: uppercase; }
 .slice-status-metrics strong { color: var(--soft); font-size: 12px; font-weight: 560; letter-spacing: 0; }
@@ -307,7 +306,7 @@ h1, h2, h3, p { margin: 0; }
   .header-main, .top-tabs, .page-shell { width: min(100% - 24px, 1260px); }
   .initiative-context #initiative-id, .context-separator, .header-meta #updated-at { display: none; }
   .slice-status-bar { flex-wrap: wrap; }
-  .slice-status-progress { min-width: 180px; flex: 1; }
+  .slice-status-progress { min-width: 110px; flex: 0 0 auto; }
   .slice-status-metrics { flex: 0 0 auto; }
   .slice-item.is-collapsed .slice-heading-copy { gap: 8px; }
   .slice-item.is-collapsed .slice-code { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

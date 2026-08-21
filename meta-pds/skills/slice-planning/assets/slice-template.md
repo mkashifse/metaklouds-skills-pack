@@ -37,6 +37,24 @@ source_commit: ""
 
 **Acceptance criteria:**
 
+## Test cases
+
+### TC-0001 — Observable lifecycle verification
+
+**Level:** STORY
+
+**Type:** PLAYWRIGHT_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-0001
+
+**Validates contracts:**
+
+**Expected:**
+
 ## Security, accessibility, and operations
 
 ## Contracts and dependencies

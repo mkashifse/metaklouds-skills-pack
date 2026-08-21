@@ -61,15 +61,16 @@ Inspect the repository, freeze or cite the technical contract, then define:
 - requirements/stories supported by each package;
 - inputs, outputs, owned and forbidden paths;
 - dependency DAG, critical path, and parallel waves;
-- entry, exit, and required test checks;
+- entry, exit, and required Test ID checks from the canonical slice;
 - integration, compatibility, migration, merge, deploy, feature-flag,
   observability, and rollback order.
 
 Use the exact structured fields in the execution-plan template. Give every
-contract, test case, and work package a stable ID; packages cite stories through
-`supports`, dependencies through `depends_on`, and test cases through
-`required_tests`. Update package and development-test state in this existing
-plan rather than creating status summaries for the dashboard.
+contract and work package a stable ID; packages cite stories through `supports`,
+dependencies through `depends_on`, and the slice's canonical test definitions
+through `required_tests`. Do not copy test definitions into the execution plan.
+Update package state in this existing plan rather than creating status
+summaries for the dashboard.
 
 Treat the product root as one Git repository. Assign work through isolated
 `frontend/` and `backend/` owned paths. Do not create nested repositories or

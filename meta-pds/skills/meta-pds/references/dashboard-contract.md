@@ -22,8 +22,10 @@ Human refreshes the page to see the current files. Canonical sources are:
 - `decision-log.yaml` for proposed, testing, locked, and superseded decisions;
 - `delivery-state.yaml` for current initiative, slice, blocker, and next-action
   state;
-- slice files for stories, acceptance, dependencies, and planning gates;
-- execution plans for work packages, owners, waves, dependencies, and tests;
+- slice files for stories, acceptance, test definitions, dependencies, and
+  planning gates;
+- execution plans for work packages, owners, waves, dependencies, and required
+  Test ID references;
 - delivery reports and runtime evidence for QA and release status;
 - optional `delivery-events.jsonl` for the recent activity timeline.
 
@@ -42,10 +44,12 @@ errors must be visible; never fall back to stale or invented data.
   order, state, and dependencies.
 - Slice stories use `### US-<id> — <title>` headings, followed by `**Story:**`
   and `**Acceptance criteria:**` with ordinary bullet items.
+- Slice tests use `### TC-<id> — <title>` headings and the labelled fields in
+  `slice-template.md`. The slice is the sole source of test definitions.
 - Initiative roadmap rows use the columns in `initiative-template.md`.
-- Execution plans contain structured `integration_contracts`, `test_cases`, and
+- Execution plans contain structured `integration_contracts` and
   `work_packages`; package `supports`, `depends_on`, and `required_tests` values
-  join records by stable IDs.
+  join stories, packages, and slice test definitions by stable IDs.
 - Delivery state owns current slice status, active work, Human attention, and
   next action. Counts, active agents, blockers, test totals, and progress are
   derived in memory and never copied back into artifacts.
@@ -76,11 +80,13 @@ Keep the interface list-first, compact, and progressively populated:
 5. currently active or blocked work packages and assigned agents directly under
    each slice;
 6. collapsible user-story rows for quick acceptance and work-package tracing;
-7. a large read-only issue-detail dialog with hierarchy breadcrumbs, a spacious
+7. collapsible slice test-case rows showing level, method, owner, linked stories,
+   expected result, and available QA evidence;
+8. a large read-only issue-detail dialog with hierarchy breadcrumbs, a spacious
    rendered-Markdown description and acceptance criteria, child tasks below,
    and a compact properties rail; selecting a task reuses the same dialog for
    its description, owner, dependencies, evidence, and breadcrumb return;
-8. separate top tabs for slices, decisions, prototype checkpoints, and durable
+9. separate top tabs for slices, decisions, prototype checkpoints, and durable
    activity.
 
 Hide or label unavailable downstream views during early discovery; do not create

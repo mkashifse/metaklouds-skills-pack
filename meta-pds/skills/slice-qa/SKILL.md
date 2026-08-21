@@ -54,8 +54,9 @@ bounded remediation package.
 7. Record exact expected and observed evidence for every failure.
 
 In the delivery report's CLI evidence table, reuse each `Test ID` from the
-execution plan. The dashboard joins definitions and QA results by that ID; do
-not copy task, story, or slice data into the report.
+canonical slice. The dashboard joins the slice definition and QA result by
+that ID; do not copy the test definition, task, story, or slice data into the
+report.
 
 Return `RELEASE_READY` only for the complete fat slice. A component, work
 package, passing PR, or partial deployment is not a slice release.

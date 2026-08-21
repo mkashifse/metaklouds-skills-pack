@@ -44,16 +44,6 @@ feature_flags: []
 observability_checks: []
 rollback_sequence: []
 
-test_cases:
-  - id: TC-0001
-    title: ""
-    type: CLI
-    owner: ""
-    status: READY
-    supports: [US-0001]
-    command: ""
-    evidence: ""
-
 work_packages:
   - id: WP-0001
     title: ""

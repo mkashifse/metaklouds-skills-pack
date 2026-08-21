@@ -7,7 +7,7 @@ import argparse
 import re
 from pathlib import Path
 
-from serve_dashboard import ArtifactError, markdown_section, parse_stories, parse_table, read_markdown, read_yaml
+from serve_dashboard import ArtifactError, markdown_section, parse_stories, parse_table, parse_test_cases, read_markdown, read_yaml
 
 
 REQUIRED_INITIATIVE_HEADINGS = {
@@ -25,6 +25,7 @@ REQUIRED_SLICE_HEADINGS = {
     "Scope and non-goals",
     "Lifecycle and journeys",
     "User stories and acceptance",
+    "Test cases",
     "Security, accessibility, and operations",
     "Contracts and dependencies",
     "Observability, rollout, and rollback",
@@ -87,14 +88,19 @@ def check_required(keys: set[str], fields: list[str], path: Path, errors: list[s
             errors.append(f"{path}: missing field '{field}'")
 
 
-def check_execution_plan(path: Path, errors: list[str], story_ids: set[str] | None = None):
+def check_execution_plan(
+    path: Path,
+    errors: list[str],
+    story_ids: set[str] | None = None,
+    test_ids: set[str] | None = None,
+):
     if not path.exists():
         errors.append(f"missing execution plan: {path}")
         return
     text = path.read_text()
     check_required(
         top_level_keys(text),
-        ["schema_version", "slice_id", "slice_revision", "contract_version", "status", "integration_contracts", "test_cases", "work_packages"],
+        ["schema_version", "slice_id", "slice_revision", "contract_version", "status", "integration_contracts", "work_packages"],
         path,
         errors,
     )
@@ -112,36 +118,7 @@ def check_execution_plan(path: Path, errors: list[str], story_ids: set[str] | No
         errors.append(f"{path}: work_packages must be a non-empty list")
         return
 
-    test_cases = document.get("test_cases")
-    if not isinstance(test_cases, list) or not test_cases:
-        errors.append(f"{path}: test_cases must be a non-empty list")
-        test_cases = []
-    test_ids: set[str] = set()
-    for index, test in enumerate(test_cases):
-        label = f"{path}: test_cases[{index}]"
-        if not isinstance(test, dict):
-            errors.append(f"{label} must be a mapping")
-            continue
-        for field in ["id", "title", "type", "owner", "status", "supports", "command", "evidence"]:
-            if field not in test:
-                errors.append(f"{label} missing '{field}'")
-        for field in ["id", "title", "type", "owner", "status", "command"]:
-            if test.get(field) in {None, ""}:
-                errors.append(f"{label}.{field} must not be empty")
-        test_id = test.get("id")
-        if not isinstance(test_id, str) or not test_id:
-            errors.append(f"{label} has invalid id")
-        elif test_id in test_ids:
-            errors.append(f"{path}: duplicate test-case id '{test_id}'")
-        else:
-            test_ids.add(test_id)
-        supports = test.get("supports")
-        if not isinstance(supports, list):
-            errors.append(f"{label}.supports must be a list")
-        elif story_ids is not None:
-            for story_id in supports:
-                if story_id not in story_ids:
-                    errors.append(f"{label}.supports references unknown '{story_id}'")
+    test_ids = test_ids or set()
 
     contracts = document.get("integration_contracts")
     if not isinstance(contracts, list):
@@ -244,12 +221,12 @@ def check_parseable_initiative(path: Path, errors: list[str]):
         errors.append(f"{path}: schema_version must be 2")
 
 
-def check_parseable_slice(path: Path, errors: list[str]) -> set[str]:
+def check_parseable_slice(path: Path, errors: list[str]) -> tuple[set[str], set[str]]:
     try:
         metadata, body = read_markdown(path)
     except (ArtifactError, OSError) as error:
         errors.append(f"{path}: {error}")
-        return set()
+        return set(), set()
     for field in sorted(REQUIRED_SLICE_METADATA):
         if field not in metadata:
             errors.append(f"{path}: frontmatter missing '{field}'")
@@ -265,7 +242,7 @@ def check_parseable_slice(path: Path, errors: list[str]) -> set[str]:
     stories = parse_stories(body)
     if not stories:
         errors.append(f"{path}: no parseable 'US-* — title' stories")
-        return set()
+        return set(), set()
     story_ids: set[str] = set()
     for story in stories:
         if story["id"] in story_ids:
@@ -273,7 +250,31 @@ def check_parseable_slice(path: Path, errors: list[str]) -> set[str]:
         story_ids.add(story["id"])
         if not story["acceptanceCriteria"]:
             errors.append(f"{path}: story '{story['id']}' has no parseable acceptance criteria")
-    return story_ids
+    tests = parse_test_cases(body)
+    if not tests:
+        errors.append(f"{path}: no parseable 'TC-* — title' test cases")
+        return story_ids, set()
+    test_ids: set[str] = set()
+    allowed_levels = {"STORY", "CONTRACT", "CROSS_CUTTING", "SLICE"}
+    allowed_statuses = {"PLANNED", "READY", "BLOCKED", "PASSED", "FAILED"}
+    for test in tests:
+        test_id = test["id"]
+        if test_id in test_ids:
+            errors.append(f"{path}: duplicate test-case id '{test_id}'")
+        test_ids.add(test_id)
+        if test["level"] not in allowed_levels:
+            errors.append(f"{path}: test '{test_id}' has invalid level '{test['level']}'")
+        if test["status"] not in allowed_statuses:
+            errors.append(f"{path}: test '{test_id}' has invalid status '{test['status']}'")
+        for field in ["title", "type", "owner", "status", "expected"]:
+            if not test.get(field):
+                errors.append(f"{path}: test '{test_id}' has no {field}")
+        if not test["supports"]:
+            errors.append(f"{path}: test '{test_id}' supports no stories")
+        for story_id in test["supports"]:
+            if story_id not in story_ids:
+                errors.append(f"{path}: test '{test_id}' references unknown story '{story_id}'")
+    return story_ids, test_ids
 
 
 def check_report(path: Path, test_ids: set[str], errors: list[str]):
@@ -343,23 +344,15 @@ def main() -> int:
         slice_path = base / "slices" / f"{args.slice_id}.md"
         check_markdown(slice_path, REQUIRED_SLICE_HEADINGS, errors)
         story_ids: set[str] = set()
+        test_ids: set[str] = set()
         if slice_path.exists():
-            story_ids = check_parseable_slice(slice_path, errors)
+            story_ids, test_ids = check_parseable_slice(slice_path, errors)
         execution_path = base / "execution" / f"{args.slice_id}.yaml"
         if args.require_execution_plan or execution_path.exists():
-            check_execution_plan(execution_path, errors, story_ids)
+            check_execution_plan(execution_path, errors, story_ids, test_ids)
         report_path = base / "reports" / f"{args.slice_id}.md"
-        if report_path.exists() and execution_path.exists():
-            try:
-                execution = read_yaml(execution_path)
-                test_ids = {
-                    str(item.get("id"))
-                    for item in execution.get("test_cases", [])
-                    if isinstance(item, dict) and item.get("id")
-                }
-                check_report(report_path, test_ids, errors)
-            except (ArtifactError, OSError) as error:
-                errors.append(f"{execution_path}: {error}")
+        if report_path.exists():
+            check_report(report_path, test_ids, errors)
 
     if errors:
         for error in errors:

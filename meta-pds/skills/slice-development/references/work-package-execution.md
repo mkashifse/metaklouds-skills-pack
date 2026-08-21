@@ -13,7 +13,7 @@ Every package declares:
 - dependencies, inputs, and produced outputs;
 - owned and forbidden paths within the single product repository;
 - entry checks and exit checks;
-- required CLI tests and evidence;
+- required canonical Test IDs, CLI checks, and evidence;
 - integration owner and dependants.
 
 Do not use changed line count as the sole size measure. Split a package when it
@@ -29,7 +29,7 @@ Give a worker only:
 - current contract subset and version;
 - assigned paths plus repository instructions;
 - applicable implementation skills;
-- required tests and result schema.
+- required Test IDs from the slice and result schema.
 
 Do not pass the full conversation or unrelated slice history. Before context
 pressure causes compaction or degraded reasoning, checkpoint the package with a

@@ -64,13 +64,6 @@
     return (data.testCases || []).filter((test) => test.sliceId === sliceId);
   }
 
-  function taskTests(tasks) {
-    return tasks.reduce((result, task) => ({
-      passed: result.passed + task.tests.passed,
-      total: result.total + task.tests.total
-    }), { passed: 0, total: 0 });
-  }
-
   function storyProgress(stories) {
     return stories.reduce((result, story) => ({
       verified: result.verified + (story.acceptance.evidenceStatus === "VERIFIED" ? 1 : 0),
@@ -185,7 +178,8 @@
     const stories = sliceStories(slice.id);
     const tasks = sliceTasks(slice.id);
     const contracts = sliceContracts(slice.id);
-    const tests = taskTests(tasks);
+    const tests = sliceTests(slice.id);
+    const passedTests = tests.filter((test) => test.status === "PASSED").length;
     const acceptance = storyProgress(stories);
     const doneTasks = tasks.filter((task) => task.status === "DONE").length;
     const blockers = tasks.filter((task) => task.status === "BLOCKED");
@@ -216,7 +210,7 @@
             <div class="slice-facts">
               <div class="slice-fact"><span>Stories</span><strong>${stories.length}</strong></div>
               <div class="slice-fact"><span>Tasks</span><strong>${doneTasks}/${tasks.length}</strong></div>
-              <div class="slice-fact"><span>Tests</span><strong>${tests.passed}/${tests.total}</strong></div>
+              <div class="slice-fact"><span>Tests</span><strong>${passedTests}/${tests.length}</strong></div>
             </div>
           </div>
         </div>
@@ -341,15 +335,12 @@
 
   function sliceEvidenceMarkdown(slice) {
     const contracts = sliceContracts(slice.id);
-    const tests = sliceTests(slice.id);
     return [
       "## Dependencies",
       `- Upstream slices: ${slice.dependencies.join(", ") || "None"}`,
       `- Source artifact: \`${slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`}\``,
       "## Contracts",
-      ...(contracts.length ? contracts.map((contract) => `- **${contract.id}** — ${contract.name} · ${contract.version} · ${pretty(contract.status)}`) : ["- No contracts recorded."]),
-      "## Test cases",
-      ...(tests.length ? tests.map((test) => `- **${test.id}** — ${test.title} · ${test.type} · ${pretty(test.status)}`) : ["- No test cases recorded."])
+      ...(contracts.length ? contracts.map((contract) => `- **${contract.id}** — ${contract.name} · ${contract.version} · ${pretty(contract.status)}`) : ["- No contracts recorded."])
     ].join("\n\n");
   }
 
@@ -367,6 +358,37 @@
           ${story.description ? `<p>${esc(story.description)}</p>` : ""}
           <h4>Acceptance criteria</h4>
           <ul>${criteria.length ? criteria.map((criterion) => `<li>${esc(criterion)}</li>`).join("") : "<li>See the canonical slice artifact.</li>"}</ul>
+          <div class="linked-test-ids"><strong>Linked tests</strong><span>${story.testIds?.length ? story.testIds.map((id) => `<code>${esc(id)}</code>`).join("") : "No tests linked"}</span></div>
+        </div>
+      </details>`;
+  }
+
+  function testCaseAccordion(test) {
+    const linkedStories = (test.supports || [])
+      .map((id) => data.stories.find((story) => story.id === id))
+      .filter(Boolean);
+    return `
+      <details class="story-accordion-item test-accordion-item">
+        <summary>
+          <span class="story-accordion-dot"><i class="state-dot ${tone(test.status)}"></i></span>
+          <span class="story-accordion-copy"><small>${esc(test.id)} · ${esc(pretty(test.level))} · ${esc(test.owner)}</small><strong>${esc(test.title)}</strong></span>
+          <span class="story-accordion-count">${esc(pretty(test.type))}</span>
+          <span class="story-accordion-chevron">${icon("chevron-down")}</span>
+        </summary>
+        <div class="story-accordion-body test-accordion-body">
+          <h4>Expected result</h4>
+          <p>${esc(test.expected || "Expected result is not yet defined.")}</p>
+          <dl class="test-case-properties">
+            <div><dt>Status</dt><dd>${badge(test.status)}</dd></div>
+            <div><dt>Level</dt><dd>${esc(pretty(test.level))}</dd></div>
+            <div><dt>Method</dt><dd>${esc(pretty(test.type))}</dd></div>
+            <div><dt>Owner</dt><dd>${esc(test.owner)}</dd></div>
+          </dl>
+          <h4>Supports stories</h4>
+          <ul>${linkedStories.length ? linkedStories.map((story) => `<li><code>${esc(story.id)}</code> — ${esc(story.title)}</li>`).join("") : "<li>No linked story.</li>"}</ul>
+          ${test.validatesContracts?.length ? `<h4>Validates contracts</h4><ul>${test.validatesContracts.map((contract) => `<li>${esc(contract)}</li>`).join("")}</ul>` : ""}
+          ${test.command ? `<h4>Executed command</h4><code class="test-command">${esc(test.command)}</code>` : ""}
+          ${test.evidence ? `<h4>QA evidence</h4><p>${esc(test.evidence)}</p>` : ""}
         </div>
       </details>`;
   }
@@ -435,6 +457,7 @@
   function sliceIssueDetail(slice) {
     const tasks = sliceTasks(slice.id);
     const stories = sliceStories(slice.id);
+    const tests = sliceTests(slice.id);
     return `
       <div class="issue-layout">
         <div class="issue-main">
@@ -444,6 +467,10 @@
             <section class="story-accordion">
               <header><div><h2>User stories and acceptance</h2><span>${stories.length} stories</span></div><span>Click a story to expand</span></header>
               <div class="story-accordion-list">${stories.length ? stories.map(storyAccordion).join("") : '<div class="empty-state">No stories are defined.</div>'}</div>
+            </section>
+            <section class="story-accordion test-accordion">
+              <header><div><h2>Test cases</h2><span>${tests.length} slice-owned test cases</span></div><span>Click a test to expand</span></header>
+              <div class="story-accordion-list">${tests.length ? tests.map(testCaseAccordion).join("") : '<div class="empty-state">No test cases are defined in this slice.</div>'}</div>
             </section>
             <div class="markdown-body supporting-markdown">${renderMarkdown(sliceEvidenceMarkdown(slice))}</div>
           </section>

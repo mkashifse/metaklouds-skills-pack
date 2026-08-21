@@ -61,8 +61,8 @@ Each functional skill provides its owned artifact template.
 | `decision-log.yaml` | Product Manager | submit evidence; do not edit |
 | `delivery-state.yaml` | Product Manager | return structured status |
 | prototype | Rapid Prototype Engineer | inspect as behavioral evidence |
-| slice file | Planning Lead | Development/QA read; gaps return upstream |
-| execution plan | Development Lead | QA reads; PM controls gate |
+| slice file, including test definitions | Planning Lead | Development/QA read; gaps return upstream |
+| execution plan, including Test ID assignments | Development Lead | QA reads; PM controls gate |
 | production code/tests | Assigned Development worker | other roles inspect only |
 | delivery report | Development Lead + independent QA evidence | PM records final gate |
 | dashboard runtime view | derived in memory from canonical artifacts | no function edits it |
@@ -91,7 +91,8 @@ separate dashboard data file.
   version control is available.
 - A locked upstream revision is immutable. Corrections create a new revision.
 - Every work package cites slice requirements or user stories, its contract
-  version, dependencies, required tests, owned paths, and evidence.
+  version, dependencies, required Test IDs from the slice, owned paths, and
+  evidence. Test definitions are not copied into the execution plan or report.
 - Every report cites exact commits, test commands/results, deployments, and
   remaining risks.
 - Do not duplicate code-native OpenAPI, JSON Schema, migrations, or similar

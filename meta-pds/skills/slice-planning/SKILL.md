@@ -62,12 +62,14 @@ present.
    recovery, permission, security, accessibility, and operational behavior.
 4. Write observable end-to-end user or system stories and measurable
    acceptance criteria.
-5. Define contract expectations, data/integration needs, known dependencies,
+5. Define the slice's stable test-case registry once, covering story,
+   contract, cross-cutting, and complete-slice verification as applicable.
+6. Define contract expectations, data/integration needs, known dependencies,
    risks, observability, rollout, and rollback without inventing detailed code
    tasks.
-6. Map every requirement to stories and acceptance evidence.
-7. Run the planning-readiness checklist and record specialist findings.
-8. Return the slice in `PLANNING_REVIEW`; the Product Manager obtains the
+7. Map every requirement to stories, Test IDs, and acceptance evidence.
+8. Run the planning-readiness checklist and record specialist findings.
+9. Return the slice in `PLANNING_REVIEW`; the Product Manager obtains the
    independent Development Intake feasibility review and controls the gate.
 
 Create or update only:
@@ -80,8 +82,10 @@ Use [assets/slice-template.md](assets/slice-template.md).
 
 Preserve the template's parseable frontmatter and story grammar. Story headings
 must use `### US-<id> — <title>`, followed by `**Story:**` and
-`**Acceptance criteria:**` with bullet items. Do not create a separate story
-index or dashboard summary.
+`**Acceptance criteria:**` with bullet items. Test headings must use
+`### TC-<id> — <title>`, followed by the template's bold labelled fields.
+The slice is the sole source of test definitions. Do not create a separate
+story index, test registry, or dashboard summary.
 
 When a filled artifact would materially clarify the required depth, inspect
 [assets/authentication-slice-example.md](assets/authentication-slice-example.md)

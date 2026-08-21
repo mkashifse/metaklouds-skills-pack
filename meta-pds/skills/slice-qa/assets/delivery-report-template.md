@@ -22,8 +22,8 @@ status: VERIFYING
 
 ## CLI test evidence
 
-| Test ID | Test class | Supports | Command | Revision/environment | Result | Report/evidence |
-| --- | --- | --- | --- | --- | --- | --- |
+| Test ID | Command | Revision/environment | Result | Report/evidence |
+| --- | --- | --- | --- | --- |
 
 ## Security, accessibility, and migration evidence
 

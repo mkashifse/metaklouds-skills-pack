@@ -233,6 +233,34 @@ def parse_stories(body: str) -> list[dict[str, Any]]:
     return stories
 
 
+def parse_test_cases(body: str) -> list[dict[str, Any]]:
+    section = markdown_section(body, "Test cases")
+    matches = list(re.finditer(r"^###\s+(TC-[A-Za-z0-9-]+)\s+(?:—|-)\s+(.+?)\s*$", section, re.MULTILINE))
+    tests: list[dict[str, Any]] = []
+    field_pattern = re.compile(r"^\*\*([^*]+):\*\*\s*(.*?)(?=^\*\*[^*]+:\*\*|\Z)", re.MULTILINE | re.DOTALL)
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(section)
+        block = section[match.end():end]
+        fields = {
+            label.strip().lower(): re.sub(r"\s+", " ", value).strip()
+            for label, value in field_pattern.findall(block)
+        }
+        supports = [value.strip(" `") for value in fields.get("supports stories", "").split(",") if value.strip(" `")]
+        contracts = [value.strip(" `") for value in fields.get("validates contracts", "").split(",") if value.strip(" `")]
+        tests.append({
+            "id": match.group(1),
+            "title": match.group(2).strip(),
+            "level": fields.get("level", "").upper().replace(" ", "_"),
+            "type": fields.get("type", ""),
+            "owner": fields.get("owner", ""),
+            "status": status(fields.get("status"), "UNKNOWN"),
+            "supports": supports,
+            "validatesContracts": contracts,
+            "expected": fields.get("expected", ""),
+        })
+    return tests
+
+
 def parse_contract_table(body: str) -> list[dict[str, Any]]:
     section = markdown_section(body, "Contracts and dependencies")
     contract_section = markdown_section(section, "Contract expectations", level=3)
@@ -392,17 +420,19 @@ def build_dashboard_data(
         meta: dict[str, Any] = {}
         body = ""
         parsed_stories: list[dict[str, Any]] = []
+        parsed_tests: list[dict[str, Any]] = []
         expected_contracts: list[dict[str, Any]] = []
         if path:
             meta, body = read_markdown(path)
             slice_id = str(meta.get("slice_id") or slice_id)
             parsed_stories = parse_stories(body)
+            parsed_tests = parse_test_cases(body)
             expected_contracts = parse_contract_table(body)
 
         execution = executions.get(slice_id, {})
         report_test_results = reports.get(slice_id, {}).get("test_results", {})
         raw_tests = []
-        for item in list_value(execution.get("test_cases")):
+        for item in parsed_tests:
             if not isinstance(item, dict):
                 continue
             test = dict(item)
@@ -410,6 +440,7 @@ def build_dashboard_data(
             if report_result:
                 test["status"] = result_status(report_result.get("Result"), test.get("status") or "READY")
                 test["evidence"] = report_result.get("Report/evidence") or test.get("evidence") or ""
+                test["command"] = report_result.get("Command") or test.get("command") or ""
             raw_tests.append(test)
         tests_by_id = {str(item.get("id")): item for item in raw_tests if item.get("id")}
         parsed_packages: list[dict[str, Any]] = []
@@ -457,6 +488,7 @@ def build_dashboard_data(
                     "evidenceStatus": "VERIFIED" if evidence_verified else "PENDING",
                 },
                 "workPackageIds": [item["id"] for item in linked],
+                "testIds": [test["id"] for test in raw_tests if story["id"] in test.get("supports", [])],
             })
 
         raw_contracts = [item for item in list_value(execution.get("integration_contracts")) if isinstance(item, dict)]
@@ -479,10 +511,14 @@ def build_dashboard_data(
                 "sliceId": slice_id,
                 "title": str(test.get("title") or test.get("id") or "Unnamed test"),
                 "type": str(test.get("type") or "CLI"),
+                "level": str(test.get("level") or "SLICE"),
                 "status": status(test.get("status"), "READY"),
                 "owner": str(test.get("owner") or "Unassigned"),
-                "evidence": str(test.get("evidence") or "Pending"),
+                "expected": str(test.get("expected") or ""),
+                "command": str(test.get("command") or ""),
+                "evidence": str(test.get("evidence") or ""),
                 "supports": [str(value) for value in list_value(test.get("supports"))],
+                "validatesContracts": [str(value) for value in list_value(test.get("validatesContracts"))],
             })
 
         title = str(meta.get("title") or row.get("Slice") or (first_heading(body) if body else slice_id))

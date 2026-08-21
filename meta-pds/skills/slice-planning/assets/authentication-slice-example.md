@@ -164,6 +164,221 @@ so that I control access to my account.
 - If server revocation is temporarily unavailable, local credentials are still
   removed and the failed revocation is observable for bounded retry.
 
+## Test cases
+
+### TC-AUTH-01 — Register with privacy-safe responses
+
+**Level:** STORY
+
+**Type:** PLAYWRIGHT_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-01
+
+**Validates contracts:** Authentication HTTP API, Authentication data schema
+
+**Expected:** A guest can create one unverified account with accessible field
+feedback; known-email and throttled requests disclose no account state and
+communicate a safe retry path.
+
+### TC-AUTH-02 — Verify, expire, resend, and reject replay
+
+**Level:** STORY
+
+**Type:** API_INTEGRATION_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-02
+
+**Validates contracts:** Authentication HTTP API, Transactional email adapter
+
+**Expected:** A valid link verifies exactly one account; consumed or expired
+links cannot repeat verification, and resend behavior remains rate-limited and
+auditable without retaining raw tokens.
+
+### TC-AUTH-03 — Sign in without leaking account state
+
+**Level:** STORY
+
+**Type:** PLAYWRIGHT_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-03
+
+**Validates contracts:** Authentication HTTP API, Session lifecycle
+
+**Expected:** A verified learner signs in and receives a valid session, while
+unknown, incorrect, unverified, and throttled attempts use privacy-safe,
+accessible failure states.
+
+### TC-AUTH-04 — Rotate sessions and reject replay races
+
+**Level:** STORY
+
+**Type:** CONCURRENCY_INTEGRATION_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-04
+
+**Validates contracts:** Session lifecycle, Authentication data schema
+
+**Expected:** Refresh rotates atomically; expired, revoked, replayed, and
+concurrent reuse cannot create competing valid refresh-session chains.
+
+### TC-AUTH-05 — Restore only a permitted destination
+
+**Level:** STORY
+
+**Type:** PLAYWRIGHT_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-04
+
+**Validates contracts:** Authentication HTTP API, Session lifecycle
+
+**Expected:** Reauthentication restores a permitted same-origin destination;
+unsafe, external, or unauthorized destinations fall back to learner home.
+
+### TC-AUTH-06 — Recover a password and revoke prior sessions
+
+**Level:** STORY
+
+**Type:** PLAYWRIGHT_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-05
+
+**Validates contracts:** Authentication HTTP API, Authentication data schema, Transactional email adapter
+
+**Expected:** Known and unknown recovery requests are indistinguishable; a
+valid single-use link changes the password and revokes all existing sessions,
+while expired or replayed links cannot change credentials.
+
+### TC-AUTH-07 — Sign out one session or every session
+
+**Level:** STORY
+
+**Type:** API_INTEGRATION_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-06
+
+**Validates contracts:** Authentication HTTP API, Session lifecycle
+
+**Expected:** Current-session and all-session sign-out revoke the intended
+chains, prevent refresh, clear local credentials, and expose bounded retry when
+server revocation is temporarily unavailable.
+
+### TC-AUTH-08 — Hold the authentication API contract
+
+**Level:** CONTRACT
+
+**Type:** CONTRACT_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06
+
+**Validates contracts:** Authentication HTTP API
+
+**Expected:** Every v1 operation preserves request, response, privacy-safe
+error, idempotency, and compatibility behavior across frontend and backend.
+
+### TC-AUTH-09 — Preserve authentication data and migration safety
+
+**Level:** CONTRACT
+
+**Type:** MIGRATION_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-01, US-AUTH-02, US-AUTH-04, US-AUTH-05, US-AUTH-06
+
+**Validates contracts:** Authentication data schema
+
+**Expected:** Forward and rollback paths preserve accounts, token hashes,
+session chains, revocations, and audit evidence without exposing secrets or
+destroying recoverable state.
+
+### TC-AUTH-10 — Meet lifecycle accessibility requirements
+
+**Level:** CROSS_CUTTING
+
+**Type:** ACCESSIBILITY_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06
+
+**Validates contracts:**
+
+**Expected:** Registration, verification, sign-in, expiry, recovery, and
+sign-out remain keyboard operable with logical focus, programmatic errors,
+screen-reader names, sufficient contrast, and no color-only meaning.
+
+### TC-AUTH-11 — Expose safe operational evidence
+
+**Level:** CROSS_CUTTING
+
+**Type:** OBSERVABILITY_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06
+
+**Validates contracts:** Authentication HTTP API, Session lifecycle, Transactional email adapter
+
+**Expected:** Required metrics, audit events, correlation IDs, throttling,
+delivery failure, replay, and revocation signals are observable without
+credentials, personal data, or raw tokens.
+
+### TC-AUTH-12 — Complete the releasable authentication lifecycle
+
+**Level:** SLICE
+
+**Type:** PLAYWRIGHT_CLI
+
+**Owner:** Slice QA
+
+**Status:** PLANNED
+
+**Supports stories:** US-AUTH-01, US-AUTH-02, US-AUTH-03, US-AUTH-04, US-AUTH-05, US-AUTH-06
+
+**Validates contracts:** Authentication HTTP API, Session lifecycle, Authentication data schema, Transactional email adapter
+
+**Expected:** One integrated environment supports registration through sign
+out, including expiry, recovery, alternate and failure paths, with release,
+feature-flag, observability, and rollback evidence ready for independent QA.
+
 ## Security, accessibility, and operations
 
 - Store passwords only through the approved adaptive password-hashing policy;

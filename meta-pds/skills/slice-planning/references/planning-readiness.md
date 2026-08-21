@@ -31,13 +31,16 @@ All must be supported by evidence:
   destructive flows are defined where relevant;
 - stories describe observable outcomes across layers;
 - acceptance is measurable and testable;
+- one slice-owned test registry covers applicable story, contract,
+  cross-cutting, and complete-slice verification without implementation-detail
+  duplication;
 - security, privacy, accessibility, and operations are addressed or explicitly
   justified as not applicable;
 - contract expectations and state transitions are unambiguous enough for
   feasibility review;
 - dependencies, assumptions, risks, rollout, observability, support, and
   rollback are recorded;
-- every requirement maps to a story and acceptance evidence;
+- every requirement maps to a story, stable Test ID, and acceptance evidence;
 - no development-blocking decision or contradiction remains;
 - specialist reviews required by material risk are complete.
 

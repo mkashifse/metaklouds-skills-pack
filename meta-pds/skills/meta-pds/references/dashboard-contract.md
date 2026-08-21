@@ -96,7 +96,8 @@ Keep the interface list-first, compact, and progressively populated:
    contract summaries; keep one persistent header summary for status, progress,
    story, task, test, and blocker counts so those metrics do not move when the
    card expands or collapses; keep status dot, slice ID, and title together as
-   a persistent first-row identity with unchanged position and typography; a
+   a persistent, vertically centered first-row identity aligned with the slice
+   icon, analytics, and collapse control, with unchanged typography; a
    collapsed card becomes one row showing the summary beside that identity;
    align the expanded description area to the same content edge as the
    work-package panel, with outcome copy on the left and a compact priority,

@@ -84,9 +84,9 @@ h1, h2, h3, p { margin: 0; }
 .slice-item { overflow: hidden; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--panel); }
 .slice-main { display: grid; min-height: 76px; grid-template-columns: 28px minmax(0, 1fr) auto 30px; align-items: start; gap: 12px; padding: 17px 14px; cursor: pointer; transition: background .15s ease; }
 .slice-main:hover { background: rgba(255,255,255,.012); }
-.slice-entity-icon { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); }
+.slice-entity-icon { display: grid; width: 28px; height: 28px; align-self: center; place-items: center; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); }
 .slice-entity-icon .lucide-icon { width: 15px; height: 15px; }
-.slice-heading-copy { min-width: 0; }
+.slice-heading-copy { min-width: 0; align-self: center; }
 .slice-title-row { display: flex; min-width: 0; align-items: center; gap: 8px; }
 .state-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--faint); box-shadow: 0 0 0 3px rgba(98,98,94,.1); }
 .state-dot.released { background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
@@ -106,7 +106,7 @@ h1, h2, h3, p { margin: 0; }
 .slice-meta { display: grid; gap: 0; margin-top: 8px; padding-left: 18px; border-left: 1px solid var(--border-soft); color: var(--faint); font-size: 12px; }
 .slice-meta span { display: flex; min-height: 23px; align-items: center; justify-content: space-between; gap: 12px; }
 .slice-meta strong { color: var(--muted); font-weight: 530; }
-.slice-status-summary { display: flex; min-width: 0; align-items: center; align-self: start; gap: 14px; padding-top: 5px; color: var(--faint); font-size: 11px; white-space: nowrap; }
+.slice-status-summary { display: flex; min-width: 0; align-items: center; align-self: center; gap: 14px; color: var(--faint); font-size: 11px; white-space: nowrap; }
 .slice-status-summary > span:not(.state-badge) { padding-left: 14px; border-left: 1px solid var(--border-soft); }
 .slice-status-summary strong { color: var(--soft); font-weight: 560; }
 .slice-status-summary .compact-blockers { color: var(--red); }
@@ -120,7 +120,7 @@ h1, h2, h3, p { margin: 0; }
 .progress-steps.ready { color: var(--amber); }
 .progress-steps.blocked { color: var(--red); }
 .progress-steps.draft { color: var(--faint); }
-.slice-collapse-toggle { display: grid; width: 30px; height: 30px; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); cursor: pointer; }
+.slice-collapse-toggle { display: grid; width: 30px; height: 30px; align-self: center; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); cursor: pointer; }
 .slice-collapse-toggle:hover { color: var(--text); }
 .slice-collapse-toggle .lucide-icon { width: 16px; height: 16px; transition: transform .15s ease; }
 .slice-item:not(.is-collapsed) .slice-collapse-toggle .lucide-icon { transform: rotate(180deg); }

@@ -274,114 +274,215 @@
   }
 
   let modalSliceId = null;
+  let modalTaskId = null;
+  let modalEntity = "slice";
   let modalReturnFocus = null;
 
-  function nestedTask(task) {
-    return `
-      <article class="nested-task">
-        <div class="nested-task-copy">
-          <span class="simple-code">${esc(task.id)} · ${esc(pretty(task.area))}</span>
-          <h4>${esc(task.title)}</h4>
-          <p>${esc(task.blocker || task.description)}</p>
-        </div>
-        <div class="nested-task-meta">
-          <span class="assignee"><i>${esc(task.ownerInitials)}</i>${esc(task.owner)}</span>
-          <span>${task.tests.passed}/${task.tests.total} tests</span>
-          ${badge(task.status)}
-        </div>
-      </article>`;
+  function inlineMarkdown(value) {
+    return esc(value)
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   }
 
-  function storyHierarchy(story) {
-    const tasks = story.workPackageIds
-      .map((id) => data.workPackages.find((task) => task.id === id))
+  function renderMarkdown(markdown) {
+    const lines = String(markdown || "").trim().split("\n");
+    const output = [];
+    let listOpen = false;
+    const closeList = () => {
+      if (listOpen) output.push("</ul>");
+      listOpen = false;
+    };
+
+    lines.forEach((rawLine) => {
+      const line = rawLine.trim();
+      if (!line) { closeList(); return; }
+      const heading = line.match(/^(#{2,4})\s+(.+)$/);
+      if (heading) {
+        closeList();
+        const level = heading[1].length;
+        output.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
+        return;
+      }
+      const item = line.match(/^[-*]\s+(.+)$/);
+      if (item) {
+        if (!listOpen) { output.push("<ul>"); listOpen = true; }
+        output.push(`<li>${inlineMarkdown(item[1])}</li>`);
+        return;
+      }
+      closeList();
+      output.push(`<p>${inlineMarkdown(line)}</p>`);
+    });
+    closeList();
+    return output.join("");
+  }
+
+  function sliceMarkdown(slice) {
+    const stories = sliceStories(slice.id);
+    const contracts = sliceContracts(slice.id);
+    const tests = sliceTests(slice.id);
+    const storyText = stories.map((story) => [
+      `### ${story.id} — ${story.title}`,
+      `**State:** ${pretty(story.status)} · **Acceptance:** ${story.acceptance.passed}/${story.acceptance.total}`,
+      "**Acceptance criteria:**",
+      ...(story.acceptanceCriteria || ["See the canonical slice artifact."]).map((criterion) => `- ${criterion}`)
+    ].join("\n")).join("\n\n");
+
+    return [
+      "## Capability outcome",
+      slice.outcome,
+      "## User stories and acceptance",
+      storyText,
+      "## Dependencies",
+      `- Upstream slices: ${slice.dependencies.join(", ") || "None"}`,
+      `- Source artifact: \`${slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`}\``,
+      "## Contracts",
+      ...(contracts.length ? contracts.map((contract) => `- **${contract.id}** — ${contract.name} · ${contract.version} · ${pretty(contract.status)}`) : ["- No contracts recorded."]),
+      "## Test cases",
+      ...(tests.length ? tests.map((test) => `- **${test.id}** — ${test.title} · ${test.type} · ${pretty(test.status)}`) : ["- No test cases recorded."])
+    ].join("\n\n");
+  }
+
+  function taskMarkdown(task) {
+    const linkedStories = task.storyIds
+      .map((id) => data.stories.find((story) => story.id === id))
       .filter(Boolean);
-    return `
-      <article class="story-detail">
-        <header class="story-detail-header">
-          <div>
-            <span class="simple-code">${esc(story.id)} · ${story.acceptance.passed}/${story.acceptance.total} acceptance checks</span>
-            <h3>${esc(story.title)}</h3>
-          </div>
-          ${badge(story.status)}
-        </header>
-        <div class="story-detail-body">
-          <div class="story-acceptance">
-            <h4>Acceptance</h4>
-            <ul>${(story.acceptanceCriteria || []).map((criterion) => `<li>${esc(criterion)}</li>`).join("") || "<li>See the canonical slice artifact.</li>"}</ul>
-          </div>
-          <div class="nested-tasks">
-            <div class="nested-heading"><span>Tasks</span><strong>${tasks.length}</strong></div>
-            ${tasks.length ? tasks.map(nestedTask).join("") : '<div class="empty-nested">Tasks have not been mobilized.</div>'}
-          </div>
-        </div>
-      </article>`;
+    return [
+      "## Description",
+      task.description,
+      task.blocker ? `## Current blocker\n${task.blocker}` : "",
+      "## Supports",
+      ...linkedStories.map((story) => `- ${story.id} — ${story.title}`),
+      "## Dependencies",
+      ...(task.dependsOn.length ? task.dependsOn.map((id) => `- ${id}`) : ["- None"]),
+      "## Completion evidence",
+      `- Required test progress: ${task.tests.passed}/${task.tests.total}`,
+      `- Preserve the parent slice's locked contracts and assigned ${pretty(task.area)} boundary.`,
+      "- Record changed paths, local commit, CLI test evidence, risks, and remaining work before handoff."
+    ].filter(Boolean).join("\n\n");
   }
 
-  function modalHierarchy(slice) {
+  function propertyRow(label, value) {
+    return `<div class="property-row"><span>${esc(label)}</span><strong>${value}</strong></div>`;
+  }
+
+  function sliceProperties(slice) {
     const stories = sliceStories(slice.id);
     const tasks = sliceTasks(slice.id);
     const contracts = sliceContracts(slice.id);
     const tests = sliceTests(slice.id);
-    const blockers = tasks.filter((task) => task.status === "BLOCKED");
     const activeAgents = [...new Set(tasks.filter((task) => task.status !== "DONE").map((task) => task.owner))];
-    const passedTests = tests.filter((test) => test.status === "PASSED").length;
-
     return `
-      <div class="slice-detail-stack">
-        <section class="slice-detail-overview">
-          <div class="slice-outcome-block">
-            <span class="section-kicker">Slice detail</span>
-            <h3>Capability outcome</h3>
-            <p>${esc(slice.outcome)}</p>
-            <div class="artifact-source"><span>Source artifact</span><code>${esc(slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`)}</code></div>
-          </div>
-          <div class="slice-detail-facts">
-            <div><span>State</span><strong>${esc(pretty(slice.status))}</strong></div>
-            <div><span>Progress</span><strong>${esc(slice.progress)}%</strong></div>
-            <div><span>Dependencies</span><strong>${esc(slice.dependencies.join(", ") || "None")}</strong></div>
-            <div><span>Active agents</span><strong>${activeAgents.length}</strong></div>
-            <div><span>Contracts</span><strong>${contracts.length}</strong></div>
-            <div><span>Test cases</span><strong>${passedTests}/${tests.length} passed</strong></div>
-          </div>
+      <aside class="issue-properties">
+        <section><h3>Properties</h3>
+          ${propertyRow("Status", badge(slice.status))}
+          ${propertyRow("Priority", esc(slice.priority))}
+          ${propertyRow("Revision", `r${esc(slice.revision)}`)}
+          ${propertyRow("Progress", `${esc(slice.progress)}%`)}
+          ${propertyRow("Dependencies", esc(slice.dependencies.join(", ") || "None"))}
         </section>
-
-        ${blockers.length ? `<section class="slice-blockers"><div>${badge("BLOCKED")}<strong>${blockers.length} blocked task${blockers.length > 1 ? "s" : ""}</strong></div><span>${esc(blockers.map((task) => `${task.id}: ${task.blocker || "Blocked"}`).join(" · "))}</span></section>` : ""}
-
-        <section class="hierarchy-section">
-          <header class="hierarchy-title">
-            <div><span class="section-kicker">Delivery hierarchy</span><h2>User stories</h2></div>
-            <span>${stories.length} stories · ${tasks.length} work packages</span>
-          </header>
-          <div class="story-hierarchy">
-            ${stories.length ? stories.map(storyHierarchy).join("") : '<div class="empty-state">User stories have not been defined for this slice.</div>'}
-          </div>
+        <section><h3>Delivery</h3>
+          ${propertyRow("Stories", stories.length)}
+          ${propertyRow("Tasks", tasks.length)}
+          ${propertyRow("Active agents", activeAgents.length)}
+          ${propertyRow("Contracts", contracts.length)}
+          ${propertyRow("Test cases", tests.length)}
         </section>
+        <section><h3>Source</h3><code class="property-code">${esc(slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`)}</code></section>
+      </aside>`;
+  }
 
-        <section class="slice-evidence">
-          <div class="evidence-column">
-            <header><h3>Slice contracts</h3><span>${contracts.length}</span></header>
-            ${contracts.length ? contracts.map((contract) => `<article><div><span class="simple-code">${esc(contract.id)} · ${esc(contract.version)}</span><strong>${esc(contract.name)}</strong><small>${esc(contract.type)} · ${esc(contract.owner)}</small></div>${badge(contract.status)}</article>`).join("") : '<div class="empty-nested">No contracts recorded.</div>'}
-          </div>
-          <div class="evidence-column">
-            <header><h3>Test evidence</h3><span>${tests.length}</span></header>
-            ${tests.length ? tests.map((test) => `<article><div><span class="simple-code">${esc(test.id)} · ${esc(test.type)}</span><strong>${esc(test.title)}</strong><small>${esc(test.owner)} · ${esc(test.evidence)}</small></div>${badge(test.status)}</article>`).join("") : '<div class="empty-nested">No test cases mapped.</div>'}
-          </div>
+  function childTask(task) {
+    return `
+      <button class="child-task" type="button" data-open-task="${esc(task.id)}">
+        <span class="child-task-status"><i class="state-dot ${tone(task.status)}"></i></span>
+        <span class="child-task-copy"><small>${esc(task.id)} · ${esc(pretty(task.area))}</small><strong>${esc(task.title)}</strong></span>
+        <span class="child-task-owner"><i>${esc(task.ownerInitials)}</i>${esc(task.owner)}</span>
+        <span class="child-task-tests">${task.tests.passed}/${task.tests.total} tests</span>
+        ${badge(task.status)}
+        <span class="child-task-arrow">›</span>
+      </button>`;
+  }
+
+  function sliceIssueDetail(slice) {
+    const tasks = sliceTasks(slice.id);
+    return `
+      <div class="issue-layout">
+        <div class="issue-main">
+          <section class="issue-section">
+            <header><h3>Description</h3><span>Markdown</span></header>
+            <div class="markdown-body">${renderMarkdown(sliceMarkdown(slice))}</div>
+          </section>
+          <section class="issue-section child-section">
+            <header><h3>Tasks</h3><span>${tasks.length}</span></header>
+            <div class="child-task-list">${tasks.length ? tasks.map(childTask).join("") : '<div class="empty-state">No tasks have been mobilized.</div>'}</div>
+          </section>
+        </div>
+        ${sliceProperties(slice)}
+      </div>`;
+  }
+
+  function taskProperties(task, slice) {
+    return `
+      <aside class="issue-properties">
+        <section><h3>Properties</h3>
+          ${propertyRow("Status", badge(task.status))}
+          ${propertyRow("Assignee", esc(task.owner))}
+          ${propertyRow("Code area", esc(pretty(task.area)))}
+          ${propertyRow("Critical path", task.critical ? "Yes" : "No")}
+          ${propertyRow("Tests", `${task.tests.passed}/${task.tests.total}`)}
         </section>
+        <section><h3>Hierarchy</h3>
+          ${propertyRow("Parent slice", esc(slice.id))}
+          ${propertyRow("User stories", esc(task.storyIds.join(", ")))}
+          ${propertyRow("Depends on", esc(task.dependsOn.join(", ") || "None"))}
+        </section>
+      </aside>`;
+  }
+
+  function taskIssueDetail(task, slice) {
+    const stories = task.storyIds.map((id) => data.stories.find((story) => story.id === id)).filter(Boolean);
+    return `
+      <div class="issue-layout">
+        <div class="issue-main">
+          <section class="issue-section">
+            <header><h3>Description</h3><span>Markdown</span></header>
+            <div class="markdown-body">${renderMarkdown(taskMarkdown(task))}</div>
+          </section>
+          <section class="issue-section linked-section">
+            <header><h3>Linked user stories</h3><span>${stories.length}</span></header>
+            ${stories.map((story) => `<article class="linked-story"><div><small>${esc(story.id)}</small><strong>${esc(story.title)}</strong></div><span>${story.acceptance.passed}/${story.acceptance.total} accepted</span>${badge(story.status)}</article>`).join("")}
+          </section>
+        </div>
+        ${taskProperties(task, slice)}
       </div>`;
   }
 
   function renderModal() {
     const slice = data.slices.find((item) => item.id === modalSliceId);
     if (!slice) return;
-    setText("#modal-id", `${slice.id} · ${slice.priority} · revision ${slice.revision}`);
-    setText("#modal-title", slice.title);
-    $("#modal-state").innerHTML = `<span class="state-dot ${tone(slice.status)}"></span>`;
-    $("#modal-content").innerHTML = modalHierarchy(slice);
+    const task = modalEntity === "task" ? data.workPackages.find((item) => item.id === modalTaskId) : null;
+    if (task) {
+      setText("#modal-id", `${task.id} · ${pretty(task.area)}`);
+      setText("#modal-title", task.title);
+      $("#modal-state").innerHTML = `<span class="state-dot ${tone(task.status)}"></span>`;
+      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button><span>›</span><button type="button" data-modal-slice>${esc(slice.title)}</button><span>›</span><strong>${esc(task.id)}</strong>`;
+      $("#modal-content").innerHTML = taskIssueDetail(task, slice);
+    } else {
+      modalEntity = "slice";
+      modalTaskId = null;
+      setText("#modal-id", `${slice.id} · ${slice.priority} · revision ${slice.revision}`);
+      setText("#modal-title", slice.title);
+      $("#modal-state").innerHTML = `<span class="state-dot ${tone(slice.status)}"></span>`;
+      $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button><span>›</span><strong>${esc(slice.title)}</strong>`;
+      $("#modal-content").innerHTML = sliceIssueDetail(slice);
+    }
+    $("#modal-content").scrollTop = 0;
   }
 
   function openModal(sliceId) {
     modalSliceId = sliceId;
+    modalTaskId = null;
+    modalEntity = "slice";
     modalReturnFocus = document.activeElement;
     renderModal();
     $("#slice-modal").classList.add("is-open");
@@ -400,6 +501,12 @@
   function bindModal() {
     $("#modal-close").addEventListener("click", closeModal);
     $("#slice-modal").addEventListener("click", (event) => { if (event.target === $("#slice-modal")) closeModal(); });
+    $("#slice-modal").addEventListener("click", (event) => {
+      const task = event.target.closest("[data-open-task]");
+      if (task) { modalTaskId = task.dataset.openTask; modalEntity = "task"; renderModal(); return; }
+      if (event.target.closest("[data-modal-slice]")) { modalTaskId = null; modalEntity = "slice"; renderModal(); return; }
+      if (event.target.closest("[data-modal-root]")) closeModal();
+    });
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && $("#slice-modal").classList.contains("is-open")) closeModal(); });
   }
 

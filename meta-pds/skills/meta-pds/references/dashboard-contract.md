@@ -52,9 +52,10 @@ Keep the interface list-first, compact, and progressively populated:
 5. currently active or blocked work packages and assigned agents directly under
    each slice;
 6. collapsible user-story rows for quick acceptance and work-package tracing;
-7. a large read-only slice detail dialog using one continuous hierarchy: slice
-   name, slice detail, user-story list, then each story's nested tasks and
-   assignees; keep contracts and test evidence as slice-level evidence below;
+7. a large read-only issue-detail dialog with hierarchy breadcrumbs, a spacious
+   rendered-Markdown description and acceptance criteria, child tasks below,
+   and a compact properties rail; selecting a task reuses the same dialog for
+   its description, owner, dependencies, evidence, and breadcrumb return;
 8. separate top tabs for slices, decisions, prototype checkpoints, and durable
    activity.
 

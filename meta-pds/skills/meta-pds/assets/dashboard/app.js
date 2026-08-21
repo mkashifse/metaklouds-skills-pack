@@ -274,74 +274,100 @@
   }
 
   let modalSliceId = null;
-  let modalView = "overview";
   let modalReturnFocus = null;
 
-  function modalOverview(slice) {
-    const stories = sliceStories(slice.id);
-    const tasks = sliceTasks(slice.id);
-    const contracts = sliceContracts(slice.id);
-    const tests = sliceTests(slice.id);
-    const activeAgents = [...new Set(tasks.filter((task) => task.status !== "DONE").map((task) => task.owner))];
-    const blockers = tasks.filter((task) => task.status === "BLOCKED");
+  function nestedTask(task) {
     return `
-      <div class="modal-grid">
-        <div>
-          <section class="detail-card"><header class="detail-card-header"><h3>Capability outcome</h3></header><div class="detail-card-body"><p class="outcome-text">${esc(slice.outcome)}</p></div></section>
-          <section class="detail-card"><header class="detail-card-header"><h3>Current development work</h3><span class="simple-code">${tasks.length} packages</span></header>
-            ${tasks.length ? `<table class="detail-table"><thead><tr><th>Task</th><th>Area</th><th>Assignee</th><th>Dependencies</th><th>Status</th></tr></thead><tbody>${tasks.map((task) => `<tr><td><strong>${esc(task.id)} · ${esc(task.title)}</strong><small>${esc(task.description)}</small></td><td>${esc(pretty(task.area))}</td><td>${esc(task.owner)}</td><td>${esc(task.dependsOn.join(", ") || "None")}</td><td>${badge(task.status)}</td></tr>`).join("")}</tbody></table>` : '<div class="empty-state">Execution has not been mobilized.</div>'}
-          </section>
+      <article class="nested-task">
+        <div class="nested-task-copy">
+          <span class="simple-code">${esc(task.id)} · ${esc(pretty(task.area))}</span>
+          <h4>${esc(task.title)}</h4>
+          <p>${esc(task.blocker || task.description)}</p>
         </div>
-        <aside>
-          <section class="detail-card"><header class="detail-card-header"><h3>Slice state</h3></header><div class="detail-card-body detail-rows">
-            <div class="detail-row"><span>State</span><span>${esc(pretty(slice.status))}</span></div>
-            <div class="detail-row"><span>Priority / revision</span><span>${esc(slice.priority)} / r${esc(slice.revision)}</span></div>
-            <div class="detail-row"><span>Dependencies</span><span>${esc(slice.dependencies.join(", ") || "None")}</span></div>
-            <div class="detail-row"><span>Progress</span><span>${esc(slice.progress)}%</span></div>
-            <div class="detail-row"><span>Stories</span><span>${stories.length}</span></div>
-            <div class="detail-row"><span>Contracts</span><span>${contracts.length}</span></div>
-            <div class="detail-row"><span>Test cases</span><span>${tests.length}</span></div>
-          </div></section>
-          <section class="detail-card"><header class="detail-card-header"><h3>Active agents</h3></header><div class="detail-card-body">${activeAgents.length ? activeAgents.map((agent) => `<div class="detail-row"><span>Assigned</span><span>${esc(agent)}</span></div>`).join("") : '<p class="simple-code">No agent currently assigned.</p>'}</div></section>
-          ${blockers.length ? `<section class="detail-card"><header class="detail-card-header"><h3>Blockers</h3>${badge("BLOCKED")}</header><div class="detail-card-body">${blockers.map((task) => `<div class="detail-row"><span>${esc(task.id)}</span><span>${esc(task.blocker || "Blocked")}</span></div>`).join("")}</div></section>` : ""}
-        </aside>
-      </div>`;
+        <div class="nested-task-meta">
+          <span class="assignee"><i>${esc(task.ownerInitials)}</i>${esc(task.owner)}</span>
+          <span>${task.tests.passed}/${task.tests.total} tests</span>
+          ${badge(task.status)}
+        </div>
+      </article>`;
   }
 
-  function modalStories(slice) {
+  function storyHierarchy(story) {
+    const tasks = story.workPackageIds
+      .map((id) => data.workPackages.find((task) => task.id === id))
+      .filter(Boolean);
+    return `
+      <article class="story-detail">
+        <header class="story-detail-header">
+          <div>
+            <span class="simple-code">${esc(story.id)} · ${story.acceptance.passed}/${story.acceptance.total} acceptance checks</span>
+            <h3>${esc(story.title)}</h3>
+          </div>
+          ${badge(story.status)}
+        </header>
+        <div class="story-detail-body">
+          <div class="story-acceptance">
+            <h4>Acceptance</h4>
+            <ul>${(story.acceptanceCriteria || []).map((criterion) => `<li>${esc(criterion)}</li>`).join("") || "<li>See the canonical slice artifact.</li>"}</ul>
+          </div>
+          <div class="nested-tasks">
+            <div class="nested-heading"><span>Tasks</span><strong>${tasks.length}</strong></div>
+            ${tasks.length ? tasks.map(nestedTask).join("") : '<div class="empty-nested">Tasks have not been mobilized.</div>'}
+          </div>
+        </div>
+      </article>`;
+  }
+
+  function modalHierarchy(slice) {
     const stories = sliceStories(slice.id);
-    if (!stories.length) return '<div class="empty-state">No user stories have been defined.</div>';
-    return `<section class="detail-card"><table class="detail-table"><thead><tr><th>Story</th><th>Acceptance criteria</th><th>Packages</th><th>Evidence</th><th>Status</th></tr></thead><tbody>${stories.map((story) => `
-      <tr>
-        <td><strong>${esc(story.id)} · ${esc(story.title)}</strong><small>${story.acceptance.passed}/${story.acceptance.total} accepted</small></td>
-        <td><ul class="acceptance-list">${(story.acceptanceCriteria || []).map((criterion) => `<li>${esc(criterion)}</li>`).join("") || "<li>Criteria are recorded in the canonical slice artifact.</li>"}</ul></td>
-        <td><span class="mini-packages">${story.workPackageIds.map((id) => `<i class="mini-package">${esc(id)}</i>`).join("")}</span></td>
-        <td>${percent(story.acceptance.passed, story.acceptance.total)}%</td>
-        <td>${badge(story.status)}</td>
-      </tr>`).join("")}</tbody></table></section>`;
-  }
-
-  function modalTasks(slice) {
     const tasks = sliceTasks(slice.id);
-    if (!tasks.length) return '<div class="empty-state">Development work has not been mobilized.</div>';
-    return `<section class="detail-card"><table class="detail-table"><thead><tr><th>Work package</th><th>Code area</th><th>Assignee</th><th>Stories</th><th>Dependencies</th><th>Tests</th><th>Status</th></tr></thead><tbody>${tasks.map((task) => `
-      <tr>
-        <td><strong>${esc(task.id)} · ${esc(task.title)}</strong><small>${esc(task.blocker || task.description)}</small></td>
-        <td>${esc(pretty(task.area))}</td><td>${esc(task.owner)}</td><td>${esc(task.storyIds.join(", "))}</td><td>${esc(task.dependsOn.join(", ") || "None")}</td>
-        <td>${task.tests.passed}/${task.tests.total}</td><td>${badge(task.status)}</td>
-      </tr>`).join("")}</tbody></table></section>`;
-  }
-
-  function modalEvidence(slice) {
     const contracts = sliceContracts(slice.id);
     const tests = sliceTests(slice.id);
-    return `<div class="modal-grid"><div>
-      <section class="detail-card"><header class="detail-card-header"><h3>Contracts</h3><span class="simple-code">${contracts.length} records</span></header>
-        ${contracts.length ? contracts.map((contract) => `<article class="contract-card"><span>${esc(contract.id)} · ${esc(contract.version)}</span><div><h3>${esc(contract.name)}</h3><p>${esc(contract.type)} · Owner: ${esc(contract.owner)} · ${esc(contract.path)}</p></div>${badge(contract.status)}</article>`).join("") : '<div class="empty-state">No contracts recorded.</div>'}
-      </section></div><div>
-      <section class="detail-card"><header class="detail-card-header"><h3>Test cases and evidence</h3><span class="simple-code">${tests.length} cases</span></header>
-        ${tests.length ? tests.map((test) => `<article class="contract-card"><span>${esc(test.id)}</span><div><h3>${esc(test.title)}</h3><p>${esc(test.type)} · ${esc(test.owner)} · ${esc(test.evidence)}</p></div>${badge(test.status)}</article>`).join("") : '<div class="empty-state">Test cases have not been mapped.</div>'}
-      </section></div></div>`;
+    const blockers = tasks.filter((task) => task.status === "BLOCKED");
+    const activeAgents = [...new Set(tasks.filter((task) => task.status !== "DONE").map((task) => task.owner))];
+    const passedTests = tests.filter((test) => test.status === "PASSED").length;
+
+    return `
+      <div class="slice-detail-stack">
+        <section class="slice-detail-overview">
+          <div class="slice-outcome-block">
+            <span class="section-kicker">Slice detail</span>
+            <h3>Capability outcome</h3>
+            <p>${esc(slice.outcome)}</p>
+          </div>
+          <div class="slice-detail-facts">
+            <div><span>State</span><strong>${esc(pretty(slice.status))}</strong></div>
+            <div><span>Progress</span><strong>${esc(slice.progress)}%</strong></div>
+            <div><span>Dependencies</span><strong>${esc(slice.dependencies.join(", ") || "None")}</strong></div>
+            <div><span>Active agents</span><strong>${activeAgents.length}</strong></div>
+            <div><span>Contracts</span><strong>${contracts.length}</strong></div>
+            <div><span>Test cases</span><strong>${passedTests}/${tests.length} passed</strong></div>
+          </div>
+        </section>
+
+        ${blockers.length ? `<section class="slice-blockers"><div>${badge("BLOCKED")}<strong>${blockers.length} blocked task${blockers.length > 1 ? "s" : ""}</strong></div><span>${esc(blockers.map((task) => `${task.id}: ${task.blocker || "Blocked"}`).join(" · "))}</span></section>` : ""}
+
+        <section class="hierarchy-section">
+          <header class="hierarchy-title">
+            <div><span class="section-kicker">Delivery hierarchy</span><h2>User stories</h2></div>
+            <span>${stories.length} stories · ${tasks.length} work packages</span>
+          </header>
+          <div class="story-hierarchy">
+            ${stories.length ? stories.map(storyHierarchy).join("") : '<div class="empty-state">User stories have not been defined for this slice.</div>'}
+          </div>
+        </section>
+
+        <section class="slice-evidence">
+          <div class="evidence-column">
+            <header><h3>Slice contracts</h3><span>${contracts.length}</span></header>
+            ${contracts.length ? contracts.map((contract) => `<article><div><span class="simple-code">${esc(contract.id)} · ${esc(contract.version)}</span><strong>${esc(contract.name)}</strong><small>${esc(contract.type)} · ${esc(contract.owner)}</small></div>${badge(contract.status)}</article>`).join("") : '<div class="empty-nested">No contracts recorded.</div>'}
+          </div>
+          <div class="evidence-column">
+            <header><h3>Test evidence</h3><span>${tests.length}</span></header>
+            ${tests.length ? tests.map((test) => `<article><div><span class="simple-code">${esc(test.id)} · ${esc(test.type)}</span><strong>${esc(test.title)}</strong><small>${esc(test.owner)} · ${esc(test.evidence)}</small></div>${badge(test.status)}</article>`).join("") : '<div class="empty-nested">No test cases mapped.</div>'}
+          </div>
+        </section>
+      </div>`;
   }
 
   function renderModal() {
@@ -350,14 +376,11 @@
     setText("#modal-id", `${slice.id} · ${slice.priority} · revision ${slice.revision}`);
     setText("#modal-title", slice.title);
     $("#modal-state").innerHTML = `<span class="state-dot ${tone(slice.status)}"></span>`;
-    $$(".modal-tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.modalView === modalView));
-    const renderers = { overview: modalOverview, stories: modalStories, tasks: modalTasks, evidence: modalEvidence };
-    $("#modal-content").innerHTML = renderers[modalView](slice);
+    $("#modal-content").innerHTML = modalHierarchy(slice);
   }
 
   function openModal(sliceId) {
     modalSliceId = sliceId;
-    modalView = "overview";
     modalReturnFocus = document.activeElement;
     renderModal();
     $("#slice-modal").classList.add("is-open");
@@ -376,7 +399,6 @@
   function bindModal() {
     $("#modal-close").addEventListener("click", closeModal);
     $("#slice-modal").addEventListener("click", (event) => { if (event.target === $("#slice-modal")) closeModal(); });
-    $$(".modal-tab").forEach((tab) => tab.addEventListener("click", () => { modalView = tab.dataset.modalView; renderModal(); }));
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && $("#slice-modal").classList.contains("is-open")) closeModal(); });
   }
 

@@ -96,6 +96,8 @@ Keep the interface list-first, compact, and progressively populated:
    status, progress, task completion, and blockers; use the same Layers entity
    icon for a slice in its card and detail header; show collapsed progress as
    ten small vertical segments with exact partial fill plus the numeric percent;
+   clicking the card header toggles the card while clicking its title opens
+   full slice detail;
 4. currently active or blocked work packages and assigned agents directly under
    each slice;
 5. collapsible user-story rows in slice detail for acceptance and work-package

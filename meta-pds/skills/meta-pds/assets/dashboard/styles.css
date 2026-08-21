@@ -82,7 +82,8 @@ h1, h2, h3, p { margin: 0; }
 
 .slice-list { display: grid; gap: 12px; margin-top: 12px; }
 .slice-item { overflow: hidden; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--panel); }
-.slice-main { position: relative; padding: 17px 58px 15px 58px; }
+.slice-main { position: relative; padding: 17px 58px 15px 58px; cursor: pointer; transition: background .15s ease; }
+.slice-main:hover { background: rgba(255,255,255,.012); }
 .slice-entity-icon { position: absolute; top: 18px; left: 18px; display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); }
 .slice-entity-icon .lucide-icon { width: 15px; height: 15px; }
 .slice-heading-copy { min-width: 0; }

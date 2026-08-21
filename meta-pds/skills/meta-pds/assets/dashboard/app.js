@@ -171,7 +171,7 @@
 
     return `
       <article class="slice-item ${collapsed ? "is-collapsed" : ""}" data-slice-id="${esc(slice.id)}">
-        <header class="slice-main">
+        <header class="slice-main" data-slice-card-header="${esc(slice.id)}">
           <span class="slice-entity-icon" aria-hidden="true">${icon("layers")}</span>
           <div class="slice-heading-copy">
             <div class="slice-title-row">
@@ -225,15 +225,18 @@
       renderSlices();
     });
     $("#slice-list").addEventListener("click", (event) => {
-      const toggle = event.target.closest("[data-toggle-slice-card]");
-      if (toggle) {
-        const id = toggle.dataset.toggleSliceCard;
-        collapsedSlices.has(id) ? collapsedSlices.delete(id) : collapsedSlices.add(id);
-        renderSlices();
+      const open = event.target.closest("[data-open-slice]");
+      if (open) {
+        openModal(open.dataset.openSlice);
         return;
       }
-      const open = event.target.closest("[data-open-slice]");
-      if (open) openModal(open.dataset.openSlice);
+      const toggle = event.target.closest("[data-toggle-slice-card]");
+      const header = event.target.closest("[data-slice-card-header]");
+      const id = toggle?.dataset.toggleSliceCard || header?.dataset.sliceCardHeader;
+      if (id) {
+        collapsedSlices.has(id) ? collapsedSlices.delete(id) : collapsedSlices.add(id);
+        renderSlices();
+      }
     });
   }
 

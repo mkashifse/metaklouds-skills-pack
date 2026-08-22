@@ -1,26 +1,50 @@
 # Metaklouds Skills Pack
 
-An installable product-to-engineering workflow for Codex and Claude Code.
+Installable product-to-engineering workflows for Codex and Claude Code.
+
+`meta-pds` is the human-centered entrypoint for new initiatives. It coordinates
+rapid prototyping, fat-slice planning, bounded development, independent QA, and
+release evidence while automatically starting or reusing one local delivery
+dashboard per project. It preserves meaningful checkpoints with local commits
+and, when the Human changes delivery topic, nudges them to create and merge a PR
+once the branch satisfies its checks and approvals. The dashboard includes live
+local branch visibility and verified GitHub pull-request status when available.
+It never substitutes bundled sample delivery data for the selected project;
+missing canonical artifacts remain visible as setup diagnostics.
 
 The pack turns an idea into a validated initiative, plans it as fat end-to-end
-vertical slices, and implements each slice as one releasable unit:
+vertical slices, and implements each slice as one releasable unit under a
+single continuous-delivery control loop:
 
 ```text
-meta-grill-team
-  -> vertical-slice-team
-    -> dev-team
+continuous-delivery-manager
+  -> meta-grill-team
+    -> vertical-slice-team
+      -> dev-team
+  -> delivery-monitoring-dashboard (non-blocking projection worker)
 ```
 
 Runtime discoveries are handled by `change-management`, so team leads can lock
 contained decisions, request human approval for material changes, run a quick
 impact analysis, and keep unaffected work moving.
 
+The monitoring worker continuously projects authoritative decisions, slices,
+stories, and release evidence into a docs-only JSON dashboard without blocking
+the active delivery team.
+
 ## Included skills
 
-The full installer provides nine skills:
+The full installer provides sixteen skills:
 
 | Skill | Ownership | Purpose |
 | --- | --- | --- |
+| `meta-pds` | Metaklouds | Coordinate the human-centered delivery suite and its per-project dashboard |
+| `rapid-prototyping` | Metaklouds | Build disposable prototypes for manual Human review |
+| `slice-planning` | Metaklouds | Define implementation-ready fat slices |
+| `slice-development` | Metaklouds | Mobilize and execute bounded slice work packages |
+| `slice-qa` | Metaklouds | Independently verify release and outcome evidence |
+| `continuous-delivery-manager` | Metaklouds | Orchestrate the complete initiative, Git, and release control loop |
+| `delivery-monitoring-dashboard` | Metaklouds | Keep the docs-only monitoring JSON synchronized in a non-blocking worker |
 | `meta-grill-team` | Metaklouds | Define the initiative while building a JSON-backed React prototype |
 | `vertical-slice-team` | Metaklouds | Convert an approved initiative into fat, end-to-end vertical slices |
 | `dev-team` | Metaklouds | Map one fat slice into stories/tasks, implement it, test it, and release it |
@@ -31,7 +55,7 @@ The full installer provides nine skills:
 | `supabase` | Upstream | Guide Supabase implementation and security |
 | `supabase-postgres-best-practices` | Upstream | Guide Postgres schemas, migrations, RLS, and performance |
 
-The four Metaklouds skills are bundled in this repository. Upstream skills are
+The eleven Metaklouds skills are bundled in this repository. Upstream skills are
 downloaded at pinned revisions from their original repositories during
 installation. See [THIRD_PARTY.md](THIRD_PARTY.md) and
 [manifest.json](manifest.json).
@@ -76,6 +100,15 @@ git pull
 `--force` does not delete the current copy. It moves every replaced skill to a
 timestamped backup beside the installation directory.
 
+To update only CDM and its monitoring worker while preserving all other
+installed skills:
+
+```bash
+./scripts/install.sh codex --force \
+  --only continuous-delivery-manager \
+  --only delivery-monitoring-dashboard
+```
+
 For an isolated or CI installation, provide an explicit destination:
 
 ```bash
@@ -87,19 +120,25 @@ For an isolated or CI installation, provide an explicit destination:
 Start with:
 
 ```text
+Use $meta-pds to start or resume this product initiative.
+```
+
+Meta PDS starts or reuses the project's local dashboard and returns its URL.
+The earlier continuous-delivery workflow remains available through:
+
+```text
+Use $continuous-delivery-manager to deliver this initiative and keep its
+monitoring dashboard synchronized.
+```
+
+CDM routes to the stage skills. They can also be invoked directly:
+
+```text
 Use $meta-grill-team to define this initiative and build its React prototype.
-```
-
-After the initiative is approved:
-
-```text
 Use $vertical-slice-team to plan fat, end-to-end vertical slices.
-```
-
-For each approved slice:
-
-```text
 Use $dev-team to implement and release this entire vertical slice.
+Use $delivery-monitoring-dashboard to refresh monitoring-data.json from the
+current delivery documents.
 ```
 
 The canonical product documents should live in a root repository. Keep the
@@ -124,8 +163,8 @@ after both PRs and whole-slice E2E evidence pass.
 
 ## Install only the bundled Metaklouds skills
 
-Agents compatible with the open skills format can discover the four bundled
-skills under `skills/`. For example:
+Agents compatible with the open skills format can discover the eleven bundled
+skills declared in [manifest.json](manifest.json). For example:
 
 ```bash
 npx skills add mkashifse/metaklouds-skills-pack --all

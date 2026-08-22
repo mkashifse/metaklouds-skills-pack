@@ -1,0 +1,4 @@
+interface:
+  display_name: "Meta PDS"
+  short_description: "Human-centered product delivery system"
+  default_prompt: "Use $meta-pds to start or resume this product initiative."

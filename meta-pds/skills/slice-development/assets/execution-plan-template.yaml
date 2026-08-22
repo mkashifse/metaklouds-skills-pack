@@ -1,0 +1,72 @@
+schema_version: 2
+initiative_id: INIT-0001
+slice_id: SLICE-0001
+slice_revision: 1
+status: MOBILIZING
+contract_version: v1
+source_commit: ""
+
+repository:
+  model: single
+  root: "."
+  remote: ""
+  nested_repositories_allowed: false
+  submodules_allowed: false
+
+code_areas:
+  frontend:
+    path: frontend/
+    direct_backend_source_dependencies_allowed: false
+  backend:
+    path: backend/
+    direct_frontend_source_dependencies_allowed: false
+
+integration_contracts:
+  - id: CON-0001
+    name: ""
+    type: ""
+    version: v1
+    status: EXPECTED
+    owner: ""
+    path: ""
+
+critical_path: []
+
+execution_waves:
+  - id: WAVE-1
+    purpose: Contract, risk, and enabling foundations
+    work_packages: []
+
+integration_sequence: []
+merge_sequence: []
+deployment_sequence: []
+feature_flags: []
+observability_checks: []
+rollback_sequence: []
+
+work_packages:
+  - id: WP-0001
+    title: ""
+    description: ""
+    area: ""
+    owner: ""
+    owner_initials: ""
+    status: BLOCKED
+    blocker: ""
+    contract_version: v1
+    supports: [US-0001]
+    depends_on: []
+    inputs: []
+    produces: []
+    owned_paths: []
+    forbidden_paths: []
+    entry_checks: []
+    exit_checks: []
+    required_tests: [TC-0001]
+    integration_owner: ""
+
+validation:
+  dependency_graph: pending
+  development_lead: pending
+  product_manager_gate: pending
+  open_blockers: []

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Slice Planning"
+  short_description: "Plan one development-ready fat slice"
+  default_prompt: "Use $slice-planning to define and validate the next fat slice."
+policy:
+  allow_implicit_invocation: false

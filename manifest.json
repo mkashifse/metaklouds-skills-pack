@@ -3,6 +3,48 @@
   "name": "metaklouds-skills-pack",
   "skills": [
     {
+      "name": "meta-pds",
+      "kind": "bundled",
+      "path": "meta-pds/skills/meta-pds",
+      "license": "MIT"
+    },
+    {
+      "name": "rapid-prototyping",
+      "kind": "bundled",
+      "path": "meta-pds/skills/rapid-prototyping",
+      "license": "MIT"
+    },
+    {
+      "name": "slice-planning",
+      "kind": "bundled",
+      "path": "meta-pds/skills/slice-planning",
+      "license": "MIT"
+    },
+    {
+      "name": "slice-development",
+      "kind": "bundled",
+      "path": "meta-pds/skills/slice-development",
+      "license": "MIT"
+    },
+    {
+      "name": "slice-qa",
+      "kind": "bundled",
+      "path": "meta-pds/skills/slice-qa",
+      "license": "MIT"
+    },
+    {
+      "name": "continuous-delivery-manager",
+      "kind": "bundled",
+      "path": "skills/continuous-delivery-manager",
+      "license": "MIT"
+    },
+    {
+      "name": "delivery-monitoring-dashboard",
+      "kind": "bundled",
+      "path": "skills/delivery-monitoring-dashboard",
+      "license": "MIT"
+    },
+    {
       "name": "meta-grill-team",
       "kind": "bundled",
       "path": "skills/meta-grill-team",

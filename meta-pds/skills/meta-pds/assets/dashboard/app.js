@@ -321,29 +321,35 @@
       group.decisions.push(decision);
     });
     $("#decision-list").innerHTML = visibleGroups.map((group) => `
-      <section class="decision-group layer-${esc(group.layerKey)}">
-        <header><span>${esc(group.layer)}</span><strong>${group.decisions.length}</strong></header>
+      <details class="decision-group layer-${esc(group.layerKey)}">
+        <summary class="decision-group-summary"><span>${esc(group.layer)}</span><span class="decision-group-summary-end"><strong>${group.decisions.length}</strong>${icon("chevron-down")}</span></summary>
         <div class="decision-group-list">${group.decisions.map((decision) => `
-          <article class="decision-item ${decision.hasContradiction ? "is-contradictory" : ""}">
-            <i class="decision-rail" aria-hidden="true"></i>
-            <div class="decision-card-layout">
+          <details class="decision-item ${decision.hasContradiction ? "is-contradictory" : ""}">
+            <summary class="decision-title-bar">
+              <i class="decision-rail" aria-hidden="true"></i>
               <span class="decision-brain" aria-hidden="true">${icon("brain")}</span>
-              <div class="decision-card-body">
-                <div class="decision-card-head">
-                  <div class="decision-identity"><code>${esc(decision.key)}</code><span>${esc(decision.id)} · r${esc(decision.revision)}</span><span class="decision-type-label">${esc(decision.typeLabel)}</span>${decision.secondaryTypes.map((type) => `<span class="decision-type-secondary">${esc(type.label)}</span>`).join("")}</div>
-                  <div class="decision-state">${badge(decision.status, decision.canonical ? "Canonical" : statusLabel(decision.status))}</div>
-                </div>
-                <div class="decision-copy"><h3>${esc(decision.title)}</h3><p>${esc(decision.summary)}</p>${decision.rationale ? `<small><strong>Why:</strong> ${esc(decision.rationale)}</small>` : ""}</div>
-                <div class="decision-context">
-                  <div><span>Phases</span><p class="decision-phases">${decision.phases.map((phase) => `<em>${esc(pretty(phase))}</em>`).join("")}</p></div>
-                  <div><span>Depends on</span><p>${decision.dependsOn.length ? decision.dependsOn.map((key) => `<code>${esc(key)}</code>`).join(" ") : "None"}</p></div>
-                  <div><span>Affects</span><p>${decision.affects.length ? decision.affects.map(esc).join(", ") : "Not recorded"}</p></div>
-                </div>
+              <span class="decision-title-main">
+                <span class="decision-card-head">
+                  <span class="decision-identity"><code>${esc(decision.key)}</code><span>${esc(decision.id)} · r${esc(decision.revision)}</span><span class="decision-type-label">${esc(decision.typeLabel)}</span>${decision.secondaryTypes.map((type) => `<span class="decision-type-secondary">${esc(type.label)}</span>`).join("")}</span>
+                  <span class="decision-state">${badge(decision.status, decision.canonical ? "Canonical" : statusLabel(decision.status))}</span>
+                </span>
+                <span class="decision-title-lower">
+                  <strong class="decision-title-question">${esc(decision.title)}</strong>
+                  <span class="decision-title-context">
+                    <span><small>Phases</small><span>${decision.phases.length ? decision.phases.map((phase) => esc(pretty(phase))).join(", ") : "None"}</span></span>
+                    <span><small>Depends on</small><span>${decision.dependsOn.length ? decision.dependsOn.map(esc).join(", ") : "None"}</span></span>
+                    <span><small>Affects</small><span>${decision.affects.length ? decision.affects.map(esc).join(", ") : "Not recorded"}</span></span>
+                  </span>
+                </span>
+              </span>
+              <span class="decision-collapse-icon" aria-hidden="true">${icon("chevron-down")}</span>
+            </summary>
+            <div class="decision-details">
+                <div class="decision-copy"><p>${esc(decision.summary)}</p>${decision.rationale ? `<small><strong>Why:</strong> ${esc(decision.rationale)}</small>` : ""}</div>
                 ${decision.contradictions.length ? `<div class="decision-contradiction">${icon("triangle-alert")}<div><strong>Contradictory decision${decision.contradictions.length > 1 ? "s" : ""}</strong>${decision.contradictions.map((conflict) => `<p><code>${esc(conflict.key)}</code> · ${esc(conflict.title)} · ${badge(conflict.status)}</p>`).join("")}</div></div>` : ""}
-              </div>
             </div>
-          </article>`).join("")}</div>
-      </section>`).join("");
+          </details>`).join("")}</div>
+      </details>`).join("");
   }
 
   let decisionStatusFilter = "ALL";

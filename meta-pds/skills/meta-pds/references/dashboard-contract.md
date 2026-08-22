@@ -148,10 +148,13 @@ horizontally rather than creating a second header row.
 2. a leftmost `Truth` tab containing decisions ordered from upstream product
    intent to downstream operations,
    grouped and filterable by layer, status, primary type, and phase; lead each
-   truth item with the brain icon and one clear statement, then show the unique
-   canonical key, record ID, revision, primary and secondary labels, dependency
-   keys, affected artifacts, one non-duplicated status label, and explicit
-   contradiction links; keep interaction mode, canonical count, review count,
+   truth item with the brain icon and one clear statement; render groups as
+   collapsible sections that start collapsed, and render each truth as an
+   independently collapsible row that also starts collapsed; keep phase,
+   dependency keys, and affected artifacts in the persistent truth title bar
+   beside the unique canonical key, record ID, revision, primary and secondary
+   labels, and one non-duplicated status label; show explicit contradiction
+   links in the expanded body; keep interaction mode, canonical count, review count,
    and contradiction count visible in the same compact, single-row toolbar as
    the status, group, type, and phase filters without turning the dashboard
    into an approval surface;

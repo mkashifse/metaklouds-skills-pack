@@ -107,7 +107,8 @@ Recommend `OUTCOME_VALIDATED` only when evidence supports it. Otherwise return
 
 QA recommends gates; only the Product Manager updates canonical gate state.
 Under `META_PDS_GIT_AUTHORITY=PM_ONLY`, QA does not commit, push, open/merge PRs,
-tag, deploy, or change feature flags.
+tag, deploy, or change feature flags. QA returns its report path to the Product
+Manager, who validates and creates the local QA checkpoint commit.
 
 ## Result
 
@@ -122,5 +123,6 @@ verification: []
 defects: []
 observability: []
 risks: []
+changed_paths: []
 recommended_next_action: ""
 ```

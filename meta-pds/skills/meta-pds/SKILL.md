@@ -27,6 +27,10 @@ Read [references/change-priority-resume.md](references/change-priority-resume.md
 when resuming, pausing, reprioritizing, correcting a released slice, or handling
 a locked-decision change.
 
+Read [references/git-checkpoints-and-topic-handoffs.md](references/git-checkpoints-and-topic-handoffs.md)
+before creating or switching branches, committing work, performing external Git
+actions, or handing off because the Human changed topic.
+
 The Human-centered autonomy charter overrides conflicting suite instructions.
 Repository instructions and the Human's explicit constraints still take
 precedence.
@@ -65,15 +69,20 @@ On every invocation:
    runtime. Capture its reported URL and always give that clickable URL to the
    Human. Do not launch another server manually. Before canonical artifacts
    exist, the command uses the visibly labelled bundled example view.
-3. Read actual Meta PDS artifacts, repository state, and available runtime
-   evidence. Never rely on conversation memory as delivery state.
-4. Reconcile contradictions conservatively and record them.
-5. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
+3. Read actual Meta PDS artifacts, repository state, available runtime evidence,
+   and Git branch/worktree state. Never rely on conversation memory as delivery
+   state.
+4. Detect whether the Human moved to another initiative, slice, defect, or
+   unrelated objective. If so, checkpoint understood in-scope changes locally
+   and give the one-time, gate-aware PR/merge nudge defined in the Git reference.
+   Do not treat clarifications or status questions as topic changes.
+5. Reconcile contradictions conservatively and record them.
+6. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
    gate while any structural error remains; surface the exact file and
    diagnostic instead of inferring missing data.
-6. Present current phase, active planning and execution slices, completed and
+7. Present current phase, active planning and execution slices, completed and
    paused slices, blockers, risks, and one recommended next action.
-7. Continue when the requested route is valid. If the user gave no route,
+8. Continue when the requested route is valid. If the user gave no route,
    recommend the highest-value valid action and concise alternatives.
 
 For a new initiative, capture a short brief and establish an authority envelope
@@ -124,11 +133,14 @@ META_PDS_SLICE_ID=<slice-id when applicable>
 META_PDS_SOURCE_REVISION=<locked upstream revision>
 ```
 
-The lead may edit its owned local artifacts. Development workers may make local
-commits on assigned branches. Under `PM_ONLY`, no functional lead or worker
-pushes, opens or merges PRs, tags, deploys, changes production flags, or commits
-canonical suite artifacts. The Product Manager validates and performs those
-actions within the authority envelope.
+The lead may edit its owned local artifacts. Development workers make local
+checkpoint commits on assigned branches and return their commit hashes. The
+Product Manager validates and commits canonical suite artifacts, prototype
+checkpoints, execution plans, and QA reports on the active topic branch. Under
+`PM_ONLY`, no functional lead or worker pushes, opens or merges PRs, tags,
+deploys, changes production flags, or commits canonical suite artifacts. The
+Product Manager performs external Git and release actions only within the
+authority envelope.
 
 If a functional skill is invoked standalone, it must not infer external Git or
 release authority; it completes the requested local work and reports the next
@@ -160,6 +172,8 @@ marked `OUTCOME_VALIDATED` or `REPLAN_REQUIRED` after observation.
 At every checkpoint, update `delivery-state.yaml` and return the visibility
 summary defined in the workflow reference. After every canonical artifact
 write, run repository-wide validation and correct the owned artifact or return
-the diagnostic to its owner. The dashboard uses this same validation contract,
-reparses canonical artifacts when the Human refreshes it, and keeps its model in
-memory; never write or maintain a separate projection.
+the diagnostic to its owner. After validation, preserve the checkpoint with a
+scoped local commit according to the Git reference. The dashboard uses this
+same validation contract, reparses canonical artifacts when the Human refreshes
+it, and keeps its model in memory; never write or maintain a separate
+projection.

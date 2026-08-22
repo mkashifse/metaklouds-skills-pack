@@ -130,7 +130,8 @@ affected readiness check.
 - Do not mark `READY_FOR_DEVELOPMENT` yourself.
 - Do not reopen released history; a new behavior becomes a linked new slice.
 - Under `META_PDS_CONTROLLED=true`, do not commit, push, open PRs, or change
-  `delivery-state.yaml`.
+  `delivery-state.yaml`; return changed paths for the Product Manager's
+  checkpoint commit.
 
 ## Result
 
@@ -147,5 +148,10 @@ planning_validation:
   evidence: []
 specialist_reviews: []
 open_blockers: []
+changed_paths: []
 recommended_next_action: "Run independent Development Intake review"
 ```
+
+Under `META_PDS_CONTROLLED=true`, the Product Manager creates the validated
+local planning checkpoint commit; the Planning Lead does not push, open, or
+merge a PR.

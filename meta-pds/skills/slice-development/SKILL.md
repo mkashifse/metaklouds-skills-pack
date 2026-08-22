@@ -156,7 +156,10 @@ Return `READY_FOR_QA` only when:
 
 Under `META_PDS_GIT_AUTHORITY=PM_ONLY`:
 
-- workers may create local commits on assigned branches;
+- workers create scoped local commits on assigned work-package branches and
+  return their hashes;
+- the Development Lead returns execution-plan and status changes to the Product
+  Manager for a canonical checkpoint commit;
 - no Development role pushes, opens/merges PRs, tags, deploys, or changes
   production flags;
 - the Product Manager validates and performs external integration/release
@@ -182,5 +185,6 @@ work_packages:
 local_commits: []
 verification: []
 risks: []
+changed_paths: []
 recommended_next_action: ""
 ```

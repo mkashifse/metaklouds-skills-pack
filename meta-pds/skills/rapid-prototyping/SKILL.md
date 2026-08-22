@@ -82,7 +82,10 @@ manual_review:
 findings: []
 questions: []
 risks: []
+changed_paths: []
 ```
 
 Under `META_PDS_CONTROLLED=true`, report only to the Product Manager. Do not
-commit, push, open PRs, deploy, or change delivery gates.
+commit, push, open PRs, deploy, or change delivery gates. Return exact changed
+paths; the Product Manager validates and creates the local prototype checkpoint
+commit.

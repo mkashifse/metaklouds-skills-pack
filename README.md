@@ -5,7 +5,9 @@ Installable product-to-engineering workflows for Codex and Claude Code.
 `meta-pds` is the human-centered entrypoint for new initiatives. It coordinates
 rapid prototyping, fat-slice planning, bounded development, independent QA, and
 release evidence while automatically starting or reusing one local delivery
-dashboard per project.
+dashboard per project. It preserves meaningful checkpoints with local commits
+and, when the Human changes delivery topic, nudges them to create and merge a PR
+once the branch satisfies its checks and approvals.
 
 The pack turns an idea into a validated initiative, plans it as fat end-to-end
 vertical slices, and implements each slice as one releasable unit under a

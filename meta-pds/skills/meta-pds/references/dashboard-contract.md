@@ -146,9 +146,10 @@ horizontally rather than creating a second header row.
    kept in the footer rather than the header;
 2. a leftmost `Truth` tab containing decisions ordered from upstream product
    intent to downstream operations,
-   grouped by layer and filterable by status, primary type, and phase; show the
-   unique canonical key, record ID, revision, primary and secondary labels,
-   dependency keys, affected artifacts, canonical status, and explicit
+   grouped and filterable by layer, status, primary type, and phase; lead each
+   truth item with the brain icon and one clear statement, then show the unique
+   canonical key, record ID, revision, primary and secondary labels, dependency
+   keys, affected artifacts, one non-duplicated status label, and explicit
    contradiction links; keep interaction mode, canonical count, review count,
    and contradiction count visible without turning the dashboard into an
    approval surface;

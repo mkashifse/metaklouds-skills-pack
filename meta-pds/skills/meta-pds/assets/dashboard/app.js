@@ -288,8 +288,14 @@
     $("#decision-status-filters").innerHTML = statuses.map(([value, label]) =>
       `<button class="filter-button ${decisionStatusFilter === value ? "is-active" : ""}" type="button" data-decision-status="${value}">${label}</button>`
     ).join("");
+    const groups = (meta.types || []).reduce((records, type) => {
+      if (!records.some((record) => record.key === type.layerKey)) records.push({ key: type.layerKey, label: type.layer });
+      return records;
+    }, []);
+    $("#decision-group-filter").innerHTML = `<option value="ALL">All groups</option>${groups.map((group) => `<option value="${esc(group.key)}">${esc(group.label)}</option>`).join("")}`;
     $("#decision-type-filter").innerHTML = `<option value="ALL">All types</option>${(meta.types || []).map((type) => `<option value="${esc(type.id)}">${esc(type.label)}</option>`).join("")}`;
     $("#decision-phase-filter").innerHTML = `<option value="ALL">All phases</option>${(meta.phases || []).map((phase) => `<option value="${esc(phase)}">${esc(pretty(phase))}</option>`).join("")}`;
+    $("#decision-group-filter").value = decisionGroupFilter;
     $("#decision-type-filter").value = decisionTypeFilter;
     $("#decision-phase-filter").value = decisionPhaseFilter;
 
@@ -298,9 +304,10 @@
         || (decisionStatusFilter === "CANONICAL" && decision.canonical)
         || (decisionStatusFilter === "NEEDS_REVIEW" && decision.needsReview)
         || (decisionStatusFilter === "CONTRADICTORY" && decision.hasContradiction);
+      const groupMatch = decisionGroupFilter === "ALL" || decision.layerKey === decisionGroupFilter;
       const typeMatch = decisionTypeFilter === "ALL" || decision.type === decisionTypeFilter || decision.secondaryTypes?.some((type) => type.id === decisionTypeFilter);
       const phaseMatch = decisionPhaseFilter === "ALL" || decision.phases?.includes(decisionPhaseFilter);
-      return statusMatch && typeMatch && phaseMatch;
+      return statusMatch && groupMatch && typeMatch && phaseMatch;
     });
     if (!filtered.length) {
       const demoLink = data.projection.kind === "live-project"
@@ -309,38 +316,43 @@
       $("#decision-list").innerHTML = `<div class="empty-state"><p>No decisions match these filters.</p>${demoLink}</div>`;
       return;
     }
-    const groups = [];
+    const visibleGroups = [];
     filtered.forEach((decision) => {
-      let group = groups.find((candidate) => candidate.layer === decision.layer);
+      let group = visibleGroups.find((candidate) => candidate.layer === decision.layer);
       if (!group) {
         group = { layer: decision.layer, layerKey: decision.layerKey, decisions: [] };
-        groups.push(group);
+        visibleGroups.push(group);
       }
       group.decisions.push(decision);
     });
-    $("#decision-list").innerHTML = groups.map((group) => `
+    $("#decision-list").innerHTML = visibleGroups.map((group) => `
       <section class="decision-group layer-${esc(group.layerKey)}">
         <header><span>${esc(group.layer)}</span><strong>${group.decisions.length}</strong></header>
         <div class="decision-group-list">${group.decisions.map((decision) => `
           <article class="decision-item ${decision.hasContradiction ? "is-contradictory" : ""}">
             <i class="decision-rail" aria-hidden="true"></i>
-            <div class="decision-card-head">
-              <div class="decision-identity"><code>${esc(decision.key)}</code><span>${esc(decision.id)} · r${esc(decision.revision)}</span></div>
-              <div class="decision-labels"><span class="decision-type-label">${esc(decision.typeLabel)}</span>${decision.secondaryTypes.map((type) => `<span class="decision-type-secondary">${esc(type.label)}</span>`).join("")}</div>
-              <div class="decision-state">${decision.canonical ? '<span class="decision-canonical">Canonical truth</span>' : ""}${badge(decision.status)}</div>
+            <div class="decision-card-layout">
+              <span class="decision-brain" aria-hidden="true">${icon("brain")}</span>
+              <div class="decision-card-body">
+                <div class="decision-card-head">
+                  <div class="decision-identity"><code>${esc(decision.key)}</code><span>${esc(decision.id)} · r${esc(decision.revision)}</span><span class="decision-type-label">${esc(decision.typeLabel)}</span>${decision.secondaryTypes.map((type) => `<span class="decision-type-secondary">${esc(type.label)}</span>`).join("")}</div>
+                  <div class="decision-state">${badge(decision.status, decision.canonical ? "Canonical" : statusLabel(decision.status))}</div>
+                </div>
+                <div class="decision-copy"><h3>${esc(decision.title)}</h3><p>${esc(decision.summary)}</p>${decision.rationale ? `<small><strong>Why:</strong> ${esc(decision.rationale)}</small>` : ""}</div>
+                <div class="decision-context">
+                  <div><span>Phases</span><p class="decision-phases">${decision.phases.map((phase) => `<em>${esc(pretty(phase))}</em>`).join("")}</p></div>
+                  <div><span>Depends on</span><p>${decision.dependsOn.length ? decision.dependsOn.map((key) => `<code>${esc(key)}</code>`).join(" ") : "None"}</p></div>
+                  <div><span>Affects</span><p>${decision.affects.length ? decision.affects.map(esc).join(", ") : "Not recorded"}</p></div>
+                </div>
+                ${decision.contradictions.length ? `<div class="decision-contradiction">${icon("triangle-alert")}<div><strong>Contradictory decision${decision.contradictions.length > 1 ? "s" : ""}</strong>${decision.contradictions.map((conflict) => `<p><code>${esc(conflict.key)}</code> · ${esc(conflict.title)} · ${badge(conflict.status)}</p>`).join("")}</div></div>` : ""}
+              </div>
             </div>
-            <div class="decision-copy"><h3>${esc(decision.title)}</h3><p>${esc(decision.summary)}</p>${decision.rationale ? `<small><strong>Why:</strong> ${esc(decision.rationale)}</small>` : ""}</div>
-            <div class="decision-context">
-              <div><span>Phases</span><p class="decision-phases">${decision.phases.map((phase) => `<em>${esc(pretty(phase))}</em>`).join("")}</p></div>
-              <div><span>Depends on</span><p>${decision.dependsOn.length ? decision.dependsOn.map((key) => `<code>${esc(key)}</code>`).join(" ") : "None"}</p></div>
-              <div><span>Affects</span><p>${decision.affects.length ? decision.affects.map(esc).join(", ") : "Not recorded"}</p></div>
-            </div>
-            ${decision.contradictions.length ? `<div class="decision-contradiction">${icon("triangle-alert")}<div><strong>Contradictory decision${decision.contradictions.length > 1 ? "s" : ""}</strong>${decision.contradictions.map((conflict) => `<p><code>${esc(conflict.key)}</code> · ${esc(conflict.title)} · ${badge(conflict.status)}</p>`).join("")}</div></div>` : ""}
           </article>`).join("")}</div>
       </section>`).join("");
   }
 
   let decisionStatusFilter = "ALL";
+  let decisionGroupFilter = "ALL";
   let decisionTypeFilter = "ALL";
   let decisionPhaseFilter = "ALL";
 
@@ -351,6 +363,7 @@
       decisionStatusFilter = button.dataset.decisionStatus;
       renderDecisions();
     });
+    $("#decision-group-filter").addEventListener("change", (event) => { decisionGroupFilter = event.target.value; renderDecisions(); });
     $("#decision-type-filter").addEventListener("change", (event) => { decisionTypeFilter = event.target.value; renderDecisions(); });
     $("#decision-phase-filter").addEventListener("change", (event) => { decisionPhaseFilter = event.target.value; renderDecisions(); });
   }

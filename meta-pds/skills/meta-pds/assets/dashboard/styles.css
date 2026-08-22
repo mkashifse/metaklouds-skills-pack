@@ -211,26 +211,28 @@ h1, h2, h3, p { margin: 0; }
 .decision-group > header { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 14px; border-bottom: 1px solid var(--border-soft); background: #191919; }
 .decision-group > header span { color: var(--decision-accent); font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; }
 .decision-group > header strong { color: var(--faint); font-size: 11px; font-weight: 560; }
-.decision-item { position: relative; padding: 15px 16px 16px 20px; border-bottom: 1px solid var(--border-soft); }
+.decision-item { position: relative; padding: 14px 16px 14px 18px; border-bottom: 1px solid var(--border-soft); }
 .decision-item:last-child { border-bottom: 0; }
 .decision-rail { position: absolute; top: 16px; bottom: 16px; left: 0; width: 3px; border-radius: 0 3px 3px 0; background: var(--decision-accent); opacity: .85; }
 .decision-item.is-contradictory .decision-rail { background: var(--red); }
-.decision-card-head { display: grid; grid-template-columns: minmax(190px, 1fr) minmax(170px, 1fr) auto; align-items: start; gap: 12px; }
-.decision-identity code, .decision-identity span { display: block; }
-.decision-identity code { color: var(--soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.decision-identity span { margin-top: 3px; color: var(--faint); font-size: 10px; }
-.decision-labels { display: flex; flex-wrap: wrap; gap: 5px; }
-.decision-type-label, .decision-type-secondary, .decision-canonical { display: inline-flex; align-items: center; min-height: 22px; padding: 0 7px; border-radius: 5px; font-size: 10px; font-weight: 620; }
+.decision-card-layout { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: start; gap: 11px; }
+.decision-brain { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid color-mix(in srgb, var(--decision-accent) 30%, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--decision-accent) 6%, #202020); color: var(--decision-accent); }
+.decision-brain .lucide-icon { width: 16px; height: 16px; stroke-width: 1.7; }
+.decision-card-body { min-width: 0; }
+.decision-card-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.decision-identity { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 5px 7px; }
+.decision-identity code { overflow: hidden; color: var(--soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.decision-identity > span:not(.decision-type-label):not(.decision-type-secondary) { color: var(--faint); font-size: 9px; }
+.decision-type-label, .decision-type-secondary { display: inline-flex; align-items: center; min-height: 20px; padding: 0 6px; border-radius: 5px; font-size: 9px; font-weight: 620; }
 .decision-type-label { border: 1px solid color-mix(in srgb, var(--decision-accent) 35%, transparent); background: color-mix(in srgb, var(--decision-accent) 8%, transparent); color: var(--decision-accent); }
 .decision-type-secondary { border: 1px solid var(--border-soft); color: var(--muted); }
-.decision-canonical { border: 1px solid rgba(103,170,122,.26); background: rgba(103,170,122,.07); color: var(--green); }
 .decision-state { display: flex; align-items: center; justify-content: flex-end; gap: 9px; }
-.decision-copy { max-width: 920px; margin-top: 12px; }
-.decision-copy h3 { color: var(--text); font-size: 15px; font-weight: 570; }
+.decision-copy { max-width: 920px; margin-top: 7px; }
+.decision-copy h3 { color: var(--text); font-size: 14px; font-weight: 570; }
 .decision-copy p { margin-top: 4px; color: var(--soft); font-size: 13px; line-height: 1.5; }
-.decision-copy small { display: block; margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.decision-copy small { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .decision-copy small strong { color: var(--soft); font-weight: 560; }
-.decision-context { display: grid; grid-template-columns: minmax(130px, .6fr) minmax(190px, 1fr) minmax(220px, 1.3fr); gap: 12px; margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--border-soft); }
+.decision-context { display: grid; grid-template-columns: minmax(130px, .6fr) minmax(190px, 1fr) minmax(220px, 1.3fr); gap: 12px; margin-top: 11px; padding-top: 9px; border-top: 1px solid var(--border-soft); }
 .decision-context > div > span { display: block; margin-bottom: 5px; color: var(--faint); font-size: 9px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
 .decision-context p { color: var(--muted); font-size: 11px; line-height: 1.6; }
 .decision-context code { display: inline-block; margin: 0 4px 3px 0; color: var(--soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
@@ -427,8 +429,7 @@ h1, h2, h3, p { margin: 0; }
   .task-line { grid-template-columns: 65px minmax(0,1fr) 120px; }
   .task-line > :last-child { display: none; }
   .repository-grid { grid-template-columns: 1fr; }
-  .decision-card-head { grid-template-columns: minmax(180px, 1fr) minmax(170px, 1fr); }
-  .decision-state { grid-column: 1 / -1; justify-content: flex-start; }
+  .decision-card-head { grid-template-columns: minmax(0, 1fr) auto; }
   .issue-layout { grid-template-columns: 1fr; }
   .issue-main { border-right: 0; }
   .issue-properties { border-top: 1px solid var(--border); }
@@ -460,11 +461,11 @@ h1, h2, h3, p { margin: 0; }
   .decision-stat:nth-child(2n) { border-right: 0; }
   .decision-stat:last-child { grid-column: 1 / -1; border-bottom: 0; }
   .decision-tools { align-items: stretch; flex-direction: column; padding: 8px 10px; }
-  .decision-selectors { display: grid; grid-template-columns: 1fr 1fr; }
+  .decision-selectors { display: grid; grid-template-columns: 1fr; }
   .decision-selectors label { align-items: stretch; flex-direction: column; }
   .decision-selectors select { width: 100%; min-width: 0; }
   .decision-card-head { grid-template-columns: 1fr; }
-  .decision-state { grid-column: auto; }
+  .decision-state { justify-content: flex-start; }
   .decision-context { grid-template-columns: 1fr; }
   .repository-summary { grid-template-columns: 1fr 1fr; }
   .repository-summary > div:nth-child(2) { border-right: 0; }

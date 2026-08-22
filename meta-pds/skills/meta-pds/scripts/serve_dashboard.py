@@ -35,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 6
+RUNTIME_VERSION = 7
 SUPPORTED_IMPLEMENTATION_SKILLS = {
     "prototype",
     "vercel-react-best-practices",

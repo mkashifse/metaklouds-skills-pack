@@ -13,6 +13,7 @@
       <symbol id="icon-package" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
       <symbol id="icon-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-9.17 4.17a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-9.17 4.17a2 2 0 0 1-1.66 0L2 17.5"/></symbol>
       <symbol id="icon-git-branch" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></symbol>
+      <symbol id="icon-git-pull-request" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M6 9v12"/><line x1="13" x2="16" y1="3" y2="6"/><line x1="16" x2="13" y1="6" y2="9"/></symbol>
       <symbol id="icon-flask" viewBox="0 0 24 24"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.58 16.5h12.85"/></symbol>
       <symbol id="icon-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
       <symbol id="icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
@@ -33,6 +34,9 @@
           </button>
           <button class="top-tab" type="button" data-view="decisions">
             <svg class="lucide-icon" aria-hidden="true"><use href="#icon-git-branch"></use></svg>Decisions <span id="decision-count">0</span>
+          </button>
+          <button class="top-tab" type="button" data-view="repository" aria-label="Branches and pull requests">
+            <svg class="lucide-icon" aria-hidden="true"><use href="#icon-git-pull-request"></use></svg>Branches <span id="branch-count">0</span>
           </button>
           <button class="top-tab" type="button" data-view="activity"><svg class="lucide-icon" aria-hidden="true"><use href="#icon-activity"></use></svg>Activity</button>
           <div class="header-utilities">
@@ -66,6 +70,20 @@
 
       <section class="view-panel" id="view-prototype" data-panel="prototype">
         <div class="prototype-card" id="prototype-card"></div>
+      </section>
+
+      <section class="view-panel" id="view-repository" data-panel="repository">
+        <div class="repository-summary" id="repository-summary"></div>
+        <div class="repository-grid">
+          <section class="repository-panel" aria-labelledby="branches-heading">
+            <header><div><span>Local Git</span><h2 id="branches-heading">Branches</h2></div><strong id="repository-branch-total">0</strong></header>
+            <div class="repository-list" id="repository-branch-list"></div>
+          </section>
+          <section class="repository-panel" aria-labelledby="pull-requests-heading">
+            <header><div><span>GitHub</span><h2 id="pull-requests-heading">Pull requests</h2></div><strong id="repository-pr-total">0</strong></header>
+            <div class="repository-list" id="repository-pr-list"></div>
+          </section>
+        </div>
       </section>
 
       <section class="view-panel" id="view-activity" data-panel="activity">

@@ -13,10 +13,12 @@ from pathlib import Path
 from serve_dashboard import (
     ArtifactError,
     build_dashboard_data,
+    build_repository_data,
     ensure_dashboard,
     parse_table,
     parse_yaml,
     prepare_demo_root,
+    pull_request_records,
     validate_product_artifacts,
 )
 
@@ -55,6 +57,55 @@ class MetaPDSContractTests(unittest.TestCase):
         self.assertEqual("Prototype checkpoint 07 approved", projection["activity"][-1]["title"])
         self.assertEqual(["DEC-003", "DEC-006", "DEC-009", "DEC-012"], [item["id"] for item in projection["decisions"]])
         self.assertEqual("TESTING", projection["decisions"][-1]["status"])
+        self.assertIn("repository", projection)
+
+    def test_repository_projection_reads_local_branch_state(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="meta-pds-git-projection-") as temporary_root:
+            repository = Path(temporary_root)
+            commands = [
+                ["git", "init", "-q", "-b", "main"],
+                ["git", "config", "user.name", "Meta PDS Test"],
+                ["git", "config", "user.email", "meta-pds@example.invalid"],
+            ]
+            for command in commands:
+                completed = subprocess.run(command, cwd=repository, capture_output=True, text=True, check=False)
+                self.assertEqual(0, completed.returncode, completed.stderr)
+            (repository / "checkpoint.txt").write_text("first\n", encoding="utf-8")
+            subprocess.run(["git", "add", "checkpoint.txt"], cwd=repository, check=True)
+            subprocess.run(["git", "commit", "-q", "-m", "Initial checkpoint"], cwd=repository, check=True)
+            subprocess.run(["git", "switch", "-q", "-c", "codex/INIT-0001-discovery"], cwd=repository, check=True)
+            (repository / "checkpoint.txt").write_text("first\nsecond\n", encoding="utf-8")
+
+            projection = build_repository_data(repository, gh_executable="")
+            self.assertTrue(projection["available"])
+            self.assertEqual("codex/INIT-0001-discovery", projection["currentBranch"])
+            self.assertEqual("main", projection["defaultBranch"])
+            self.assertEqual(1, projection["dirtyPaths"])
+            current = next(branch for branch in projection["branches"] if branch["isCurrent"])
+            self.assertTrue(current["isManaged"])
+            self.assertEqual("ACTIVE", current["status"])
+            self.assertFalse(projection["pullRequestSource"]["available"])
+
+    def test_pull_request_projection_preserves_evidence_states(self) -> None:
+        records = pull_request_records([
+            {
+                "number": 7,
+                "title": "Delivery checkpoint",
+                "state": "OPEN",
+                "isDraft": True,
+                "headRefName": "codex/SLICE-001-delivery",
+                "baseRefName": "main",
+                "url": "https://example.invalid/pull/7",
+                "reviewDecision": "REVIEW_REQUIRED",
+                "mergeStateStatus": "BLOCKED",
+                "updatedAt": "2026-08-22T05:00:00Z",
+            },
+            {"number": 6, "title": "Merged work", "state": "MERGED", "headRefName": "old", "baseRefName": "main"},
+        ])
+        self.assertEqual([7, 6], [record["number"] for record in records])
+        self.assertEqual("DRAFT", records[0]["status"])
+        self.assertEqual("REVIEW_REQUIRED", records[0]["reviewDecision"])
+        self.assertEqual("MERGED", records[1]["status"])
 
     def test_manifest_declares_installed_dashboard_bundle(self) -> None:
         suite_root = SKILL_ROOT.parent.parent

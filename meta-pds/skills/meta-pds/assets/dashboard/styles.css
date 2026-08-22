@@ -173,6 +173,51 @@ h1, h2, h3, p { margin: 0; }
 .prototype-stat strong { margin-top: 4px; color: var(--soft); font-size: 16px; font-weight: 540; }
 .activity-list .simple-item { grid-template-columns: 80px minmax(0,1fr) auto; }
 
+.repository-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); }
+.repository-summary > div { min-width: 0; padding: 12px 14px; border-right: 1px solid var(--border-soft); }
+.repository-summary > div:last-child { border-right: 0; }
+.repository-summary span, .repository-summary strong { display: block; }
+.repository-summary span { margin-bottom: 4px; color: var(--faint); font-size: 10px; font-weight: 620; letter-spacing: .06em; text-transform: uppercase; }
+.repository-summary strong { overflow: hidden; color: var(--soft); font-size: 13px; font-weight: 560; text-overflow: ellipsis; white-space: nowrap; }
+.repository-summary .repository-source-live { color: var(--green); }
+.repository-summary .repository-source-unavailable { color: var(--red); }
+.repository-notice { display: flex; grid-column: 1 / -1; align-items: center; gap: 10px; border-right: 0 !important; }
+.repository-notice .lucide-icon { color: var(--red); }
+.repository-notice div { min-width: 0; }
+.repository-notice strong, .repository-notice span { display: block; margin: 0; }
+.repository-notice strong { margin-bottom: 2px; color: var(--soft); font-size: 13px; }
+.repository-notice span { color: var(--muted); font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.repository-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+.repository-panel { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); }
+.repository-panel > header { display: flex; min-height: 59px; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 14px; border-bottom: 1px solid var(--border-soft); background: #191919; }
+.repository-panel > header span { display: block; color: var(--faint); font-size: 9px; font-weight: 630; letter-spacing: .08em; text-transform: uppercase; }
+.repository-panel > header h2 { margin-top: 1px; color: var(--soft); font-size: 15px; font-weight: 570; }
+.repository-panel > header > strong { color: var(--faint); font-size: 12px; font-weight: 560; }
+.repository-list { min-width: 0; }
+.repository-row { display: grid; min-height: 94px; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: start; gap: 11px; padding: 13px 14px; border-bottom: 1px solid var(--border-soft); }
+.repository-row:last-child { border-bottom: 0; }
+.repository-row.is-current { background: rgba(232,120,50,.035); }
+.repository-entity-icon { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid var(--border); border-radius: 7px; background: #222; color: var(--muted); }
+.repository-entity-icon .lucide-icon { width: 15px; height: 15px; }
+.repository-row-copy { min-width: 0; }
+.repository-title-line { display: flex; min-width: 0; align-items: center; gap: 7px; }
+.repository-title-line strong { overflow: hidden; color: var(--soft); font-size: 13px; font-weight: 570; text-overflow: ellipsis; white-space: nowrap; }
+.repository-title-line em { flex: 0 0 auto; color: var(--orange); font-size: 9px; font-style: normal; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; }
+.repository-title-line a { display: flex; min-width: 0; align-items: center; gap: 6px; color: inherit; text-decoration: none; }
+.repository-title-line a:hover strong { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.repository-title-line a .lucide-icon { width: 12px; height: 12px; color: var(--faint); }
+.repository-row-copy p { margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.repository-row-copy small { display: block; margin-top: 7px; color: var(--faint); font-size: 10px; line-height: 1.45; }
+.repository-row-copy small a { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); text-decoration: none; }
+.repository-row-copy small a:hover { color: var(--text); }
+.repository-row-copy small .lucide-icon { width: 10px; height: 10px; }
+.repository-row-copy code { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
+.repository-row > .state-badge { padding-top: 5px; }
+.repository-unavailable { padding: 28px 22px; color: var(--muted); text-align: center; }
+.repository-unavailable .lucide-icon { margin-bottom: 8px; color: var(--red); }
+.repository-unavailable strong { display: block; margin-bottom: 4px; color: var(--soft); font-size: 13px; font-weight: 560; }
+.repository-unavailable p { color: var(--faint); font-size: 12px; }
+
 .page-footer { display: flex; justify-content: space-between; gap: 15px; padding: 18px 2px 0; color: var(--faint); font-size: 11px; }
 .empty-state { padding: 32px; color: var(--muted); font-size: 14px; text-align: center; }
 
@@ -310,6 +355,7 @@ h1, h2, h3, p { margin: 0; }
   .slice-status-summary > span:not(.state-badge) { padding-left: 9px; }
   .task-line { grid-template-columns: 65px minmax(0,1fr) 120px; }
   .task-line > :last-child { display: none; }
+  .repository-grid { grid-template-columns: 1fr; }
   .issue-layout { grid-template-columns: 1fr; }
   .issue-main { border-right: 0; }
   .issue-properties { border-top: 1px solid var(--border); }
@@ -334,6 +380,11 @@ h1, h2, h3, p { margin: 0; }
   .task-line { grid-template-columns: 60px minmax(0,1fr); }
   .task-line .assignee { display: none; }
   .prototype-grid { grid-template-columns: 1fr 1fr; }
+  .repository-summary { grid-template-columns: 1fr 1fr; }
+  .repository-summary > div:nth-child(2) { border-right: 0; }
+  .repository-summary > div:nth-child(-n+2) { border-bottom: 1px solid var(--border-soft); }
+  .repository-row { grid-template-columns: 28px minmax(0, 1fr); }
+  .repository-row > .state-badge { grid-column: 2; justify-self: start; padding-top: 0; }
   .simple-item { grid-template-columns: 75px minmax(0,1fr); }
   .simple-item > :last-child { grid-column: 2; }
   .page-footer { flex-direction: column; gap: 3px; }

@@ -39,6 +39,20 @@ the current files. Canonical sources are:
 - delivery reports and runtime evidence for QA and release status;
 - optional `delivery-events.jsonl` for the recent activity timeline.
 
+Repository visibility is derived separately from read-only runtime evidence on
+each refresh:
+
+- local branch, current branch, upstream, commit, ahead/behind, and working-tree
+  state come from the product root's Git repository;
+- pull-request state, draft state, review decision, merge state, branches, and
+  URL come from authenticated GitHub CLI output when available.
+
+Never infer a PR from a branch name or infer merge readiness from local commits.
+When GitHub CLI, authentication, a supported remote, or network access is
+unavailable, keep local branch evidence visible and label PR evidence
+unavailable with the concise runtime diagnostic. Never expose credentials or
+authentication output.
+
 The activity file is append-only JSON Lines. Each event contains an ISO 8601
 `at`, concise `kind`, `title`, and evidence-bearing `detail`; the dashboard
 renders the newest valid event first. Record durable delivery checkpoints only,
@@ -159,6 +173,12 @@ horizontally rather than creating a second header row.
    slice-recorded required behavior;
 9. separate top tabs for slices, decisions, prototype checkpoints, and durable
    activity, with compact slice totals integrated into the tabs.
+10. a separate Branches tab showing the current and default branches, dirty-path
+    count, every local branch's head, upstream and ahead/behind state, associated
+    PR when verified, plus a pull-request list with live state, draft/review/merge
+    evidence, head/base branches, update time, and clickable GitHub URL. Keep
+    Git/PR diagnostics inside this tab rather than treating unavailable remote
+    evidence as a canonical artifact error.
 
 Hide or label unavailable downstream views during early discovery; do not create
 fake progress.

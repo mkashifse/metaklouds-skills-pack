@@ -36,17 +36,22 @@
     .toLowerCase()
     .replace(/\b\w/g, (character) => character.toUpperCase());
   const time = (value) => new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
+  const dateTime = (value) => {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? "Unknown" : new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(parsed);
+  };
+  const externalUrl = (value) => /^https?:\/\//i.test(String(value || "")) ? String(value) : "";
   const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
   const icon = (name, className = "") => `<svg class="lucide-icon ${esc(className)}" aria-hidden="true" focusable="false"><use href="#icon-${esc(name)}"></use></svg>`;
 
   const STATUS_TONES = Object.freeze({
     RELEASED: "released", OUTCOME_VALIDATED: "released", DONE: "released", COMPLETED: "released",
-    LOCKED: "released", PASSED: "released", VERIFIED: "released", ON_TRACK: "released",
+    LOCKED: "released", PASSED: "released", VERIFIED: "released", ON_TRACK: "released", MERGED: "released", SYNCED: "released", CLEAN: "released", APPROVED: "released",
     IN_PROGRESS: "active", ACTIVE: "active", EXECUTING: "active", MOBILIZING: "active",
-    VERIFYING: "verifying", TESTING: "verifying", HUMAN_REVIEW: "verifying", IN_REVIEW: "verifying",
-    READY: "ready", READY_FOR_DEVELOPMENT: "ready", EXECUTION_READY: "ready", RELEASE_READY: "ready",
+    VERIFYING: "verifying", TESTING: "verifying", HUMAN_REVIEW: "verifying", IN_REVIEW: "verifying", OPEN: "verifying", REVIEW_REQUIRED: "verifying",
+    READY: "ready", READY_FOR_DEVELOPMENT: "ready", EXECUTION_READY: "ready", RELEASE_READY: "ready", AHEAD: "ready",
     BLOCKED: "blocked", REWORK_REQUIRED: "blocked", REVERIFY_REQUIRED: "blocked", FAILED: "blocked",
-    AT_RISK: "blocked", OFF_TRACK: "blocked"
+    AT_RISK: "blocked", OFF_TRACK: "blocked", BEHIND: "blocked", AHEAD_BEHIND: "blocked", UPSTREAM_GONE: "blocked", CONFLICTING: "blocked", CHANGES_REQUESTED: "blocked"
   });
   const normalizeStatus = (status) => String(status ?? "").trim().replaceAll("-", "_").replaceAll(" ", "_").toUpperCase();
   const statusLabel = (status) => pretty(normalizeStatus(status));
@@ -100,6 +105,7 @@
   function renderHeader() {
     setText("#slice-count", data.slices.length);
     setText("#decision-count", data.decisions.length);
+    setText("#branch-count", data.repository?.branches?.length || 0);
     setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);
   }
 
@@ -131,7 +137,7 @@
   function bindTopTabs() {
     $$(".top-tab").forEach((tab) => tab.addEventListener("click", () => showView(tab.dataset.view)));
     const requested = location.hash.slice(1);
-    showView(["slices", "decisions", "prototype", "activity"].includes(requested) ? requested : "slices");
+    showView(["slices", "decisions", "repository", "prototype", "activity"].includes(requested) ? requested : "slices");
   }
 
   let sliceFilter = "ALL";
@@ -295,6 +301,69 @@
         <div class="simple-copy"><h3>${esc(item.title)}</h3><p>${esc(item.detail)}</p></div>
         ${badge(activityStatus(item.kind), pretty(item.kind))}
       </article>`).join("") : '<div class="empty-state">No durable delivery events are recorded.</div>';
+  }
+
+  function repositoryTracking(branch) {
+    const parts = [];
+    if (branch.upstream) parts.push(branch.upstream);
+    if (branch.ahead) parts.push(`${branch.ahead} ahead`);
+    if (branch.behind) parts.push(`${branch.behind} behind`);
+    if (branch.upstreamGone) parts.push("upstream gone");
+    return parts.join(" · ") || "No upstream branch";
+  }
+
+  function renderRepository() {
+    const repository = data.repository || { available: false, branches: [], pullRequests: [], pullRequestSource: {} };
+    setText("#repository-branch-total", repository.branches?.length || 0);
+    setText("#repository-pr-total", repository.pullRequests?.length || 0);
+    if (!repository.available) {
+      $("#repository-summary").innerHTML = `<div class="repository-notice">${icon("triangle-alert")}<div><strong>Git evidence unavailable</strong><span>${esc(repository.message || "The product root is not a Git repository.")}</span></div></div>`;
+      $("#repository-branch-list").innerHTML = '<div class="empty-state">No local branches are available.</div>';
+      $("#repository-pr-list").innerHTML = '<div class="empty-state">No pull-request evidence is available.</div>';
+      return;
+    }
+
+    const pullRequestsByNumber = new Map((repository.pullRequests || []).map((pullRequest) => [pullRequest.number, pullRequest]));
+    $("#repository-summary").innerHTML = `
+      <div><span>Current branch</span><strong>${esc(repository.currentBranch || "Detached HEAD")}</strong></div>
+      <div><span>Default branch</span><strong>${esc(repository.defaultBranch || "Unknown")}</strong></div>
+      <div><span>Working tree</span><strong>${repository.dirtyPaths ? `${esc(repository.dirtyPaths)} changed paths` : "Clean"}</strong></div>
+      <div><span>PR evidence</span><strong class="${repository.pullRequestSource?.available ? "repository-source-live" : "repository-source-unavailable"}">${esc(repository.pullRequestSource?.available ? "Live" : "Unavailable")}</strong></div>`;
+
+    $("#repository-branch-list").innerHTML = repository.branches?.length ? repository.branches.map((branch) => {
+      const pullRequest = pullRequestsByNumber.get(branch.pullRequestNumber);
+      const url = externalUrl(pullRequest?.url);
+      return `
+        <article class="repository-row branch-row ${branch.isCurrent ? "is-current" : ""}">
+          <span class="repository-entity-icon">${icon("git-branch")}</span>
+          <div class="repository-row-copy">
+            <div class="repository-title-line"><strong>${esc(branch.name)}</strong>${branch.isCurrent ? "<em>Current</em>" : ""}${branch.isManaged ? "<em>Meta PDS</em>" : ""}</div>
+            <p>${esc(branch.subject || "No commit subject")}</p>
+            <small><code>${esc(branch.head)}</code> · ${esc(repositoryTracking(branch))} · Updated ${esc(dateTime(branch.updatedAt))}${pullRequest ? ` · ${url ? `<a href="${esc(url)}" target="_blank" rel="noreferrer">PR #${esc(pullRequest.number)}${icon("external-link")}</a>` : `PR #${esc(pullRequest.number)}`}` : ""}</small>
+          </div>
+          ${badge(branch.status)}
+        </article>`;
+    }).join("") : '<div class="empty-state">No local branches were found.</div>';
+
+    if (!repository.pullRequestSource?.available) {
+      $("#repository-pr-list").innerHTML = `<div class="repository-unavailable">${icon("triangle-alert")}<strong>Pull-request status unavailable</strong><p>${esc(repository.pullRequestSource?.message || "Install and authenticate GitHub CLI to show PR evidence.")}</p></div>`;
+      return;
+    }
+    $("#repository-pr-list").innerHTML = repository.pullRequests?.length ? repository.pullRequests.map((pullRequest) => {
+      const url = externalUrl(pullRequest.url);
+      const review = pullRequest.reviewDecision !== "UNKNOWN" ? pretty(pullRequest.reviewDecision) : "No review decision";
+      const mergeState = pullRequest.mergeState !== "UNKNOWN" ? pretty(pullRequest.mergeState) : "Merge state unknown";
+      return `
+        <article class="repository-row pull-request-row">
+          <span class="repository-entity-icon">${icon("git-pull-request")}</span>
+          <div class="repository-row-copy">
+            <div class="repository-title-line">${url ? `<a href="${esc(url)}" target="_blank" rel="noreferrer"><strong>#${esc(pullRequest.number)} · ${esc(pullRequest.title)}</strong>${icon("external-link")}</a>` : `<strong>#${esc(pullRequest.number)} · ${esc(pullRequest.title)}</strong>`}</div>
+            <p><code>${esc(pullRequest.headBranch || "Unknown head")}</code> → <code>${esc(pullRequest.baseBranch || "Unknown base")}</code></p>
+            <small>${esc(review)} · ${esc(mergeState)} · Updated ${esc(dateTime(pullRequest.updatedAt))}</small>
+          </div>
+          ${badge(pullRequest.status)}
+        </article>`;
+    }).join("") : '<div class="empty-state">No pull requests were returned for this repository.</div>';
   }
 
   let modalSliceId = null;
@@ -676,6 +745,7 @@
   renderDecisions();
   renderPrototype();
   renderActivity();
+  renderRepository();
   bindTopTabs();
   bindSliceList();
   bindModal();

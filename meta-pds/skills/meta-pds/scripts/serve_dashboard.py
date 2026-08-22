@@ -11,6 +11,7 @@ import json
 import os
 import re
 import signal
+import shutil
 import socket
 import subprocess
 import sys
@@ -34,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 1
+RUNTIME_VERSION = 2
 
 
 class ArtifactError(RuntimeError):
@@ -1180,10 +1181,170 @@ def contract_markdown(product_root: Path, contract_path: Any) -> str:
     return (match.group(1) if match else text).strip()
 
 
+def run_readonly_command(command: list[str], cwd: Path, timeout: float = 5.0) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        command,
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def parse_tracking(value: str) -> tuple[int, int, bool]:
+    ahead_match = re.search(r"ahead\s+(\d+)", value)
+    behind_match = re.search(r"behind\s+(\d+)", value)
+    return (
+        int(ahead_match.group(1)) if ahead_match else 0,
+        int(behind_match.group(1)) if behind_match else 0,
+        "gone" in value.lower(),
+    )
+
+
+def pull_request_records(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    records: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict) or not isinstance(item.get("number"), int):
+            continue
+        state = status(item.get("state"), "UNKNOWN")
+        display_status = "DRAFT" if item.get("isDraft") and state == "OPEN" else state
+        records.append({
+            "number": item["number"],
+            "title": str(item.get("title") or f"Pull request {item['number']}"),
+            "status": display_status,
+            "state": state,
+            "isDraft": bool(item.get("isDraft")),
+            "headBranch": str(item.get("headRefName") or ""),
+            "baseBranch": str(item.get("baseRefName") or ""),
+            "url": str(item.get("url") or ""),
+            "reviewDecision": status(item.get("reviewDecision"), "UNKNOWN"),
+            "mergeState": status(item.get("mergeStateStatus"), "UNKNOWN"),
+            "updatedAt": str(item.get("updatedAt") or ""),
+        })
+    state_order = {"OPEN": 0, "DRAFT": 0, "MERGED": 1, "CLOSED": 2}
+    records.sort(key=lambda item: item["updatedAt"], reverse=True)
+    records.sort(key=lambda item: state_order.get(item["status"], 3))
+    return records
+
+
+def build_repository_data(project_root: Path, gh_executable: str | None = None) -> dict[str, Any]:
+    project_root = project_root.resolve()
+    unavailable = {
+        "available": False,
+        "root": str(project_root),
+        "currentBranch": "",
+        "defaultBranch": "",
+        "dirtyPaths": 0,
+        "branches": [],
+        "pullRequests": [],
+        "pullRequestSource": {"available": False, "kind": "github-cli", "message": "Git repository unavailable."},
+        "message": "Git repository unavailable.",
+    }
+    try:
+        resolved = run_readonly_command(["git", "rev-parse", "--show-toplevel"], project_root, timeout=2.0)
+    except (OSError, subprocess.TimeoutExpired):
+        return unavailable
+    if resolved.returncode != 0 or not resolved.stdout.strip():
+        return unavailable
+
+    repository_root = Path(resolved.stdout.strip()).resolve()
+    current_result = run_readonly_command(["git", "symbolic-ref", "--quiet", "--short", "HEAD"], repository_root, timeout=2.0)
+    current_branch = current_result.stdout.strip() if current_result.returncode == 0 else "DETACHED"
+    dirty_result = run_readonly_command(["git", "status", "--porcelain", "--untracked-files=normal"], repository_root, timeout=2.0)
+    dirty_paths = len([line for line in dirty_result.stdout.splitlines() if line.strip()]) if dirty_result.returncode == 0 else 0
+
+    branch_result = run_readonly_command([
+        "git", "for-each-ref", "--sort=-committerdate",
+        "--format=%(refname:short)%00%(objectname:short)%00%(upstream:short)%00%(upstream:track)%00%(committerdate:iso-strict)%00%(subject)",
+        "refs/heads",
+    ], repository_root, timeout=3.0)
+    branches: list[dict[str, Any]] = []
+    if branch_result.returncode == 0:
+        for line in branch_result.stdout.splitlines():
+            fields = line.split("\0")
+            if len(fields) != 6 or not fields[0]:
+                continue
+            name, head, upstream, tracking, updated_at, subject = fields
+            ahead, behind, upstream_gone = parse_tracking(tracking)
+            branches.append({
+                "name": name,
+                "head": head,
+                "subject": subject,
+                "updatedAt": updated_at,
+                "upstream": upstream,
+                "ahead": ahead,
+                "behind": behind,
+                "upstreamGone": upstream_gone,
+                "isCurrent": name == current_branch,
+                "isManaged": name.startswith("codex/"),
+                "status": "UPSTREAM_GONE" if upstream_gone else ("AHEAD_BEHIND" if ahead and behind else ("AHEAD" if ahead else ("BEHIND" if behind else ("ACTIVE" if name == current_branch else ("SYNCED" if upstream else "LOCAL"))))),
+                "pullRequestNumber": None,
+            })
+
+    default_branch = ""
+    default_result = run_readonly_command(["git", "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], repository_root, timeout=2.0)
+    if default_result.returncode == 0:
+        default_branch = default_result.stdout.strip().removeprefix("origin/")
+    if not default_branch:
+        names = {branch["name"] for branch in branches}
+        default_branch = "main" if "main" in names else ("master" if "master" in names else "")
+
+    gh_path = shutil.which("gh") if gh_executable is None else gh_executable
+    pull_requests: list[dict[str, Any]] = []
+    if not gh_path:
+        pull_request_source = {"available": False, "kind": "github-cli", "message": "GitHub CLI is not installed."}
+    else:
+        try:
+            pr_result = run_readonly_command([
+                gh_path, "pr", "list", "--state", "all", "--limit", "100", "--json",
+                "number,title,state,isDraft,headRefName,baseRefName,url,reviewDecision,mergeStateStatus,updatedAt",
+            ], repository_root, timeout=8.0)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            pull_request_source = {"available": False, "kind": "github-cli", "message": f"Pull-request lookup failed: {error.__class__.__name__}."}
+        else:
+            if pr_result.returncode == 0:
+                try:
+                    pull_requests = pull_request_records(json.loads(pr_result.stdout))
+                except json.JSONDecodeError:
+                    pull_requests = []
+                    pull_request_source = {"available": False, "kind": "github-cli", "message": "GitHub CLI returned invalid JSON."}
+                else:
+                    pull_request_source = {"available": True, "kind": "github-cli", "message": "Live GitHub pull-request evidence."}
+            else:
+                detail = next((line.strip() for line in pr_result.stderr.splitlines() if line.strip()), "GitHub CLI is unavailable for this repository.")
+                pull_request_source = {"available": False, "kind": "github-cli", "message": detail[:240]}
+
+    prs_by_branch: dict[str, list[dict[str, Any]]] = {}
+    for pull_request in pull_requests:
+        prs_by_branch.setdefault(pull_request["headBranch"], []).append(pull_request)
+    for branch in branches:
+        matches = prs_by_branch.get(branch["name"], [])
+        if matches:
+            pull_request = matches[0]
+            branch["pullRequestNumber"] = pull_request["number"]
+            branch["status"] = pull_request["status"]
+
+    return {
+        "available": True,
+        "root": str(repository_root),
+        "currentBranch": current_branch,
+        "defaultBranch": default_branch,
+        "dirtyPaths": dirty_paths,
+        "branches": branches,
+        "pullRequests": pull_requests,
+        "pullRequestSource": pull_request_source,
+        "message": "Live local Git branch evidence.",
+    }
+
+
 def build_dashboard_data(
     product_root: Path,
     projection_kind: str = "live-canonical",
     projection_source: str = "Canonical Meta PDS artifacts",
+    repository_root: Path | None = None,
 ) -> dict[str, Any]:
     product_root = product_root.resolve()
     base = product_root / "docs" / "meta-pds"
@@ -1490,6 +1651,7 @@ def build_dashboard_data(
         "contracts": contracts,
         "testCases": test_cases,
         "activity": events,
+        "repository": build_repository_data(repository_root or product_root),
     }
 
 
@@ -1524,7 +1686,7 @@ def handler_for(
             if path == "/api/dashboard":
                 try:
                     payload = json.dumps(
-                        build_dashboard_data(product_root, projection_kind, projection_source),
+                        build_dashboard_data(product_root, projection_kind, projection_source, runtime_project_root),
                         ensure_ascii=False,
                     ).encode("utf-8")
                     self.send_response(200)

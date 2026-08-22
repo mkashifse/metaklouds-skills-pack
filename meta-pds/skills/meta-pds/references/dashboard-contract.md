@@ -7,16 +7,26 @@ place to manage work.
 ## Runtime and source
 
 Do not create a dashboard folder, projection file, database, or duplicated
-dashboard data inside a product repository. The installed skill owns the reusable
-UI and parser. Launch it from the product root with:
+dashboard data inside a product repository. The installed skill owns the
+reusable UI, parser, and runtime coordinator. On every Meta PDS invocation,
+ensure the project dashboard with:
 
 ```text
-python3 <installed-meta-pds>/scripts/serve_dashboard.py <product-root>
+python3 <installed-meta-pds>/scripts/serve_dashboard.py <product-root> --ensure
 ```
 
-The local service binds to `127.0.0.1:8765` by default, reparses canonical files
-for every dashboard request, and keeps the assembled view only in memory. The
-Human refreshes the page to see the current files. Canonical sources are:
+The command starts one detached local service for the resolved project or
+reuses the existing healthy service for that exact project. It prints the URL
+and exits; always return that clickable URL to the Human. Runtime coordination
+is stored outside the product repository in the operating system's temporary
+directory. A lock serializes discovery and launch, stale registry entries are
+discarded, and a project identity endpoint prevents one project's dashboard
+from being mistaken for another. If `127.0.0.1:8765` belongs to another
+service, select an available local port. Never start a second server manually.
+
+The local service reparses canonical files for every dashboard request and
+keeps the assembled view only in memory. The Human refreshes the page to see
+the current files. Canonical sources are:
 
 - `initiative.md` for purpose, outcomes, and roadmap;
 - `decision-log.yaml` for proposed, testing, locked, and superseded decisions;
@@ -34,10 +44,14 @@ The activity file is append-only JSON Lines. Each event contains an ISO 8601
 renders the newest valid event first. Record durable delivery checkpoints only,
 not low-value agent or editor activity.
 
-For UI preview before a product has canonical artifacts, use `--demo`. Demo mode
-parses the bundled Authentication slice and execution-plan examples into a
-temporary in-memory runtime, writes nothing into a product repository, and must
-be visibly labelled as example data. Never treat it as delivery state.
+Before a product has canonical artifacts, `--ensure` automatically uses demo
+mode for that project's runtime identity. Demo mode parses the bundled
+Authentication slice and execution-plan examples into a temporary in-memory
+runtime, writes nothing into a product repository, and must be visibly labelled
+as example data. Use `--demo` directly only for an unassociated manual preview.
+Never treat example data as delivery state. After canonical core artifacts are
+created, run `--ensure` again; it stops the example runtime and replaces it with
+the live canonical projection for the same project.
 
 Never infer a successful gate, test, release, or Human approval merely to fill
 the display. Show unknown or missing evidence explicitly. The dashboard runs

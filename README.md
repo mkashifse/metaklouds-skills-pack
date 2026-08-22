@@ -1,6 +1,11 @@
 # Metaklouds Skills Pack
 
-An installable product-to-engineering workflow for Codex and Claude Code.
+Installable product-to-engineering workflows for Codex and Claude Code.
+
+`meta-pds` is the human-centered entrypoint for new initiatives. It coordinates
+rapid prototyping, fat-slice planning, bounded development, independent QA, and
+release evidence while automatically starting or reusing one local delivery
+dashboard per project.
 
 The pack turns an idea into a validated initiative, plans it as fat end-to-end
 vertical slices, and implements each slice as one releasable unit under a
@@ -24,10 +29,15 @@ the active delivery team.
 
 ## Included skills
 
-The full installer provides eleven skills:
+The full installer provides sixteen skills:
 
 | Skill | Ownership | Purpose |
 | --- | --- | --- |
+| `meta-pds` | Metaklouds | Coordinate the human-centered delivery suite and its per-project dashboard |
+| `rapid-prototyping` | Metaklouds | Build disposable prototypes for manual Human review |
+| `slice-planning` | Metaklouds | Define implementation-ready fat slices |
+| `slice-development` | Metaklouds | Mobilize and execute bounded slice work packages |
+| `slice-qa` | Metaklouds | Independently verify release and outcome evidence |
 | `continuous-delivery-manager` | Metaklouds | Orchestrate the complete initiative, Git, and release control loop |
 | `delivery-monitoring-dashboard` | Metaklouds | Keep the docs-only monitoring JSON synchronized in a non-blocking worker |
 | `meta-grill-team` | Metaklouds | Define the initiative while building a JSON-backed React prototype |
@@ -40,7 +50,7 @@ The full installer provides eleven skills:
 | `supabase` | Upstream | Guide Supabase implementation and security |
 | `supabase-postgres-best-practices` | Upstream | Guide Postgres schemas, migrations, RLS, and performance |
 
-The six Metaklouds skills are bundled in this repository. Upstream skills are
+The eleven Metaklouds skills are bundled in this repository. Upstream skills are
 downloaded at pinned revisions from their original repositories during
 installation. See [THIRD_PARTY.md](THIRD_PARTY.md) and
 [manifest.json](manifest.json).
@@ -105,6 +115,13 @@ For an isolated or CI installation, provide an explicit destination:
 Start with:
 
 ```text
+Use $meta-pds to start or resume this product initiative.
+```
+
+Meta PDS starts or reuses the project's local dashboard and returns its URL.
+The earlier continuous-delivery workflow remains available through:
+
+```text
 Use $continuous-delivery-manager to deliver this initiative and keep its
 monitoring dashboard synchronized.
 ```
@@ -141,8 +158,8 @@ after both PRs and whole-slice E2E evidence pass.
 
 ## Install only the bundled Metaklouds skills
 
-Agents compatible with the open skills format can discover the six bundled
-skills under `skills/`. For example:
+Agents compatible with the open skills format can discover the eleven bundled
+skills declared in [manifest.json](manifest.json). For example:
 
 ```bash
 npx skills add mkashifse/metaklouds-skills-pack --all

@@ -69,6 +69,12 @@ fi
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 suite_root="$(cd "$script_directory/.." && pwd)"
 skills=(meta-pds rapid-prototyping slice-planning slice-development slice-qa)
+dashboard_files=(
+  scripts/serve_dashboard.py
+  assets/dashboard/index.html
+  assets/dashboard/styles.css
+  assets/dashboard/app.js
+)
 
 mkdir -p "$destination"
 
@@ -83,6 +89,14 @@ for skill in "${skills[@]}"; do
 
   if [[ -e "$target_directory" ]]; then
     if [[ "$force" != "true" ]]; then
+      if [[ "$skill" == "meta-pds" ]]; then
+        for dashboard_file in "${dashboard_files[@]}"; do
+          if [[ ! -f "$target_directory/$dashboard_file" ]]; then
+            echo "Error: installed Meta PDS dashboard file is missing: $dashboard_file" >&2
+            exit 1
+          fi
+        done
+      fi
       echo "Skipping $skill (already installed)."
       continue
     fi
@@ -93,6 +107,14 @@ for skill in "${skills[@]}"; do
 
   mkdir -p "$target_directory"
   cp -R "$source_directory/." "$target_directory/"
+  if [[ "$skill" == "meta-pds" ]]; then
+    for dashboard_file in "${dashboard_files[@]}"; do
+      if [[ ! -f "$target_directory/$dashboard_file" ]]; then
+        echo "Error: Meta PDS dashboard file was not installed: $dashboard_file" >&2
+        exit 1
+      fi
+    done
+  fi
   echo "Installed $skill"
 done
 

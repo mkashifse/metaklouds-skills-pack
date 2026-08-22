@@ -1,7 +1,7 @@
 {
   "name": "meta-pds",
   "displayName": "Meta Product Delivery System",
-  "version": "0.10.5",
+  "version": "0.10.6",
   "entrySkill": "meta-pds",
   "skills": [
     "meta-pds",
@@ -9,5 +9,14 @@
     "slice-planning",
     "slice-development",
     "slice-qa"
-  ]
+  ],
+  "dashboard": {
+    "entrypoint": "skills/meta-pds/scripts/serve_dashboard.py",
+    "assets": [
+      "skills/meta-pds/assets/dashboard/index.html",
+      "skills/meta-pds/assets/dashboard/styles.css",
+      "skills/meta-pds/assets/dashboard/app.js"
+    ],
+    "lifecycle": "ensure-one-runtime-per-project"
+  }
 }

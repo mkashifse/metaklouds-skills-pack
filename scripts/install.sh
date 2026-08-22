@@ -88,7 +88,7 @@ fi
 if [[ "$only_count" -gt 0 ]]; then
   for selected_skill in "${only_skills[@]}"; do
     case "$selected_skill" in
-      continuous-delivery-manager|delivery-monitoring-dashboard|meta-grill-team|vertical-slice-team|dev-team|change-management|prototype|vercel-react-best-practices|fastapi|supabase|supabase-postgres-best-practices)
+      meta-pds|rapid-prototyping|slice-planning|slice-development|slice-qa|continuous-delivery-manager|delivery-monitoring-dashboard|meta-grill-team|vertical-slice-team|dev-team|change-management|prototype|vercel-react-best-practices|fastapi|supabase|supabase-postgres-best-practices)
         ;;
       *)
         echo "Error: unknown skill for --only: $selected_skill" >&2
@@ -122,6 +122,24 @@ should_install() {
   return 1
 }
 
+verify_meta_pds_dashboard() {
+  local skill_directory="$1"
+  local required_file
+  local required_files=(
+    scripts/serve_dashboard.py
+    assets/dashboard/index.html
+    assets/dashboard/styles.css
+    assets/dashboard/app.js
+  )
+
+  for required_file in "${required_files[@]}"; do
+    if [[ ! -f "$skill_directory/$required_file" ]]; then
+      echo "Error: Meta PDS dashboard file is missing: $required_file" >&2
+      exit 1
+    fi
+  done
+}
+
 install_directory() {
   local source_directory="$1"
   local skill_name="$2"
@@ -138,6 +156,9 @@ install_directory() {
 
   if [[ -e "$target_directory" ]]; then
     if [[ "$force" != "true" ]]; then
+      if [[ "$skill_name" == "meta-pds" ]]; then
+        verify_meta_pds_dashboard "$target_directory"
+      fi
       echo "Skipping $skill_name (already installed)."
       return
     fi
@@ -150,6 +171,9 @@ install_directory() {
 
   mkdir -p "$target_directory"
   cp -R "$source_directory/." "$target_directory/"
+  if [[ "$skill_name" == "meta-pds" ]]; then
+    verify_meta_pds_dashboard "$target_directory"
+  fi
   echo "Installed $skill_name"
 }
 
@@ -181,6 +205,11 @@ fetch_and_install() {
 
 echo "Installing Metaklouds Skills Pack for $target into $destination"
 
+install_directory "$repository_root/meta-pds/skills/meta-pds" "meta-pds"
+install_directory "$repository_root/meta-pds/skills/rapid-prototyping" "rapid-prototyping"
+install_directory "$repository_root/meta-pds/skills/slice-planning" "slice-planning"
+install_directory "$repository_root/meta-pds/skills/slice-development" "slice-development"
+install_directory "$repository_root/meta-pds/skills/slice-qa" "slice-qa"
 install_directory "$repository_root/skills/continuous-delivery-manager" "continuous-delivery-manager"
 install_directory "$repository_root/skills/delivery-monitoring-dashboard" "delivery-monitoring-dashboard"
 install_directory "$repository_root/skills/meta-grill-team" "meta-grill-team"

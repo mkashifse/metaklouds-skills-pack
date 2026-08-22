@@ -5,9 +5,18 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
+import http.client
 import json
+import os
 import re
+import signal
+import socket
+import subprocess
+import sys
 import tempfile
+import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -24,6 +33,8 @@ STATIC_FILES = {
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
+RUNTIME_SERVICE = "meta-pds-dashboard"
+RUNTIME_VERSION = 1
 
 
 class ArtifactError(RuntimeError):
@@ -1487,10 +1498,29 @@ def handler_for(
     asset_root: Path,
     projection_kind: str = "live-canonical",
     projection_source: str = "Canonical Meta PDS artifacts",
+    runtime_project_root: Path | None = None,
 ):
+    runtime_project_root = (runtime_project_root or product_root).resolve()
+
     class DashboardHandler(BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802
             path = urlparse(self.path).path
+            if path == "/api/runtime":
+                payload = json.dumps({
+                    "service": RUNTIME_SERVICE,
+                    "runtimeVersion": RUNTIME_VERSION,
+                    "projectRoot": str(runtime_project_root),
+                    "projectionKind": projection_kind,
+                    "pid": os.getpid(),
+                }).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return
+
             if path == "/api/dashboard":
                 try:
                     payload = json.dumps(
@@ -1528,6 +1558,229 @@ def handler_for(
             return
 
     return DashboardHandler
+
+
+def dashboard_url(host: str, port: int) -> str:
+    rendered_host = f"[{host}]" if ":" in host and not host.startswith("[") else host
+    return f"http://{rendered_host}:{port}"
+
+
+def dashboard_runtime_paths(project_root: Path) -> tuple[Path, Path, Path]:
+    runtime_root = Path(tempfile.gettempdir()) / "meta-pds-dashboard"
+    runtime_root.mkdir(parents=True, mode=0o700, exist_ok=True)
+    try:
+        runtime_root.chmod(0o700)
+    except OSError:
+        pass
+    project_key = hashlib.sha256(str(project_root.resolve()).encode("utf-8")).hexdigest()[:20]
+    return (
+        runtime_root / f"{project_key}.json",
+        runtime_root / ".launch.lock",
+        runtime_root / f"{project_key}.log",
+    )
+
+
+@contextmanager
+def dashboard_launch_lock(lock_path: Path):
+    """Serialize dashboard discovery and launch across concurrent invocations."""
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    handle = lock_path.open("a+b")
+    if handle.tell() == 0:
+        handle.write(b"0")
+        handle.flush()
+    handle.seek(0)
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        yield
+    finally:
+        handle.seek(0)
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        handle.close()
+
+
+def read_runtime_registry(registry_path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def write_runtime_registry(registry_path: Path, record: dict[str, Any]) -> None:
+    temporary_path = registry_path.with_name(f".{registry_path.name}.{os.getpid()}.tmp")
+    temporary_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    try:
+        temporary_path.chmod(0o600)
+    except OSError:
+        pass
+    temporary_path.replace(registry_path)
+
+
+def probe_dashboard_runtime(url: str, timeout: float = 0.5) -> dict[str, Any]:
+    parsed = urlparse(url)
+    if (
+        parsed.scheme != "http"
+        or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}
+        or not parsed.port
+    ):
+        return {}
+    connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=timeout)
+    try:
+        connection.request("GET", "/api/runtime")
+        response = connection.getresponse()
+        if response.status != 200:
+            return {}
+        value = json.loads(response.read().decode("utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, json.JSONDecodeError, http.client.HTTPException):
+        return {}
+    finally:
+        connection.close()
+
+
+def runtime_identity_matches(runtime: dict[str, Any], project_root: Path) -> bool:
+    return (
+        runtime.get("service") == RUNTIME_SERVICE
+        and runtime.get("projectRoot") == str(project_root.resolve())
+    )
+
+
+def runtime_matches(runtime: dict[str, Any], project_root: Path, projection_kind: str) -> bool:
+    return (
+        runtime_identity_matches(runtime, project_root)
+        and runtime.get("runtimeVersion") == RUNTIME_VERSION
+        and runtime.get("projectionKind") == projection_kind
+    )
+
+
+def stop_dashboard_runtime(url: str, runtime: dict[str, Any], timeout: float = 5.0) -> None:
+    """Stop an exact, locally identified project runtime before replacing it."""
+    pid = runtime.get("pid")
+    if not isinstance(pid, int) or pid == os.getpid():
+        raise RuntimeError(f"cannot replace dashboard runtime without a valid child PID: {url}")
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if not probe_dashboard_runtime(url):
+            return
+        time.sleep(0.05)
+    raise RuntimeError(f"existing dashboard runtime did not stop: {url}")
+
+
+def port_is_available(host: str, port: int) -> bool:
+    if port == 0:
+        return True
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    try:
+        with socket.socket(family, socket.SOCK_STREAM) as candidate:
+            candidate.bind((host, port))
+    except OSError:
+        return False
+    return True
+
+
+def ensure_dashboard(
+    project_root: Path,
+    skill_root: Path,
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    startup_timeout: float = 10.0,
+) -> dict[str, Any]:
+    """Start one dashboard for a project or reuse its healthy existing runtime."""
+    project_root = project_root.resolve()
+    if not project_root.is_dir():
+        raise RuntimeError(f"project root does not exist: {project_root}")
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        raise RuntimeError("managed dashboards must bind to a loopback host")
+    registry_path, lock_path, log_path = dashboard_runtime_paths(project_root)
+    use_demo = not (project_root / "docs" / "meta-pds").is_dir()
+    expected_projection_kind = "bundled-example" if use_demo else "live-canonical"
+
+    with dashboard_launch_lock(lock_path):
+        registry = read_runtime_registry(registry_path)
+        registered_url = str(registry.get("url") or "")
+        registered_runtime = probe_dashboard_runtime(registered_url) if registered_url else {}
+        if runtime_matches(registered_runtime, project_root, expected_projection_kind):
+            return {**registry, "status": "reused", "runtime": registered_runtime}
+        if runtime_identity_matches(registered_runtime, project_root):
+            stop_dashboard_runtime(registered_url, registered_runtime)
+
+        if registry_path.exists():
+            registry_path.unlink()
+
+        requested_url = dashboard_url(host, port) if port else ""
+        requested_runtime = probe_dashboard_runtime(requested_url) if requested_url else {}
+        if runtime_matches(requested_runtime, project_root, expected_projection_kind):
+            record = {
+                "service": RUNTIME_SERVICE,
+                "runtimeVersion": RUNTIME_VERSION,
+                "projectRoot": str(project_root),
+                "url": requested_url,
+                "pid": requested_runtime.get("pid"),
+                "projectionKind": requested_runtime.get("projectionKind"),
+            }
+            write_runtime_registry(registry_path, record)
+            return {**record, "status": "reused", "runtime": requested_runtime}
+        if runtime_identity_matches(requested_runtime, project_root):
+            stop_dashboard_runtime(requested_url, requested_runtime)
+
+        selected_port = port if port_is_available(host, port) else 0
+        command = [sys.executable, str(Path(__file__).resolve())]
+        if use_demo:
+            command.extend(["--demo", "--runtime-project-root", str(project_root)])
+        else:
+            command.append(str(project_root))
+        command.extend([
+            "--host", host,
+            "--port", str(selected_port),
+            "--registry-path", str(registry_path),
+        ])
+
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("ab") as log_handle:
+            process_options: dict[str, Any] = {
+                "stdin": subprocess.DEVNULL,
+                "stdout": log_handle,
+                "stderr": subprocess.STDOUT,
+                "cwd": str(project_root),
+            }
+            if os.name == "nt":
+                process_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+            else:
+                process_options["start_new_session"] = True
+            process = subprocess.Popen(command, **process_options)
+
+        deadline = time.monotonic() + startup_timeout
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                detail = log_path.read_text(encoding="utf-8", errors="replace")[-2000:] if log_path.exists() else ""
+                raise RuntimeError(f"dashboard failed to start (exit {process.returncode}): {detail.strip()}")
+            registry = read_runtime_registry(registry_path)
+            runtime_url = str(registry.get("url") or "")
+            runtime = probe_dashboard_runtime(runtime_url) if runtime_url else {}
+            if runtime_matches(runtime, project_root, expected_projection_kind):
+                return {**registry, "status": "started", "runtime": runtime, "process": process}
+            time.sleep(0.05)
+
+        process.terminate()
+        raise RuntimeError(f"dashboard did not become ready within {startup_timeout:g} seconds; log: {log_path}")
 
 
 def prepare_demo_root(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
@@ -1682,18 +1935,34 @@ def main() -> int:
     parser.add_argument("product_root", type=Path, nargs="?")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--ensure", action="store_true", help="Start or reuse one background dashboard for this project, then exit")
     parser.add_argument("--demo", action="store_true", help="Preview the bundled Authentication slice without writing product files")
     parser.add_argument("--print-json", action="store_true", help="Print one in-memory projection and exit")
+    parser.add_argument("--runtime-project-root", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--registry-path", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     if args.demo and args.product_root:
         parser.error("product_root and --demo are mutually exclusive")
+    if args.ensure and args.demo:
+        parser.error("--ensure selects demo mode automatically when the project has no Meta PDS artifacts")
+    if args.ensure and args.print_json:
+        parser.error("--ensure and --print-json are mutually exclusive")
     if not args.demo and not args.product_root:
         parser.error("product_root is required unless --demo is used")
 
     skill_root = Path(__file__).resolve().parent.parent
+    if args.ensure:
+        result = ensure_dashboard(args.product_root, skill_root, args.host, args.port)
+        print(f"Meta PDS dashboard: {result['url']}")
+        print(f"Dashboard runtime: {result['status']} for {result['projectRoot']}")
+        if result.get("projectionKind") == "bundled-example":
+            print("No canonical Meta PDS artifacts were found; the dashboard is visibly using bundled example data.")
+        return 0
+
     demo_runtime = prepare_demo_root(skill_root) if args.demo else None
     product_root = Path(demo_runtime.name).resolve() if demo_runtime else args.product_root.resolve()
+    runtime_project_root = (args.runtime_project_root or product_root).resolve()
     projection_kind = "bundled-example" if args.demo else "live-canonical"
     projection_source = "Bundled Authentication slice and execution examples" if args.demo else "Canonical Meta PDS artifacts"
     if not (product_root / "docs" / "meta-pds").is_dir():
@@ -1705,17 +1974,39 @@ def main() -> int:
     asset_root = skill_root / "assets" / "dashboard"
     server = ThreadingHTTPServer(
         (args.host, args.port),
-        handler_for(product_root, asset_root, projection_kind, projection_source),
+        handler_for(product_root, asset_root, projection_kind, projection_source, runtime_project_root),
     )
-    print(f"Meta PDS dashboard: http://{args.host}:{server.server_port}")
-    print("Reading the bundled Authentication slice and execution examples in memory." if args.demo else f"Reading canonical artifacts from: {product_root}")
-    print("Refresh the page to reparse current files. Press Ctrl-C to stop.")
+    url = dashboard_url(args.host, server.server_port)
+    registry_record = {
+        "service": RUNTIME_SERVICE,
+        "runtimeVersion": RUNTIME_VERSION,
+        "projectRoot": str(runtime_project_root),
+        "url": url,
+        "pid": os.getpid(),
+        "projectionKind": projection_kind,
+        "startedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    if args.registry_path:
+        write_runtime_registry(args.registry_path, registry_record)
+
+    def stop_server(_signum, _frame):
+        raise KeyboardInterrupt
+
+    previous_sigterm = signal.signal(signal.SIGTERM, stop_server)
+    print(f"Meta PDS dashboard: {url}", flush=True)
+    print("Reading the bundled Authentication slice and execution examples in memory." if args.demo else f"Reading canonical artifacts from: {product_root}", flush=True)
+    print("Refresh the page to reparse current files. Press Ctrl-C to stop.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
         server.server_close()
+        signal.signal(signal.SIGTERM, previous_sigterm)
+        if args.registry_path:
+            current_registry = read_runtime_registry(args.registry_path)
+            if current_registry.get("pid") == os.getpid():
+                args.registry_path.unlink(missing_ok=True)
     return 0
 
 

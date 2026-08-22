@@ -1,6 +1,6 @@
 ---
 name: meta-pds
-description: Human-centered product delivery suite and single point of contact for starting, resuming, redirecting, or completing an initiative through rapid manual prototyping, fat-slice planning, bounded development, independent QA, release, and outcome validation. Use when the user invokes Meta PDS or wants one visible, state-aware workflow across product planning and delivery.
+description: Human-centered product delivery suite and single point of contact for starting, resuming, redirecting, or completing an initiative through rapid manual prototyping, fat-slice planning, bounded development, independent QA, release, and outcome validation, with a reusable local delivery dashboard. Use when the user invokes Meta PDS or wants one visible, state-aware workflow across product planning and delivery.
 ---
 
 # Meta PDS
@@ -60,24 +60,30 @@ not independently advance suite gates.
 On every invocation:
 
 1. Locate the canonical product root.
-2. Read actual Meta PDS artifacts, repository state, and available runtime
+2. Run `scripts/serve_dashboard.py <product-root> --ensure`. This starts one
+   background dashboard for the resolved project or reuses its healthy existing
+   runtime. Capture its reported URL and always give that clickable URL to the
+   Human. Do not launch another server manually. Before canonical artifacts
+   exist, the command uses the visibly labelled bundled example view.
+3. Read actual Meta PDS artifacts, repository state, and available runtime
    evidence. Never rely on conversation memory as delivery state.
-3. Reconcile contradictions conservatively and record them.
-4. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
+4. Reconcile contradictions conservatively and record them.
+5. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
    gate while any structural error remains; surface the exact file and
    diagnostic instead of inferring missing data.
-5. Present current phase, active planning and execution slices, completed and
+6. Present current phase, active planning and execution slices, completed and
    paused slices, blockers, risks, and one recommended next action.
-6. Continue when the requested route is valid. If the user gave no route,
+7. Continue when the requested route is valid. If the user gave no route,
    recommend the highest-value valid action and concise alternatives.
 
 For a new initiative, capture a short brief and establish an authority envelope
 before launching rapid discovery. Create artifacts from the templates in
 `assets/` only when their lifecycle begins. Do not copy dashboard assets or
-create dashboard data in the product repository. When the Human requests the
-dashboard, read the dashboard contract and launch `scripts/serve_dashboard.py`
-against the canonical product root; render missing downstream evidence as
-unknown rather than simulated progress.
+create dashboard data in the product repository. The installed skill owns and
+serves the dashboard; render missing downstream evidence as unknown rather than
+simulated progress. After creating the canonical core artifacts for a new
+initiative, rerun the same `--ensure` command so it replaces the example runtime
+with the live canonical view and return the live URL.
 
 ## Human interaction
 

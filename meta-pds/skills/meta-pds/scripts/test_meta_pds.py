@@ -3,14 +3,17 @@
 
 from __future__ import annotations
 
-import unittest
+import json
 import subprocess
 import sys
+import tempfile
+import unittest
 from pathlib import Path
 
 from serve_dashboard import (
     ArtifactError,
     build_dashboard_data,
+    ensure_dashboard,
     parse_table,
     parse_yaml,
     prepare_demo_root,
@@ -52,6 +55,57 @@ class MetaPDSContractTests(unittest.TestCase):
         self.assertEqual("Prototype checkpoint 07 approved", projection["activity"][-1]["title"])
         self.assertEqual(["DEC-003", "DEC-006", "DEC-009", "DEC-012"], [item["id"] for item in projection["decisions"]])
         self.assertEqual("TESTING", projection["decisions"][-1]["status"])
+
+    def test_manifest_declares_installed_dashboard_bundle(self) -> None:
+        suite_root = SKILL_ROOT.parent.parent
+        manifest = json.loads((suite_root / "manifest.json").read_text(encoding="utf-8"))
+        dashboard = manifest["dashboard"]
+        self.assertEqual("ensure-one-runtime-per-project", dashboard["lifecycle"])
+        declared = [dashboard["entrypoint"], *dashboard["assets"]]
+        self.assertEqual(4, len(declared))
+        for relative_path in declared:
+            self.assertTrue((suite_root / relative_path).is_file(), relative_path)
+
+        pack_manifest = json.loads((suite_root.parent / "manifest.json").read_text(encoding="utf-8"))
+        bundled_skills = {item["name"]: item["path"] for item in pack_manifest["skills"] if item["kind"] == "bundled"}
+        self.assertEqual("meta-pds/skills/meta-pds", bundled_skills["meta-pds"])
+        for skill_name in ["rapid-prototyping", "slice-planning", "slice-development", "slice-qa"]:
+            self.assertIn(skill_name, bundled_skills)
+
+    def test_ensure_dashboard_reuses_one_runtime_for_project(self) -> None:
+        first = ensure_dashboard(self.root, SKILL_ROOT, port=0, startup_timeout=5)
+        process = first["process"]
+        try:
+            second = ensure_dashboard(self.root, SKILL_ROOT, port=0, startup_timeout=5)
+            self.assertEqual("started", first["status"])
+            self.assertEqual("reused", second["status"])
+            self.assertEqual(first["url"], second["url"])
+            self.assertEqual(first["pid"], second["pid"])
+            self.assertEqual(str(self.root.resolve()), second["runtime"]["projectRoot"])
+        finally:
+            process.terminate()
+            process.wait(timeout=5)
+
+    def test_ensure_dashboard_replaces_demo_when_project_is_initialized(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="meta-pds-runtime-transition-") as temporary_root:
+            project_root = Path(temporary_root)
+            demo = ensure_dashboard(project_root, SKILL_ROOT, port=0, startup_timeout=5)
+            live = None
+            try:
+                self.assertEqual("bundled-example", demo["projectionKind"])
+                (project_root / "docs" / "meta-pds").mkdir(parents=True)
+                live = ensure_dashboard(project_root, SKILL_ROOT, port=0, startup_timeout=5)
+                demo["process"].wait(timeout=5)
+                self.assertEqual("started", live["status"])
+                self.assertEqual("live-canonical", live["projectionKind"])
+                self.assertNotEqual(demo["pid"], live["pid"])
+            finally:
+                if live and live.get("process"):
+                    live["process"].terminate()
+                    live["process"].wait(timeout=5)
+                elif demo["process"].poll() is None:
+                    demo["process"].terminate()
+                    demo["process"].wait(timeout=5)
 
     def test_cli_defaults_to_repository_wide_validation(self) -> None:
         validator = Path(__file__).with_name("validate_meta_pds.py")

@@ -109,12 +109,7 @@
     setText("#branch-count", data.repository?.branches?.length || 0);
     setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);
     const isDemo = data.projection.kind === "demo-fixture";
-    const demoBanner = $("#demo-banner");
-    demoBanner.hidden = !isDemo;
-    demoBanner.innerHTML = isDemo ? `
-      <div class="demo-marker"><span>Demo</span><strong>Example decision map</strong></div>
-      <p>Bundled examples for visual review. They are not project decisions and are never written into this repository.</p>
-      <a href="/#truth">Return to live project data</a>` : "";
+    $("#demo-indicator").hidden = !isDemo;
     setText("#view-authority", isDemo
       ? "Read-only demo view · Bundled examples are not canonical product truth"
       : "Read-only live view · Canonical Meta PDS artifacts remain authoritative");
@@ -275,11 +270,11 @@
   function renderDecisions() {
     const meta = data.decisionMeta || {};
     $("#decision-summary").innerHTML = [
-      ["Current mode", pretty(meta.interactionMode || "EXPLORE"), "mode"],
-      ["Total decisions", data.decisions.length, "total"],
-      ["Canonical truth", meta.canonicalCount || 0, "canonical"],
-      ["Needs review", meta.reviewCount || 0, "review"],
-      ["Contradictions", meta.contradictionCount || 0, "contradictions"]
+      ["Mode", pretty(meta.interactionMode || "EXPLORE"), "mode"],
+      ["Truths", data.decisions.length, "total"],
+      ["Canonical", meta.canonicalCount || 0, "canonical"],
+      ["Review", meta.reviewCount || 0, "review"],
+      ["Conflicts", meta.contradictionCount || 0, "contradictions"]
     ].map(([label, value, kind]) => `<div class="decision-stat ${esc(kind)}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("");
 
     const statuses = [

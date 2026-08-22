@@ -67,8 +67,9 @@ same runtime projects them on the next refresh.
 
 An explicit `?demo=1` view may project the bundled regression fixture for
 visual inspection. It must use the existing project runtime, display a
-persistent demo banner and a return-to-live link, preserve live repository
-evidence, and never copy or write fixture data into the product repository.
+persistent demo indicator in the header with a concise tooltip and a
+return-to-live link, preserve live repository evidence, and never copy or write
+fixture data into the product repository.
 The ordinary URL and `/api/dashboard` endpoint remain live-only; demo data is
 served only when the Human opens the explicitly labelled demo URL.
 
@@ -151,8 +152,9 @@ horizontally rather than creating a second header row.
    canonical key, record ID, revision, primary and secondary labels, dependency
    keys, affected artifacts, one non-duplicated status label, and explicit
    contradiction links; keep interaction mode, canonical count, review count,
-   and contradiction count visible without turning the dashboard into an
-   approval surface;
+   and contradiction count visible in the same compact, single-row toolbar as
+   the status, group, type, and phase filters without turning the dashboard
+   into an approval surface;
 3. a primary slice list with separate collapsible cards containing outcome,
    revision, priority, dependency, gate, progress, story, task, test, and
    contract summaries; keep one persistent header summary for status, progress,

@@ -1,7 +1,7 @@
 {
   "name": "meta-pds",
   "displayName": "Meta Product Delivery System",
-  "version": "0.10.9",
+  "version": "0.18.1",
   "entrySkill": "meta-pds",
   "skills": [
     "meta-pds",
@@ -9,6 +9,19 @@
     "slice-planning",
     "slice-development",
     "slice-qa"
+  ],
+  "supportSkills": [
+    "prototype",
+    "vercel-react-best-practices",
+    "frontend-design",
+    "vercel-composition-patterns",
+    "fastapi",
+    "nodejs-backend-patterns",
+    "python-testing-patterns",
+    "vitest",
+    "playwright-best-practices",
+    "supabase",
+    "supabase-postgres-best-practices"
   ],
   "dashboard": {
     "entrypoint": "skills/meta-pds/scripts/serve_dashboard.py",

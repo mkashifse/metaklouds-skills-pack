@@ -9,14 +9,19 @@ several stories. It never becomes a separate product or release boundary.
 Every package declares:
 
 - ID, owner, status, and contract version;
+- priority, assigning Product Manager, and assignment time;
+- an immutable Development Lead brief containing the original instruction,
+  expected outcome, scope, exclusions, and acceptance criteria;
 - supported slice requirements or user stories;
 - dependencies, inputs, and produced outputs;
 - owned and forbidden paths within the single product repository;
 - entry checks and exit checks;
 - required canonical Test IDs, CLI checks, and evidence;
+- repository-evidenced applicable support skills;
 - integration owner and dependants.
 
-Do not use changed line count as the sole size measure. Split a package when it
+Append dated clarifications to the Lead brief; never replace the original
+instruction after assignment. Do not use changed line count as the sole size measure. Split a package when it
 crosses unrelated modules, needs materially different context, or cannot be
 completed and verified in one focused session.
 
@@ -36,11 +41,18 @@ pressure causes compaction or degraded reasoning, checkpoint the package with a
 local commit, tests, status, remaining work, and exact resume instruction. A
 fresh worker resumes from artifacts and evidence.
 
+Before launch, read the Meta PDS implementation-skill routing reference. Record
+the selected names in the package's `applicable_skills` field, verify that each
+is installed, and require the worker to read those skills. Do not select a
+framework skill without repository evidence or broaden the package to justify
+an installed skill.
+
 ## Scheduling
 
-A package becomes `READY` only when every dependency is `DONE`, required inputs
-exist at the cited revisions, and entry checks pass. The Development Lead owns
-the ready queue.
+A newly assigned package is `BACKLOG` until every dependency is `DONE`, required
+inputs exist at the cited revisions, and entry checks pass. It then becomes
+`READY`; it becomes `IN_PROGRESS` only when the worker starts. The Development
+Lead owns the ready queue.
 
 Prefer dependency-aware waves rather than rigid layer order:
 

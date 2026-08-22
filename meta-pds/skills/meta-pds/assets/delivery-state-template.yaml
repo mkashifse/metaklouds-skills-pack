@@ -1,8 +1,12 @@
-schema_version: 2
+schema_version: 3
 initiative_id: INIT-0001
 initiative_status: DISCOVERING
 initiative_revision: 1
 health: UNKNOWN
+interaction_mode: EXPLORE
+decision_review:
+  pending_keys: []
+  last_checkpoint_at: ""
 active_planning_slice: null
 active_execution_slice: null
 paused_slices: []

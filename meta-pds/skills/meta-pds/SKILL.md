@@ -22,10 +22,25 @@ before creating, reconciling, or advancing canonical artifacts. Read
 launching the Human-facing delivery dashboard. Read
 [references/testing-and-browser-policy.md](references/testing-and-browser-policy.md)
 before any prototype, development-test, QA, or release-verification launch.
+Read [references/implementation-skill-routing.md](references/implementation-skill-routing.md)
+before assigning prototype, implementation, database, or test work.
+Read [references/interaction-modes-and-decision-capture.md](references/interaction-modes-and-decision-capture.md)
+when brainstorming, capturing or reviewing decisions, prototyping, or shaping
+slices from an unstructured feature request.
 
 Read [references/change-priority-resume.md](references/change-priority-resume.md)
-when resuming, pausing, reprioritizing, correcting a released slice, or handling
-a locked-decision change.
+when the project has no canonical Meta PDS context, or when resuming, pausing,
+reprioritizing, correcting a released slice, or handling a locked-decision
+change.
+
+Read [references/drift-control.md](references/drift-control.md) whenever drift is
+detected, at development and QA checkpoints, before auto-resolving a mismatch,
+or while routing Human approval without stopping independent work.
+
+Read [references/scheduled-supervision-strategy.md](references/scheduled-supervision-strategy.md)
+when designing, configuring, or reviewing unattended continuation with Codex
+scheduled tasks. Treat its proposed state additions as non-operative until the
+artifact schema, validator, and dashboard implement them together.
 
 Read [references/git-checkpoints-and-topic-handoffs.md](references/git-checkpoints-and-topic-handoffs.md)
 before creating or switching branches, committing work, performing external Git
@@ -64,26 +79,34 @@ not independently advance suite gates.
 On every invocation:
 
 1. Locate the canonical product root.
-2. Run `scripts/serve_dashboard.py <product-root> --ensure`. This starts one
+2. Run `scripts/check_dependencies.py`. Missing internal or support skills
+   block only work that requires them; report the exact missing names and the
+   repair instruction while continuing safe dashboard and state inspection.
+3. Run `scripts/serve_dashboard.py <product-root> --ensure`. This starts one
    background dashboard for the resolved project or reuses its healthy existing
    runtime. Capture its reported URL and always give that clickable URL to the
    Human. Do not launch another server manually. The dashboard always reads the
    resolved project; before canonical artifacts exist, show its live repository
    evidence and explicit missing-artifact diagnostics without sample data.
-3. Read actual Meta PDS artifacts, repository state, available runtime evidence,
+4. Read actual Meta PDS artifacts, repository state, available runtime evidence,
    and Git branch/worktree state. Never rely on conversation memory as delivery
    state.
-4. Detect whether the Human moved to another initiative, slice, defect, or
+5. Detect whether the Human moved to another initiative, slice, defect, or
    unrelated objective. If so, checkpoint understood in-scope changes locally
    and give the one-time, gate-aware PR/merge nudge defined in the Git reference.
    Do not treat clarifications or status questions as topic changes.
-5. Reconcile contradictions conservatively and record them.
-6. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
+6. Reconcile contradictions conservatively and record them.
+7. Reconcile open drift, keep its dependent work paused, and continue the
+   independent ready queue according to the drift-control policy.
+8. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
    gate while any structural error remains; surface the exact file and
    diagnostic instead of inferring missing data.
-7. Present current phase, active planning and execution slices, completed and
-   paused slices, blockers, risks, and one recommended next action.
-8. Continue when the requested route is valid. If the user gave no route,
+9. Use the first-contact or evidence-based recap response contract in the
+   resume reference. Present current phase and mode, active planning and
+   execution slices, active Scrum Board tasks, completed and paused work,
+   blockers, drift, Human decisions, Git/PR state, and one recommended next
+   action without asking the Human to restate yesterday's context.
+10. Continue when the requested route is valid. If the user gave no route,
    recommend the highest-value valid action and concise alternatives.
 
 For a new initiative, capture a short brief and establish an authority envelope
@@ -95,15 +118,31 @@ simulated progress. The existing project runtime reparses newly created
 canonical artifacts on refresh, so no runtime replacement or example-to-live
 transition is required.
 
+The Product Manager owns first-contact and resume messaging. Functional leads
+and workers return structured evidence to the Product Manager and never send a
+second greeting, recap, or competing next action directly to the Human.
+
 ## Human interaction
 
 - Ask focused questions in small, high-value batches.
 - Record uncertain decisions as `PROPOSED` or `TESTING`.
+- Treat locked Truth as append-only: never edit a locked revision; create a new
+  uniquely identified revision under the same key, link it to the previous
+  revision ID, and keep the locked revision canonical until Human approval.
+- In `EXPLORE`, persist meaningful candidate-decision clusters without
+  interrupting the Human's flow; review them at a natural pause or resume.
 - Lock consequential decisions only after Human approval.
 - Recommend an answer and impact before asking for a decision.
 - Suppress worker chatter; surface decisions, blockers, drift, risk, evidence,
   and the next action.
+- Record every development assignment as one canonical execution-plan work
+  package with an immutable Lead brief. Assignment places dependency-waiting
+  work in `BACKLOG` or executable work in `READY`; only an actual worker start
+  moves it to `IN_PROGRESS`. The dashboard projects these packages in the
+  read-only Scrum Board rather than maintaining a separate task store.
 - Pause only affected work while awaiting a Human decision.
+- Auto-resolve only safe, reversible, high-confidence drift; durably record the
+  resolution and evidence even when no Human interruption is needed.
 
 The Product Manager must not write prototype or production code, invent missing
 scope, alter acceptance, or approve unsupported claims.
@@ -151,7 +190,16 @@ required action.
 
 Route by evidence:
 
-- unclear initiative or decisions under test: `rapid-prototyping`;
+- `EXPLORE`: capture candidate decisions quietly and keep the conversation flowing;
+- `DECISION_REVIEW`: present a compact upstream-to-downstream review packet and
+  lock, revise, or retain each candidate only with Human approval;
+- `PROTOTYPE`: route bounded experience or behavior questions to
+  `rapid-prototyping`; require a schema decision checkpoint whenever realistic
+  seeded entities, fields, relationships, privacy rules, or invariants emerge;
+- `SLICE_SHAPING`: recommend fat slices from the locked decision graph and wait
+  for the Human to approve them one by one;
+- `DELIVERY`: follow the gate routes below and flag drift against canonical keys;
+- unclear initiative or experience decisions under test: `rapid-prototyping`;
 - locked initiative with an unplanned capability: `slice-planning`;
 - `READY_FOR_DEVELOPMENT`: `slice-development` intake and mobilization;
 - `EXECUTION_READY` or active work packages: `slice-development` execution;

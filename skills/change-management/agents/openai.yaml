@@ -1,4 +1,0 @@
-interface:
-  display_name: "Change Management"
-  short_description: "Lock runtime changes without slowing delivery"
-  default_prompt: "Use $change-management to classify, approve, lock, and assess this runtime change."

@@ -15,7 +15,8 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/human-centered-autonomy.md`;
 - `references/workflow-and-gates.md`;
 - `references/artifact-and-state-contract.md`;
-- `references/testing-and-browser-policy.md`.
+- `references/testing-and-browser-policy.md`;
+- `references/implementation-skill-routing.md`.
 
 Read [references/verification-contract.md](references/verification-contract.md)
 before verification.
@@ -46,6 +47,8 @@ bounded remediation package.
    commits, and environments.
 2. Validate slice → story → work package → test → evidence traceability.
 3. Run required repository-native CLI tests and committed Playwright CLI tests.
+   Read the matching installed testing support skill before running or assessing
+   each suite.
 4. Verify the complete primary, alternate, recovery, failure, expiry,
    permission, security, and destructive lifecycle as applicable.
 5. Verify contracts, migrations, compatibility, accessibility, observability,

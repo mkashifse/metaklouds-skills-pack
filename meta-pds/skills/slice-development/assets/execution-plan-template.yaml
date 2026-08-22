@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 initiative_id: INIT-0001
 slice_id: SLICE-0001
 slice_revision: 1
@@ -48,12 +48,28 @@ work_packages:
   - id: WP-0001
     title: ""
     description: ""
+    priority: P1
     area: ""
     owner: ""
     owner_initials: ""
+    assigned_by: Product Manager
+    assigned_at: ""
+    started_at: ""
+    updated_at: ""
+    branch: ""
+    pull_request: ""
     status: BLOCKED
     blocker: ""
     contract_version: v1
+    lead_brief:
+      issued_by: Development Lead
+      issued_at: ""
+      instruction: ""
+      expected_outcome: ""
+      scope: []
+      out_of_scope: []
+      acceptance_criteria: []
+      clarifications: []
     supports: [US-0001]
     depends_on: []
     inputs: []
@@ -63,6 +79,7 @@ work_packages:
     entry_checks: []
     exit_checks: []
     required_tests: [TC-0001]
+    applicable_skills: []
     integration_owner: ""
 
 validation:

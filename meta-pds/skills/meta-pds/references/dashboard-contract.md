@@ -30,14 +30,17 @@ the current files. Canonical sources are:
 
 - `initiative.md` for purpose, outcomes, and roadmap;
 - `decision-log.yaml` for proposed, testing, locked, and superseded decisions;
+- optional `drift-log.yaml` for detected, auto-resolved, approval-pending,
+  re-verification, and closed drift with confidence and dependency impact;
 - `delivery-state.yaml` for current initiative, slice, blocker, and next-action
   state;
 - slice files for stories, acceptance, test definitions, dependencies, and
   planning gates;
-- execution plans for work packages, owners, waves, dependencies, and required
-  Test ID references;
+- execution plans for Scrum Board tasks: work packages, immutable Lead briefs,
+  owners, assignment metadata, waves, dependencies, and required Test ID
+  references;
 - delivery reports and runtime evidence for QA and release status;
-- optional `delivery-events.jsonl` for the recent activity timeline.
+- optional `delivery-events.jsonl` for append-only task and delivery history.
 
 Repository visibility is derived separately from read-only runtime evidence on
 each refresh:
@@ -53,10 +56,11 @@ unavailable, keep local branch evidence visible and label PR evidence
 unavailable with the concise runtime diagnostic. Never expose credentials or
 authentication output.
 
-The activity file is append-only JSON Lines. Each event contains an ISO 8601
+The delivery-event file is append-only JSON Lines. Each event contains an ISO 8601
 `at`, concise `kind`, `title`, and evidence-bearing `detail`; the dashboard
-renders the newest valid event first. Record durable delivery checkpoints only,
-not low-value agent or editor activity.
+joins events that cite a work-package ID into that task's status history.
+Record durable delivery checkpoints only, not low-value agent or editor
+activity. Do not restore a separate generic Activity view.
 
 Before a product has canonical artifacts, the dashboard remains attached to
 that real project. It shows live repository and pull-request evidence, empty
@@ -64,6 +68,14 @@ delivery collections, and explicit diagnostics for each missing canonical
 artifact. Never substitute bundled examples, templates, fixtures, conversation
 memory, or another project's files. When canonical artifacts are created, the
 same runtime projects them on the next refresh.
+
+An explicit `?demo=1` view may project the bundled regression fixture for
+visual inspection. It must use the existing project runtime, display a
+persistent demo indicator in the header with a concise tooltip and a
+return-to-live link, preserve live repository evidence, and never copy or write
+fixture data into the product repository.
+The ordinary URL and `/api/dashboard` endpoint remain live-only; demo data is
+served only when the Human opens the explicitly labelled demo URL.
 
 Never infer a successful gate, test, release, or Human approval merely to fill
 the display. Show unknown or missing evidence explicitly. The dashboard runs
@@ -91,8 +103,9 @@ longer be established. Never fall back to stale or invented data.
   derived in memory and never copied back into artifacts. Progress is a derived
   display estimate, not canonical delivery evidence.
 - Duplicate YAML keys and duplicate slice, story, test, contract, work-package,
-  execution, report, decision, or state IDs are errors rather than last-write
-  wins.
+  execution, report, decision-record, or state IDs are errors rather than
+  last-write wins. A Truth key may repeat only as a valid append-only revision
+  sequence.
 
 ## Status semantics
 
@@ -137,8 +150,32 @@ horizontally rather than creating a second header row.
 
 1. visible canonical data-health diagnostics, with projection source details
    kept in the footer rather than the header;
-2. decisions grouped by status and affected slices;
-3. a primary slice list with separate collapsible cards containing outcome,
+2. a leftmost `Truth` tab containing decisions ordered from upstream product
+   intent to downstream operations,
+   grouped and filterable by layer, status, primary type, and phase; lead each
+   truth item with the brain icon and one clear statement; use the same compact
+   three-row document rhythm as Drifts: identity/type/status metadata first,
+   title second, and phased dependency/affected-artifact properties third;
+   render groups as
+   collapsible sections that start collapsed, and render each truth as an
+   independently collapsible row that also starts collapsed; keep phase,
+   dependency keys, and affected artifacts in the persistent truth title bar
+   beside the unique canonical key, record ID, revision, primary and secondary
+   labels, and one non-duplicated status label; show explicit contradiction
+   links in the expanded body; default the status filter to `Canonical`; keep
+   the current locked revision as the displayed Truth while an optional
+   proposed or testing revision awaits Human approval; show that candidate and
+   collapsed append-only revision history inside the expanded Truth item; keep
+   interaction mode, canonical count, review count,
+   and contradiction count visible in the same compact, single-row toolbar as
+   the status, group, type, and phase filters without turning the dashboard
+   into an approval surface;
+3. a primary slice list with a single view toolbar that keeps the slice totals
+   beside the status filters rather than in the application header, followed
+   by separate compact document-style collapsible cards that place icon, ID,
+   status, progress, and counts in one metadata row, the
+   slice title beneath it, and outcome plus properties behind hairline rules;
+   cards contain outcome,
    revision, priority, dependency, gate, progress, story, task, test, and
    contract summaries; keep one persistent header summary for status, progress,
    story, task, test, and blocker counts so those metrics do not move when the
@@ -169,9 +206,28 @@ horizontally rather than creating a second header row.
 8. dependencies and clickable contracts in the slice properties rail; selecting
    a contract reuses the detail dialog and renders its canonical Markdown or
    slice-recorded required behavior;
-9. separate top tabs for slices, decisions, prototype checkpoints, and durable
-   activity, with compact slice totals integrated into the tabs.
-10. a separate Branches tab showing the current and default branches, dirty-path
+9. a separate `Drifts Detected` tab showing every durable drift, status,
+   severity, ambiguity and confidence, recommendation, resolution, evidence,
+   Human approval state, affected Truth/slices/work packages, and the explicit
+   split between paused and continuing work; render each drift as a quiet,
+   document-style accordion with one compact ID/severity/status/confidence row,
+   a clear title and recommendation using the dashboard's shared type scale,
+   then aligned affected-work properties
+   and evidence separated by hairline rules; provide compact status and severity
+   filters, and never make the dashboard itself an approval surface;
+10. separate top tabs ordered Truth, Slices, Drifts Detected, Branches, and
+   Scrum Board, plus the prototype utility; keep compact totals integrated into
+   the relevant tabs. Scrum Board is a compact, filterable vertical Task List
+   projected from canonical work packages, not a writable Kanban database.
+   Every collapsible row keeps `Task ID : Task title` left-aligned and
+   `Assignee | Status` right-aligned; its expanded body renders the package as
+   Markdown, leading with the locked original Lead instruction and then the
+   expected outcome, scope, exclusions, acceptance criteria, dependencies,
+   Truth/story/test traceability, development evidence, and task-specific
+   status history. Map the normal flow to Backlog, Ready, In Progress, Review,
+   and Done filters while preserving explicit blocked and drift states in the
+   row itself.
+11. a separate Branches tab showing the current and default branches, dirty-path
     count, every local branch's head, upstream and ahead/behind state, associated
     PR when verified, plus a pull-request list with live state, draft/review/merge
     evidence, head/base branches, update time, and clickable GitHub URL. Keep

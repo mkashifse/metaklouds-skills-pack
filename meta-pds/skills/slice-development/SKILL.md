@@ -17,6 +17,7 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/workflow-and-gates.md`;
 - `references/artifact-and-state-contract.md`;
 - `references/testing-and-browser-policy.md`;
+- `references/implementation-skill-routing.md`;
 - `references/change-priority-resume.md` when scope, contract, priority, or
   released behavior is implicated.
 
@@ -64,14 +65,19 @@ paths, sequencing, or assignments without repository and slice evidence.
 Inspect the repository, freeze or cite the technical contract, then define:
 
 - bounded work packages and explicit owners;
+- one immutable Lead brief and assignment record for every work package;
 - requirements/stories supported by each package;
 - inputs, outputs, owned and forbidden paths;
 - dependency DAG, critical path, and parallel waves;
 - entry, exit, and required Test ID checks from the canonical slice;
+- repository-evidenced `applicable_skills` for every work package;
 - integration, compatibility, migration, merge, deploy, feature-flag,
   observability, and rollback order.
 
-Use the exact structured fields in the execution-plan template. Give every
+Use the exact structured fields in the execution-plan template. Record the
+Product Manager assignment separately from the Development Lead's immutable
+original instruction, expected outcome, scope, exclusions, and acceptance
+criteria; append later clarification without replacing the original brief. Give every
 contract and work package a stable ID; packages cite stories through `supports`,
 dependencies through `depends_on`, and the slice's canonical test definitions
 through `required_tests`. Do not copy test definitions into the execution plan.
@@ -97,7 +103,9 @@ blockers.
 
 ### Execution
 
-Launch only `READY` packages. Use the minimum applicable worker roles:
+Launch only `READY` packages. Assigned work with incomplete prerequisites stays
+in `BACKLOG`; assignment alone never implies that implementation started. Use
+the minimum applicable worker roles:
 
 - Frontend Engineer;
 - Backend/Domain Engineer;
@@ -113,16 +121,17 @@ not a release or a substitute user story.
 After every result:
 
 1. verify the exact changed paths and local commits;
-2. verify acceptance, contract version, ownership, and CLI test evidence;
-3. reject scope or path drift;
-4. update package status and unblock dependants only when exit checks pass;
-5. run combined verification when all required packages finish;
-6. return upstream if implementation reveals missing scope or acceptance.
+2. verify the worker loaded the recorded applicable skills;
+3. verify acceptance, contract version, ownership, and CLI test evidence;
+4. reject scope or path drift;
+5. update package status and unblock dependants only when exit checks pass;
+6. run combined verification when all required packages finish;
+7. return upstream if implementation reveals missing scope or acceptance.
 
 Use:
 
 ```text
-BLOCKED → READY → IN_PROGRESS → VERIFYING → DONE
+BACKLOG → READY → IN_PROGRESS → VERIFYING → DONE
 ```
 
 Contract changes mark affected and dependent packages `REVERIFY_REQUIRED` and

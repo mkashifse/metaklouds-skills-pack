@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 from urllib.request import urlopen
 
+from check_dependencies import INTERNAL_SKILLS, SUPPORT_SKILLS, dependency_status
 from serve_dashboard import (
     ArtifactError,
     build_dashboard_data,
@@ -54,12 +55,123 @@ class MetaPDSContractTests(unittest.TestCase):
             len(projection["testCases"]),
             len(projection["contracts"]),
         ))
-        self.assertEqual(9, len(projection["activity"]))
+        self.assertEqual(12, len(projection["activity"]))
         self.assertEqual("Full-stack integration is blocked", projection["activity"][0]["title"])
         self.assertEqual("Prototype checkpoint 07 approved", projection["activity"][-1]["title"])
-        self.assertEqual(["DEC-003", "DEC-006", "DEC-009", "DEC-012"], [item["id"] for item in projection["decisions"]])
-        self.assertEqual("TESTING", projection["decisions"][-1]["status"])
+        packages = {item["id"]: item for item in projection["workPackages"]}
+        self.assertEqual("BACKLOG", packages["WP-AUTH-07"]["status"])
+        self.assertEqual("Product Manager", packages["WP-AUTH-03"]["assignedBy"])
+        self.assertEqual("Development Lead", packages["WP-AUTH-03"]["leadBrief"]["issuedBy"])
+        self.assertIn("complete authentication lifecycle API", packages["WP-AUTH-03"]["leadBrief"]["instruction"])
+        self.assertTrue(packages["WP-AUTH-03"]["history"])
+        self.assertEqual(20, len(projection["decisions"]))
+        self.assertEqual(18, len({item["type"] for item in projection["decisions"]}))
+        self.assertEqual(20, len({item["key"] for item in projection["decisions"]}))
+        self.assertEqual(["GLOBAL", "PHASE-1", "PHASE-2", "PHASE-3"], projection["decisionMeta"]["phases"])
+        self.assertEqual("DELIVERY", projection["decisionMeta"]["interactionMode"])
+        self.assertEqual((16, 7, 4), (
+            projection["decisionMeta"]["canonicalCount"],
+            projection["decisionMeta"]["reviewCount"],
+            projection["decisionMeta"]["contradictionCount"],
+        ))
+        self.assertEqual((24, 3, 1), (
+            projection["decisionMeta"]["revisionCount"],
+            projection["decisionMeta"]["historyCount"],
+            projection["decisionMeta"]["candidateCount"],
+        ))
+        by_key = {item["key"]: item for item in projection["decisions"]}
+        authentication = by_key["feature.authentication.email-password"]
+        self.assertEqual(("DEC-005", 2, True), (authentication["id"], authentication["revision"], authentication["canonical"]))
+        self.assertEqual([("DEC-005-R1", 1, "SUPERSEDED")], [
+            (item["id"], item["revision"], item["status"]) for item in authentication["history"]
+        ])
+        self.assertEqual(("DEC-005-R3", 3, "TESTING"), (
+            authentication["candidateRevision"]["id"],
+            authentication["candidateRevision"]["revision"],
+            authentication["candidateRevision"]["status"],
+        ))
+        self.assertEqual(["ux.navigation.topbar"], [item["key"] for item in by_key["ux.navigation.sidebar"]["contradictions"]])
+        self.assertEqual(["ux.navigation.sidebar"], [item["key"] for item in by_key["ux.navigation.topbar"]["contradictions"]])
+        self.assertTrue(by_key["storage.postgres.primary"]["canonical"])
+        self.assertFalse(by_key["storage.document.primary"]["canonical"])
+        self.assertEqual(5, len(projection["drifts"]))
+        self.assertEqual((1, 3, 1, 0), (
+            projection["driftMeta"]["openCount"],
+            projection["driftMeta"]["autoResolvedCount"],
+            projection["driftMeta"]["humanApprovalCount"],
+            projection["driftMeta"]["criticalCount"],
+        ))
+        pending = next(item for item in projection["drifts"] if item["status"] == "HUMAN_APPROVAL_NEEDED")
+        self.assertEqual(["WP-AUTH-03", "WP-AUTH-06", "WP-AUTH-07"], pending["blockedWorkPackages"])
+        self.assertEqual(["WP-AUTH-04", "WP-AUTH-05"], pending["continuingWorkPackages"])
         self.assertIn("repository", projection)
+
+    def test_drift_auto_resolution_requires_safe_high_confidence_evidence(self) -> None:
+        path = self.base / "drift-log.yaml"
+        path.write_text(path.read_text().replace("resolution_confidence: 96", "resolution_confidence: 60", 1))
+        self.assertIn("drift.auto-resolution", {item["code"] for item in self.diagnostics()})
+
+    def test_execution_v3_requires_immutable_lead_brief(self) -> None:
+        path = self.base / "execution" / "SLICE-AUTH-001.yaml"
+        content = path.read_text().replace("issued_by: Development Lead", 'issued_by: ""', 1)
+        path.write_text(content)
+        self.assertIn("package.lead-brief", {item["code"] for item in self.diagnostics()})
+
+    def test_human_approval_drift_requires_recommendation_and_pending_approval(self) -> None:
+        path = self.base / "drift-log.yaml"
+        content = path.read_text().replace(
+            "recommendation: Keep the locked schema and restore role_ids in the event adapter.",
+            'recommendation: ""',
+            1,
+        ).replace("status: PENDING", "status: NOT_REQUIRED", 1)
+        path.write_text(content)
+        codes = {item["code"] for item in self.diagnostics()}
+        self.assertIn("drift.recommendation", codes)
+        self.assertIn("drift.approval", codes)
+
+    def test_drift_contract_rejects_unknown_truth_slice_and_work_package(self) -> None:
+        path = self.base / "drift-log.yaml"
+        content = path.read_text().replace("data.profile.schema-v1", "data.profile.unknown", 1)
+        content = content.replace("affected_slices: [SLICE-AUTH-001]", "affected_slices: [SLICE-UNKNOWN]", 1)
+        content = content.replace("affected_work_packages: [WP-AUTH-03, WP-AUTH-06]", "affected_work_packages: [WP-UNKNOWN]", 1)
+        path.write_text(content)
+        codes = {item["code"] for item in self.diagnostics()}
+        self.assertTrue({"reference.decision", "reference.slice", "reference.package"}.issubset(codes))
+
+    def test_drift_log_is_optional_until_first_detection(self) -> None:
+        (self.base / "drift-log.yaml").unlink()
+        projection = self.projection()
+        self.assertEqual([], projection["drifts"])
+        self.assertEqual([], self.diagnostics())
+
+    def test_decision_contract_rejects_duplicate_revision_for_semantic_key(self) -> None:
+        path = self.base / "decision-log.yaml"
+        path.write_text(path.read_text().replace("key: product.user.busy-learners", "key: product.goal.guided-learning", 1))
+        self.assertIn("id.duplicate-decision-revision", {item["code"] for item in self.diagnostics()})
+
+    def test_decision_revision_chain_requires_previous_record_id(self) -> None:
+        path = self.base / "decision-log.yaml"
+        path.write_text(path.read_text().replace("supersedes: DEC-005-R1", "supersedes: DEC-UNKNOWN", 1))
+        self.assertIn("reference.decision-revision", {item["code"] for item in self.diagnostics()})
+
+    def test_decision_contract_rejects_unknown_contradiction_and_invalid_phase(self) -> None:
+        path = self.base / "decision-log.yaml"
+        content = path.read_text().replace("contradicts: [ux.navigation.sidebar]", "contradicts: [ux.navigation.unknown]", 1)
+        content = content.replace("phases: [PHASE-3]", "phases: [PHASE-ZERO]", 1)
+        path.write_text(content)
+        codes = {item["code"] for item in self.diagnostics()}
+        self.assertIn("reference.decision", codes)
+        self.assertIn("decision.phase", codes)
+
+    def test_two_locked_contradictory_decisions_are_invalid(self) -> None:
+        path = self.base / "decision-log.yaml"
+        content = path.read_text().replace(
+            "key: ux.navigation.topbar\n    revision: 1\n    status: TESTING",
+            "key: ux.navigation.topbar\n    revision: 1\n    status: LOCKED",
+            1,
+        )
+        path.write_text(content)
+        self.assertIn("decision.locked-contradiction", {item["code"] for item in self.diagnostics()})
 
     def test_repository_projection_reads_local_branch_state(self) -> None:
         with tempfile.TemporaryDirectory(prefix="meta-pds-git-projection-") as temporary_root:
@@ -120,10 +232,34 @@ class MetaPDSContractTests(unittest.TestCase):
             self.assertTrue((suite_root / relative_path).is_file(), relative_path)
 
         pack_manifest = json.loads((suite_root.parent / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(2, pack_manifest["schema_version"])
+        self.assertEqual("meta-pds", pack_manifest["default_profile"]["entrypoint"])
+        self.assertEqual(16, len(pack_manifest["default_profile"]["skills"]))
         bundled_skills = {item["name"]: item["path"] for item in pack_manifest["skills"] if item["kind"] == "bundled"}
         self.assertEqual("meta-pds/skills/meta-pds", bundled_skills["meta-pds"])
         for skill_name in ["rapid-prototyping", "slice-planning", "slice-development", "slice-qa"]:
             self.assertIn(skill_name, bundled_skills)
+        self.assertEqual(5, len(bundled_skills))
+        self.assertEqual(
+            set(pack_manifest["default_profile"]["skills"]),
+            {item["name"] for item in pack_manifest["skills"]},
+        )
+
+    def test_dependency_check_reports_complete_and_missing_profiles(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="meta-pds-skills-") as temporary_root:
+            skills_root = Path(temporary_root)
+            for skill_name in (*INTERNAL_SKILLS, *SUPPORT_SKILLS):
+                skill_directory = skills_root / skill_name
+                skill_directory.mkdir()
+                (skill_directory / "SKILL.md").write_text(f"---\nname: {skill_name}\n---\n")
+            ready = dependency_status(skills_root)
+            self.assertEqual("ready", ready["status"])
+            self.assertEqual({"internal": [], "support": []}, ready["missing"])
+
+            (skills_root / "vitest" / "SKILL.md").unlink()
+            incomplete = dependency_status(skills_root)
+            self.assertEqual("incomplete", incomplete["status"])
+            self.assertEqual(["vitest"], incomplete["missing"]["support"])
 
     def test_ensure_dashboard_reuses_one_runtime_for_project(self) -> None:
         first = ensure_dashboard(self.root, SKILL_ROOT, port=0, startup_timeout=5)
@@ -150,8 +286,24 @@ class MetaPDSContractTests(unittest.TestCase):
                 self.assertEqual("live-project", empty_projection["projection"]["kind"])
                 self.assertEqual([], empty_projection["slices"])
                 self.assertEqual([], empty_projection["decisions"])
+                self.assertEqual([], empty_projection["drifts"])
                 self.assertNotIn("Learning Platform V1", json.dumps(empty_projection))
                 self.assertGreater(empty_projection["dataHealth"]["errors"], 0)
+
+                with urlopen(f"{live['url']}/api/dashboard?demo=1", timeout=5) as response:
+                    demo_projection = json.loads(response.read())
+                self.assertEqual("demo-fixture", demo_projection["projection"]["kind"])
+                self.assertEqual("Learning Platform V1", demo_projection["initiative"]["name"])
+                self.assertEqual(20, len(demo_projection["decisions"]))
+                self.assertEqual(5, len(demo_projection["drifts"]))
+                self.assertEqual(18, len({item["type"] for item in demo_projection["decisions"]}))
+
+                with urlopen(f"{live['url']}/api/dashboard", timeout=5) as response:
+                    live_after_demo = json.loads(response.read())
+                self.assertEqual("live-project", live_after_demo["projection"]["kind"])
+                self.assertEqual([], live_after_demo["decisions"])
+                self.assertEqual([], live_after_demo["drifts"])
+                self.assertNotIn("Learning Platform V1", json.dumps(live_after_demo))
 
                 shutil.copytree(self.base, project_root / "docs" / "meta-pds")
                 refreshed = ensure_dashboard(project_root, SKILL_ROOT, port=0, startup_timeout=5)
@@ -206,6 +358,11 @@ class MetaPDSContractTests(unittest.TestCase):
         projection = self.projection()
         self.assertEqual(7, len(projection["workPackages"]))
         self.assertIn("docs/meta-pds/execution/BROKEN.yaml", {item["file"] for item in projection["dataHealth"]["diagnostics"]})
+
+    def test_execution_rejects_unsupported_applicable_skill(self) -> None:
+        path = self.base / "execution" / "SLICE-AUTH-001.yaml"
+        path.write_text(path.read_text().replace("applicable_skills: []", "applicable_skills: [obsolete-delivery-skill]", 1))
+        self.assertIn("reference.skill", {item["code"] for item in self.diagnostics()})
 
     def test_unrelated_broken_report_is_quarantined(self) -> None:
         reports = self.base / "reports"

@@ -1,76 +1,85 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "name": "metaklouds-skills-pack",
+  "default_profile": {
+    "name": "meta-pds",
+    "entrypoint": "meta-pds",
+    "skills": [
+      "meta-pds",
+      "rapid-prototyping",
+      "slice-planning",
+      "slice-development",
+      "slice-qa",
+      "prototype",
+      "vercel-react-best-practices",
+      "frontend-design",
+      "vercel-composition-patterns",
+      "fastapi",
+      "nodejs-backend-patterns",
+      "python-testing-patterns",
+      "vitest",
+      "playwright-best-practices",
+      "supabase",
+      "supabase-postgres-best-practices"
+    ]
+  },
   "skills": [
     {
       "name": "meta-pds",
       "kind": "bundled",
       "path": "meta-pds/skills/meta-pds",
+      "role": "flagship",
+      "dependencies": [
+        "rapid-prototyping",
+        "slice-planning",
+        "slice-development",
+        "slice-qa",
+        "prototype",
+        "vercel-react-best-practices",
+        "frontend-design",
+        "vercel-composition-patterns",
+        "fastapi",
+        "nodejs-backend-patterns",
+        "python-testing-patterns",
+        "vitest",
+        "playwright-best-practices",
+        "supabase",
+        "supabase-postgres-best-practices"
+      ],
       "license": "MIT"
     },
     {
       "name": "rapid-prototyping",
       "kind": "bundled",
       "path": "meta-pds/skills/rapid-prototyping",
+      "role": "internal-function",
       "license": "MIT"
     },
     {
       "name": "slice-planning",
       "kind": "bundled",
       "path": "meta-pds/skills/slice-planning",
+      "role": "internal-function",
       "license": "MIT"
     },
     {
       "name": "slice-development",
       "kind": "bundled",
       "path": "meta-pds/skills/slice-development",
+      "role": "internal-function",
       "license": "MIT"
     },
     {
       "name": "slice-qa",
       "kind": "bundled",
       "path": "meta-pds/skills/slice-qa",
-      "license": "MIT"
-    },
-    {
-      "name": "continuous-delivery-manager",
-      "kind": "bundled",
-      "path": "skills/continuous-delivery-manager",
-      "license": "MIT"
-    },
-    {
-      "name": "delivery-monitoring-dashboard",
-      "kind": "bundled",
-      "path": "skills/delivery-monitoring-dashboard",
-      "license": "MIT"
-    },
-    {
-      "name": "meta-grill-team",
-      "kind": "bundled",
-      "path": "skills/meta-grill-team",
-      "license": "MIT"
-    },
-    {
-      "name": "vertical-slice-team",
-      "kind": "bundled",
-      "path": "skills/vertical-slice-team",
-      "license": "MIT"
-    },
-    {
-      "name": "dev-team",
-      "kind": "bundled",
-      "path": "skills/dev-team",
-      "license": "MIT"
-    },
-    {
-      "name": "change-management",
-      "kind": "bundled",
-      "path": "skills/change-management",
+      "role": "internal-function",
       "license": "MIT"
     },
     {
       "name": "prototype",
       "kind": "upstream",
+      "role": "support",
       "repository": "https://github.com/mattpocock/skills.git",
       "revision": "2ab958093e83e0ec752e6c1c5932da465bf23e0c",
       "path": "skills/engineering/prototype",
@@ -79,22 +88,79 @@
     {
       "name": "vercel-react-best-practices",
       "kind": "upstream",
+      "role": "support",
       "repository": "https://github.com/vercel-labs/agent-skills.git",
       "revision": "7c180d9044c9ae2b442b567aad4e42a28dd5ed62",
       "path": "skills/react-best-practices",
       "license": "No repository license declared"
     },
     {
+      "name": "frontend-design",
+      "kind": "upstream",
+      "role": "support",
+      "repository": "https://github.com/anthropics/skills.git",
+      "revision": "3b3fad96af16a10759d930941b4520ba0c40edae",
+      "path": "skills/frontend-design",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "vercel-composition-patterns",
+      "kind": "upstream",
+      "role": "support",
+      "repository": "https://github.com/vercel-labs/agent-skills.git",
+      "revision": "dd089a8c752c966dee8bf0f27cb625ba193ffd9e",
+      "path": "skills/composition-patterns",
+      "license": "MIT (declared by skill)"
+    },
+    {
       "name": "fastapi",
       "kind": "upstream",
+      "role": "support",
       "repository": "https://github.com/fastapi/fastapi.git",
       "revision": "95f8322ee1dcda7ceace7b1c4f6c9915b36d748f",
       "path": "fastapi/.agents/skills/fastapi",
       "license": "MIT"
     },
     {
+      "name": "nodejs-backend-patterns",
+      "kind": "upstream",
+      "role": "support",
+      "repository": "https://github.com/wshobson/agents.git",
+      "revision": "367cb6a4a182cf7e9b0a17c9429f7411ddd9cf35",
+      "path": "plugins/javascript-typescript/skills/nodejs-backend-patterns",
+      "license": "MIT"
+    },
+    {
+      "name": "python-testing-patterns",
+      "kind": "upstream",
+      "role": "support",
+      "repository": "https://github.com/wshobson/agents.git",
+      "revision": "367cb6a4a182cf7e9b0a17c9429f7411ddd9cf35",
+      "path": "plugins/python-development/skills/python-testing-patterns",
+      "license": "MIT"
+    },
+    {
+      "name": "vitest",
+      "kind": "upstream",
+      "role": "support",
+      "repository": "https://github.com/antfu/skills.git",
+      "revision": "a74f281a27dadc02397bc1a174b0f2c97531b6ae",
+      "path": "skills/vitest",
+      "license": "MIT"
+    },
+    {
+      "name": "playwright-best-practices",
+      "kind": "upstream",
+      "role": "support",
+      "repository": "https://github.com/currents-dev/playwright-best-practices-skill.git",
+      "revision": "283d5cbc5d11aac1abda058b16ad22c317d54dc0",
+      "path": "playwright-best-practices",
+      "license": "MIT"
+    },
+    {
       "name": "supabase",
       "kind": "upstream",
+      "role": "support",
       "repository": "https://github.com/supabase/agent-skills.git",
       "revision": "1207767388a0ffb55f21fb4e6988fee96942431d",
       "path": "skills/supabase",
@@ -103,6 +169,7 @@
     {
       "name": "supabase-postgres-best-practices",
       "kind": "upstream",
+      "role": "support",
       "repository": "https://github.com/supabase/agent-skills.git",
       "revision": "1207767388a0ffb55f21fb4e6988fee96942431d",
       "path": "skills/supabase-postgres-best-practices",

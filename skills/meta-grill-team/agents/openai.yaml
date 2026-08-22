@@ -1,4 +1,0 @@
-interface:
-  display_name: "Meta Grill Team"
-  short_description: "Define initiatives with a live React prototype"
-  default_prompt: "Use $meta-grill-team to grill this initiative while building a frontend-only React prototype, then lock the PRD, UX, prototype findings, context, ADRs, and change history."

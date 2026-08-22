@@ -10,7 +10,7 @@ Usage:
 Options:
   --dest PATH  Install into an explicit skills directory.
   --force      Replace existing skills after moving them to timestamped backups.
-  --only NAME  Install only this skill. Repeat to select multiple skills.
+  --only NAME  Install selected skills. Selecting meta-pds includes its complete profile.
   -h, --help   Show this help.
 USAGE
 }
@@ -26,6 +26,33 @@ destination=""
 force="false"
 only_skills=()
 only_count=0
+install_complete_profile="false"
+profile_skills=(
+  meta-pds
+  rapid-prototyping
+  slice-planning
+  slice-development
+  slice-qa
+  prototype
+  vercel-react-best-practices
+  frontend-design
+  vercel-composition-patterns
+  fastapi
+  nodejs-backend-patterns
+  python-testing-patterns
+  vitest
+  playwright-best-practices
+  supabase
+  supabase-postgres-best-practices
+)
+legacy_skills=(
+  continuous-delivery-manager
+  delivery-monitoring-dashboard
+  meta-grill-team
+  vertical-slice-team
+  dev-team
+  change-management
+)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -88,7 +115,10 @@ fi
 if [[ "$only_count" -gt 0 ]]; then
   for selected_skill in "${only_skills[@]}"; do
     case "$selected_skill" in
-      meta-pds|rapid-prototyping|slice-planning|slice-development|slice-qa|continuous-delivery-manager|delivery-monitoring-dashboard|meta-grill-team|vertical-slice-team|dev-team|change-management|prototype|vercel-react-best-practices|fastapi|supabase|supabase-postgres-best-practices)
+      meta-pds)
+        install_complete_profile="true"
+        ;;
+      rapid-prototyping|slice-planning|slice-development|slice-qa|prototype|vercel-react-best-practices|frontend-design|vercel-composition-patterns|fastapi|nodejs-backend-patterns|python-testing-patterns|vitest|playwright-best-practices|supabase|supabase-postgres-best-practices)
         ;;
       *)
         echo "Error: unknown skill for --only: $selected_skill" >&2
@@ -96,12 +126,20 @@ if [[ "$only_count" -gt 0 ]]; then
         ;;
     esac
   done
+else
+  install_complete_profile="true"
+fi
+
+if [[ "$install_complete_profile" == "true" && "$only_count" -gt 0 ]]; then
+  only_skills=("${profile_skills[@]}")
+  only_count="${#only_skills[@]}"
 fi
 
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_directory/.." && pwd)"
 temporary_root="$(mktemp -d)"
 trap 'rm -rf "$temporary_root"' EXIT
+backup_root="$(dirname "$destination")/metaklouds-skills-backups/$(date -u +%Y%m%dT%H%M%SZ)-$$"
 
 mkdir -p "$destination"
 
@@ -122,11 +160,13 @@ should_install() {
   return 1
 }
 
-verify_meta_pds_dashboard() {
+verify_meta_pds_bundle() {
   local skill_directory="$1"
   local required_file
   local required_files=(
     scripts/serve_dashboard.py
+    scripts/check_dependencies.py
+    references/implementation-skill-routing.md
     assets/dashboard/index.html
     assets/dashboard/styles.css
     assets/dashboard/app.js
@@ -134,10 +174,30 @@ verify_meta_pds_dashboard() {
 
   for required_file in "${required_files[@]}"; do
     if [[ ! -f "$skill_directory/$required_file" ]]; then
-      echo "Error: Meta PDS dashboard file is missing: $required_file" >&2
+      echo "Error: Meta PDS bundled file is missing: $required_file" >&2
       exit 1
     fi
   done
+}
+
+move_to_backup() {
+  local target_directory="$1"
+  local skill_name="$2"
+  local backup_directory="$backup_root/$skill_name"
+
+  mkdir -p "$backup_root"
+  mv "$target_directory" "$backup_directory"
+  echo "Backed up $skill_name to $backup_directory"
+}
+
+retire_legacy_skill() {
+  local skill_name="$1"
+  local target_directory="$destination/$skill_name"
+
+  if [[ -e "$target_directory" ]]; then
+    move_to_backup "$target_directory" "$skill_name"
+    echo "Retired legacy skill $skill_name"
+  fi
 }
 
 install_directory() {
@@ -157,22 +217,19 @@ install_directory() {
   if [[ -e "$target_directory" ]]; then
     if [[ "$force" != "true" ]]; then
       if [[ "$skill_name" == "meta-pds" ]]; then
-        verify_meta_pds_dashboard "$target_directory"
+        verify_meta_pds_bundle "$target_directory"
       fi
       echo "Skipping $skill_name (already installed)."
       return
     fi
 
-    local backup_directory
-    backup_directory="${target_directory}.backup-$(date -u +%Y%m%dT%H%M%SZ)"
-    mv "$target_directory" "$backup_directory"
-    echo "Backed up $skill_name to $backup_directory"
+    move_to_backup "$target_directory" "$skill_name"
   fi
 
   mkdir -p "$target_directory"
   cp -R "$source_directory/." "$target_directory/"
   if [[ "$skill_name" == "meta-pds" ]]; then
-    verify_meta_pds_dashboard "$target_directory"
+    verify_meta_pds_bundle "$target_directory"
   fi
   echo "Installed $skill_name"
 }
@@ -205,17 +262,17 @@ fetch_and_install() {
 
 echo "Installing Metaklouds Skills Pack for $target into $destination"
 
+if [[ "$install_complete_profile" == "true" ]]; then
+  for legacy_skill in "${legacy_skills[@]}"; do
+    retire_legacy_skill "$legacy_skill"
+  done
+fi
+
 install_directory "$repository_root/meta-pds/skills/meta-pds" "meta-pds"
 install_directory "$repository_root/meta-pds/skills/rapid-prototyping" "rapid-prototyping"
 install_directory "$repository_root/meta-pds/skills/slice-planning" "slice-planning"
 install_directory "$repository_root/meta-pds/skills/slice-development" "slice-development"
 install_directory "$repository_root/meta-pds/skills/slice-qa" "slice-qa"
-install_directory "$repository_root/skills/continuous-delivery-manager" "continuous-delivery-manager"
-install_directory "$repository_root/skills/delivery-monitoring-dashboard" "delivery-monitoring-dashboard"
-install_directory "$repository_root/skills/meta-grill-team" "meta-grill-team"
-install_directory "$repository_root/skills/vertical-slice-team" "vertical-slice-team"
-install_directory "$repository_root/skills/dev-team" "dev-team"
-install_directory "$repository_root/skills/change-management" "change-management"
 
 fetch_and_install \
   "https://github.com/mattpocock/skills.git" \
@@ -230,10 +287,46 @@ fetch_and_install \
   "vercel-react-best-practices"
 
 fetch_and_install \
+  "https://github.com/anthropics/skills.git" \
+  "3b3fad96af16a10759d930941b4520ba0c40edae" \
+  "skills/frontend-design" \
+  "frontend-design"
+
+fetch_and_install \
+  "https://github.com/vercel-labs/agent-skills.git" \
+  "dd089a8c752c966dee8bf0f27cb625ba193ffd9e" \
+  "skills/composition-patterns" \
+  "vercel-composition-patterns"
+
+fetch_and_install \
   "https://github.com/fastapi/fastapi.git" \
   "95f8322ee1dcda7ceace7b1c4f6c9915b36d748f" \
   "fastapi/.agents/skills/fastapi" \
   "fastapi"
+
+fetch_and_install \
+  "https://github.com/wshobson/agents.git" \
+  "367cb6a4a182cf7e9b0a17c9429f7411ddd9cf35" \
+  "plugins/javascript-typescript/skills/nodejs-backend-patterns" \
+  "nodejs-backend-patterns"
+
+fetch_and_install \
+  "https://github.com/wshobson/agents.git" \
+  "367cb6a4a182cf7e9b0a17c9429f7411ddd9cf35" \
+  "plugins/python-development/skills/python-testing-patterns" \
+  "python-testing-patterns"
+
+fetch_and_install \
+  "https://github.com/antfu/skills.git" \
+  "a74f281a27dadc02397bc1a174b0f2c97531b6ae" \
+  "skills/vitest" \
+  "vitest"
+
+fetch_and_install \
+  "https://github.com/currents-dev/playwright-best-practices-skill.git" \
+  "283d5cbc5d11aac1abda058b16ad22c317d54dc0" \
+  "playwright-best-practices" \
+  "playwright-best-practices"
 
 fetch_and_install \
   "https://github.com/supabase/agent-skills.git" \
@@ -248,8 +341,8 @@ fetch_and_install \
   "supabase-postgres-best-practices"
 
 echo
-if [[ "$only_count" -eq 0 ]]; then
-  echo "Installed the complete skills pack."
+if [[ "$install_complete_profile" == "true" ]]; then
+  echo "Installed the complete Meta PDS profile (16 skills)."
 else
   echo "Installed selected skills: ${only_skills[*]}"
 fi

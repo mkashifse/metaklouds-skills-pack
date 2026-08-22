@@ -117,6 +117,30 @@ class MetaPDSContractTests(unittest.TestCase):
         path.write_text(content)
         self.assertIn("package.lead-brief", {item["code"] for item in self.diagnostics()})
 
+    def test_production_intent_frontend_package_requires_promotion_sources(self) -> None:
+        path = self.base / "execution" / "SLICE-AUTH-001.yaml"
+        content = path.read_text().replace(
+            "    prototype_sources:\n      - source: prototypes/INIT-0042/auth/src/components/AuthFormShell.tsx",
+            "    prototype_sources: []\n    ignored_prototype_sources:\n      - source: prototypes/INIT-0042/auth/src/components/AuthFormShell.tsx",
+            1,
+        )
+        path.write_text(content)
+        self.assertIn("prototype-promotion.sources", {item["code"] for item in self.diagnostics()})
+
+    def test_prototype_promotion_rejects_invalid_classification(self) -> None:
+        path = self.base / "execution" / "SLICE-AUTH-001.yaml"
+        path.write_text(path.read_text().replace("classification: REUSE_AS_IS", "classification: REGENERATE", 1))
+        self.assertIn("prototype-promotion.classification", {item["code"] for item in self.diagnostics()})
+
+    def test_react_prototype_promotion_requires_vercel_guidance(self) -> None:
+        path = self.base / "execution" / "SLICE-AUTH-001.yaml"
+        path.write_text(path.read_text().replace(
+            "applicable_skills: [frontend-design, vercel-react-best-practices, vercel-composition-patterns]",
+            "applicable_skills: [frontend-design]",
+            1,
+        ))
+        self.assertIn("prototype-promotion.skill", {item["code"] for item in self.diagnostics()})
+
     def test_human_approval_drift_requires_recommendation_and_pending_approval(self) -> None:
         path = self.base / "drift-log.yaml"
         content = path.read_text().replace(

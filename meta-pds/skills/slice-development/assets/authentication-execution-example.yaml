@@ -21,6 +21,13 @@ code_areas:
     path: backend/
     direct_frontend_source_dependencies_allowed: false
 
+prototype_promotion:
+  mode: PRODUCTION_INTENT
+  handoff_path: prototypes/INIT-0042/auth/promotion-handoff.md
+  source_commit: prototype-checkpoint-07
+  target_stack: react-nextjs
+  truth_keys: [feature.authentication.email-password, ux.accessibility.keyboard-first]
+
 integration_contracts:
   - id: CON-AUTH-API
     name: Authentication HTTP API
@@ -321,14 +328,32 @@ work_packages:
     entry_checks:
       - WP-AUTH-01 is DONE
       - Generated client matches CON-AUTH-API v1
-      - Prototype findings and Human decisions are cited
+      - Prototype checkpoint 07, its promotion handoff, and Human decisions are cited
     exit_checks:
       - All six stories have complete visible UI states
       - Keyboard, focus, names, errors, and contrast requirements pass
       - Unsafe intended destinations fall back safely
+      - Eligible prototype files were promoted and every regeneration exception is recorded
       - Frontend component and route tests pass through CLI
     required_tests: [TC-AUTH-01, TC-AUTH-03, TC-AUTH-05, TC-AUTH-06, TC-AUTH-10]
-    applicable_skills: [frontend-design]
+    applicable_skills: [frontend-design, vercel-react-best-practices, vercel-composition-patterns]
+    prototype_sources:
+      - source: prototypes/INIT-0042/auth/src/components/AuthFormShell.tsx
+        target: frontend/src/features/auth/components/AuthFormShell.tsx
+        classification: REUSE_AS_IS
+        truth_keys: [ux.accessibility.keyboard-first]
+        hardening: []
+      - source: prototypes/INIT-0042/auth/src/routes/RecoveryFlow.tsx
+        target: frontend/src/routes/auth/RecoveryFlow.tsx
+        classification: HARDEN_THEN_REUSE
+        truth_keys: [feature.authentication.email-password, ux.accessibility.keyboard-first]
+        hardening: [Replace fake auth adapter with generated auth-v1 client, Add component and route tests]
+      - source: prototypes/INIT-0042/auth/src/fixtures/auth-scenarios.ts
+        target: ""
+        classification: REFERENCE_ONLY
+        truth_keys: [feature.authentication.email-password]
+        hardening: [Do not copy prototype fixtures into production runtime code]
+    regeneration_exceptions: []
     integration_owner: Integration Engineer
 
   - id: WP-AUTH-05

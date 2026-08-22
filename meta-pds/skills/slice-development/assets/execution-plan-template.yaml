@@ -21,6 +21,13 @@ code_areas:
     path: backend/
     direct_frontend_source_dependencies_allowed: false
 
+prototype_promotion:
+  mode: NONE
+  handoff_path: ""
+  source_commit: ""
+  target_stack: ""
+  truth_keys: []
+
 integration_contracts:
   - id: CON-0001
     name: ""
@@ -80,6 +87,8 @@ work_packages:
     exit_checks: []
     required_tests: [TC-0001]
     applicable_skills: []
+    prototype_sources: []
+    regeneration_exceptions: []
     integration_owner: ""
 
 validation:

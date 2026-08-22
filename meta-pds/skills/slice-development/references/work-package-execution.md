@@ -18,6 +18,8 @@ Every package declares:
 - entry checks and exit checks;
 - required canonical Test IDs, CLI checks, and evidence;
 - repository-evidenced applicable support skills;
+- production-intent prototype sources, destinations, classifications, required
+  hardening, and any evidence-backed regeneration exceptions;
 - integration owner and dependants.
 
 Append dated clarifications to the Lead brief; never replace the original
@@ -32,6 +34,7 @@ Give a worker only:
 - slice ID/revision and relevant requirement/story excerpts;
 - package definition and dependency outputs;
 - current contract subset and version;
+- the relevant promotion-handoff rows and immutable prototype checkpoint;
 - assigned paths plus repository instructions;
 - applicable implementation skills;
 - required Test IDs from the slice and result schema.
@@ -46,6 +49,26 @@ the selected names in the package's `applicable_skills` field, verify that each
 is installed, and require the worker to read those skills. Do not select a
 framework skill without repository evidence or broaden the package to justify
 an installed skill.
+
+## Prototype promotion
+
+For a frontend package backed by an approved production-intent prototype:
+
+1. Verify the handoff path, prototype checkpoint commit, target stack, and
+   locked Truth keys before implementation starts.
+2. Copy each `REUSE_AS_IS` or `HARDEN_THEN_REUSE` source to its declared target
+   before generating an equivalent component. Do not import production runtime
+   code directly from `prototypes/`.
+3. Remove or replace fixtures, fake adapters, prototype navigation,
+   `localStorage`, reset controls, and other `REFERENCE_ONLY` boundaries.
+4. Complete the declared production hardening and required CLI tests.
+5. If promotion is unsafe or incompatible, record the source, reason, evidence,
+   affected Truth keys, and replacement path as a regeneration exception.
+
+The worker must not regenerate approved reusable UI merely from screenshots or
+prose. The Development Lead rejects unexplained recreation as implementation
+drift. Promotion reduces duplicate generation; it does not waive code review,
+integration, accessibility, security, performance, or test requirements.
 
 ## Scheduling
 
@@ -77,6 +100,9 @@ tests:
     result: passed | failed
     evidence: ""
 produces: []
+prototype_promotion:
+  promoted: []
+  regeneration_exceptions: []
 risks: []
 remaining_work: []
 ```

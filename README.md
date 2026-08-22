@@ -46,7 +46,7 @@ The full installer provides the sixteen-skill Meta PDS profile:
 | Skill | Ownership | Purpose |
 | --- | --- | --- |
 | `meta-pds` | Metaklouds | Coordinate the human-centered delivery suite and its per-project dashboard |
-| `rapid-prototyping` | Metaklouds | Build disposable prototypes for manual Human review |
+| `rapid-prototyping` | Metaklouds | Build disposable or production-intent prototypes for manual Human review and controlled frontend promotion |
 | `slice-planning` | Metaklouds | Define implementation-ready fat slices |
 | `slice-development` | Metaklouds | Mobilize and execute bounded slice work packages |
 | `slice-qa` | Metaklouds | Independently verify release and outcome evidence |
@@ -93,6 +93,11 @@ into the product repository.
   discovery action.
 - **Returning project:** it reads the current Truth, slices, Scrum tasks, drift,
   branches, PRs, and evidence, then gives a compact recap and next action.
+- **Prototype reuse:** early exploration stays disposable. Once the frontend
+  stack is established, a production-intent prototype uses the applicable
+  frontend skills and emits a source-to-target promotion handoff. Frontend
+  workers promote approved files before generating replacements and must record
+  any evidence-backed regeneration exception.
 - **Human approval:** only affected dependency paths pause. Independent ready
   work continues inside the approved authority envelope.
 - **Drift control:** safe, reversible, high-confidence drift may be resolved and

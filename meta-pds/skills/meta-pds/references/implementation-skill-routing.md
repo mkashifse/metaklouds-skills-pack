@@ -18,6 +18,7 @@ state reconstruction, or unrelated work.
 | Evidence or assignment | Required support skills |
 | --- | --- |
 | Disposable product prototype | `prototype`; add `frontend-design` when visual or interaction direction is being tested |
+| Production-intent React or Next.js prototype | `prototype`, `frontend-design`, and `vercel-react-best-practices`; add `vercel-composition-patterns` for reusable component APIs or composition boundaries |
 | Production visual interface or UX implementation | `frontend-design` |
 | React or Next.js production code | `vercel-react-best-practices` |
 | Reusable React component APIs or component composition | `vercel-composition-patterns` plus `vercel-react-best-practices` |
@@ -35,12 +36,19 @@ skill is installed.
 
 ## Phase enforcement
 
-- Rapid Prototyping uses `prototype` and, when applicable, `frontend-design`.
-  It never uses Playwright or automated browser validation.
+- Rapid Prototyping always uses `prototype` and uses `frontend-design` when
+  visual or interaction direction is tested. A production-intent React or
+  Next.js prototype also uses `vercel-react-best-practices`, plus
+  `vercel-composition-patterns` when it creates reusable component APIs. A
+  disposable prototype does not add a framework merely because support skills
+  are installed. Rapid Prototyping never uses Playwright or automated browser
+  validation.
 - Slice Planning defines required evidence and test classes without choosing
   implementation frameworks that repository evidence has not established.
 - Slice Development records and passes the applicable skills for every work
-  package before it becomes `READY`.
+  package before it becomes `READY`. A frontend package backed by an approved
+  production-intent handoff must load the same applicable frontend skills and
+  promote eligible prototype files before considering regeneration.
 - Slice QA applies the testing skill matching each committed suite. QA never
   modifies production tests and never substitutes interactive browser control
   for Playwright CLI evidence.

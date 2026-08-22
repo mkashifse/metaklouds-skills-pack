@@ -7,7 +7,7 @@ Use one Git repository as the product root. The locked default layout is:
 ```text
 <product-root>/
 ├── docs/meta-pds/             # canonical Meta PDS artifacts
-├── prototypes/                # disposable prototype evidence
+├── prototypes/                # isolated prototype and promotion evidence
 ├── frontend/                  # frontend application and frontend tests
 └── backend/                   # backend, database migrations, and backend tests
 ```
@@ -44,6 +44,7 @@ docs/meta-pds/slices/<slice-id>.md
 docs/meta-pds/execution/<slice-id>.yaml
 docs/meta-pds/reports/<slice-id>.md
 prototypes/<initiative-id>/
+prototypes/<initiative-id>/promotion-handoff.md    # production-intent only
 ```
 
 Each non-empty `delivery-events.jsonl` line is one JSON object with `at` (ISO
@@ -69,7 +70,7 @@ Each functional skill provides its owned artifact template.
 | `decision-log.yaml` | Product Manager | submit evidence; do not edit |
 | `drift-log.yaml` | Product Manager | report evidence and affected dependency closure |
 | `delivery-state.yaml` | Product Manager | return structured status |
-| prototype | Rapid Prototype Engineer | inspect as behavioral evidence |
+| prototype and promotion handoff | Rapid Prototype Engineer; Product Manager checkpoints the reviewed revision | Planning and Development inspect as behavioral and file-promotion evidence |
 | slice file, including test definitions | Planning Lead | Development/QA read; gaps return upstream |
 | execution plan, including Test ID assignments | Development Lead | QA reads; PM controls gate |
 | production code/tests | Assigned Development worker | other roles inspect only |
@@ -89,11 +90,14 @@ Functional leads provide evidence-backed recommendations.
 6. `delivery-state.yaml` current-state projection;
 7. draft artifacts and prototype behavior.
 
-The prototype is evidence, never product authority. `delivery-state.yaml` is a
-current-state ledger, not a narrative activity log. Use the optional JSONL file
-for append-only history. The dashboard is a read-only in-memory view and never
-overrides a canonical artifact or verified runtime evidence. Never persist a
-separate dashboard data file.
+The prototype is evidence, never product authority. A production-intent
+promotion handoff authorizes file reuse only where it agrees with locked Truth,
+the approved slice, and the cited prototype checkpoint; it never bypasses
+production tests, contracts, security, accessibility, or QA. `delivery-state.yaml`
+is a current-state ledger, not a narrative activity log. Use the optional JSONL
+file for append-only history. The dashboard is a read-only in-memory view and
+never overrides a canonical artifact or verified runtime evidence. Never
+persist a separate dashboard data file.
 
 ## Decision truth
 
@@ -145,6 +149,10 @@ for phased applicability. Do not combine `GLOBAL` with numbered phases.
   exclusions, and acceptance criteria. Later clarification is append-only and
   never silently rewrites that original instruction. Test definitions are not
   copied into the execution plan or report.
+- A production-intent frontend package cites the promotion handoff and prototype
+  checkpoint, maps each reusable source to its production target, records its
+  classification and required hardening, and documents any regeneration
+  exception instead of silently recreating approved UI.
 - Every report cites exact commits, test commands/results, deployments, and
   remaining risks.
 - Do not duplicate code-native OpenAPI, JSON Schema, migrations, or similar

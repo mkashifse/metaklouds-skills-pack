@@ -65,6 +65,13 @@ artifact. Never substitute bundled examples, templates, fixtures, conversation
 memory, or another project's files. When canonical artifacts are created, the
 same runtime projects them on the next refresh.
 
+An explicit `?demo=1` view may project the bundled regression fixture for
+visual inspection. It must use the existing project runtime, display a
+persistent demo banner and a return-to-live link, preserve live repository
+evidence, and never copy or write fixture data into the product repository.
+The ordinary URL and `/api/dashboard` endpoint remain live-only; demo data is
+served only when the Human opens the explicitly labelled demo URL.
+
 Never infer a successful gate, test, release, or Human approval merely to fill
 the display. Show unknown or missing evidence explicitly. The dashboard runs
 the same repository-wide contract as the CLI, returns structured diagnostics,

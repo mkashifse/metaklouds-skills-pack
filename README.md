@@ -133,6 +133,11 @@ It routes internally to its four functional skills and selects the installed
 implementation and testing skills from actual repository evidence. Users do
 not need to coordinate those skills directly.
 
+For visual inspection without initializing a project, open the explicitly
+labelled demo URL printed by the dashboard launcher. Demo delivery data is
+served by the same per-project runtime, never copied into the repository, and
+kept separate from the ordinary live URL and API response.
+
 The canonical product documents, prototype, frontend, and backend live in one
 product repository:
 

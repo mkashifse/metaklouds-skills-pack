@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 TERMINAL_PACKAGE_STATUSES = {"DONE"}
@@ -35,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 4
+RUNTIME_VERSION = 5
 SUPPORTED_IMPLEMENTATION_SKILLS = {
     "prototype",
     "vercel-react-best-practices",
@@ -1992,7 +1992,9 @@ def handler_for(
 
     class DashboardHandler(BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802
-            path = urlparse(self.path).path
+            request = urlparse(self.path)
+            path = request.path
+            demo_requested = parse_qs(request.query).get("demo") == ["1"]
             if path == "/api/runtime":
                 payload = json.dumps({
                     "service": RUNTIME_SERVICE,
@@ -2011,8 +2013,12 @@ def handler_for(
 
             if path == "/api/dashboard":
                 try:
+                    if demo_requested:
+                        dashboard_data = build_demo_dashboard_data(asset_root.parent.parent, runtime_project_root)
+                    else:
+                        dashboard_data = build_dashboard_data(product_root, projection_kind, projection_source, runtime_project_root)
                     payload = json.dumps(
-                        build_dashboard_data(product_root, projection_kind, projection_source, runtime_project_root),
+                        dashboard_data,
                         ensure_ascii=False,
                     ).encode("utf-8")
                     self.send_response(200)
@@ -2367,6 +2373,20 @@ def prepare_projection_fixture(skill_root: Path) -> tempfile.TemporaryDirectory[
     return runtime
 
 
+def build_demo_dashboard_data(skill_root: Path, repository_root: Path) -> dict[str, Any]:
+    """Project the bundled fixture explicitly without touching product artifacts."""
+    fixture = prepare_projection_fixture(skill_root)
+    try:
+        return build_dashboard_data(
+            Path(fixture.name),
+            projection_kind="demo-fixture",
+            projection_source="Bundled demo delivery data · repository evidence remains live",
+            repository_root=repository_root,
+        )
+    finally:
+        fixture.cleanup()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("product_root", type=Path)
@@ -2384,6 +2404,7 @@ def main() -> int:
     if args.ensure:
         result = ensure_dashboard(args.product_root, skill_root, args.host, args.port)
         print(f"Meta PDS dashboard: {result['url']}")
+        print(f"Meta PDS demo: {result['url']}/?demo=1#decisions")
         print(f"Dashboard runtime: {result['status']} for {result['projectRoot']}")
         base = args.product_root.resolve() / "docs" / "meta-pds"
         if not (base / "initiative.md").is_file() or not (base / "delivery-state.yaml").is_file():

@@ -1,6 +1,7 @@
 (async function () {
   "use strict";
 
+  const demoRequested = new URLSearchParams(location.search).get("demo") === "1";
   const safeError = (value) => String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -10,7 +11,7 @@
   let data;
   try {
     if (location.protocol === "file:") throw new Error("Launch the Meta PDS dashboard service from the product root; direct file access cannot read canonical artifacts.");
-    const response = await fetch("/api/dashboard", { cache: "no-store" });
+    const response = await fetch(demoRequested ? "/api/dashboard?demo=1" : "/api/dashboard", { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) {
       const firstDiagnostic = payload.diagnostics?.[0];
@@ -107,6 +108,16 @@
     setText("#decision-count", data.decisions.length);
     setText("#branch-count", data.repository?.branches?.length || 0);
     setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);
+    const isDemo = data.projection.kind === "demo-fixture";
+    const demoBanner = $("#demo-banner");
+    demoBanner.hidden = !isDemo;
+    demoBanner.innerHTML = isDemo ? `
+      <div class="demo-marker"><span>Demo</span><strong>Example decision map</strong></div>
+      <p>Bundled examples for visual review. They are not project decisions and are never written into this repository.</p>
+      <a href="/#decisions">Return to live project data</a>` : "";
+    setText("#view-authority", isDemo
+      ? "Read-only demo view · Bundled examples are not canonical product truth"
+      : "Read-only live view · Canonical Meta PDS artifacts remain authoritative");
   }
 
   function renderDataHealth() {
@@ -131,7 +142,7 @@
     $$(".top-tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === view));
     $$(".view-panel").forEach((panel) => panel.classList.toggle("is-active", panel.dataset.panel === view));
     $("#slice-summary").classList.toggle("is-hidden", view !== "slices");
-    if (history.replaceState) history.replaceState(null, "", `#${view}`);
+    if (history.replaceState) history.replaceState(null, "", `${location.pathname}${location.search}#${view}`);
   }
 
   function bindTopTabs() {
@@ -291,7 +302,10 @@
       return statusMatch && typeMatch && phaseMatch;
     });
     if (!filtered.length) {
-      $("#decision-list").innerHTML = '<div class="empty-state">No decisions match these filters.</div>';
+      const demoLink = data.projection.kind === "live-project"
+        ? '<a class="empty-action" href="?demo=1#decisions">Preview bundled demo decisions</a>'
+        : "";
+      $("#decision-list").innerHTML = `<div class="empty-state"><p>No decisions match these filters.</p>${demoLink}</div>`;
       return;
     }
     const groups = [];

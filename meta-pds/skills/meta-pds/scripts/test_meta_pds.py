@@ -215,6 +215,19 @@ class MetaPDSContractTests(unittest.TestCase):
                 self.assertNotIn("Learning Platform V1", json.dumps(empty_projection))
                 self.assertGreater(empty_projection["dataHealth"]["errors"], 0)
 
+                with urlopen(f"{live['url']}/api/dashboard?demo=1", timeout=5) as response:
+                    demo_projection = json.loads(response.read())
+                self.assertEqual("demo-fixture", demo_projection["projection"]["kind"])
+                self.assertEqual("Learning Platform V1", demo_projection["initiative"]["name"])
+                self.assertEqual(20, len(demo_projection["decisions"]))
+                self.assertEqual(18, len({item["type"] for item in demo_projection["decisions"]}))
+
+                with urlopen(f"{live['url']}/api/dashboard", timeout=5) as response:
+                    live_after_demo = json.loads(response.read())
+                self.assertEqual("live-project", live_after_demo["projection"]["kind"])
+                self.assertEqual([], live_after_demo["decisions"])
+                self.assertNotIn("Learning Platform V1", json.dumps(live_after_demo))
+
                 shutil.copytree(self.base, project_root / "docs" / "meta-pds")
                 refreshed = ensure_dashboard(project_root, SKILL_ROOT, port=0, startup_timeout=5)
                 self.assertEqual("reused", refreshed["status"])

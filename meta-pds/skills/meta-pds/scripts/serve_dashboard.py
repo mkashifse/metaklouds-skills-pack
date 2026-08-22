@@ -35,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 12
+RUNTIME_VERSION = 13
 SUPPORTED_IMPLEMENTATION_SKILLS = {
     "prototype",
     "vercel-react-best-practices",
@@ -49,6 +49,8 @@ SUPPORTED_IMPLEMENTATION_SKILLS = {
     "supabase",
     "supabase-postgres-best-practices",
 }
+PROTOTYPE_PROMOTION_MODES = {"NONE", "REFERENCE_ONLY", "PRODUCTION_INTENT"}
+PROTOTYPE_SOURCE_CLASSIFICATIONS = {"REUSE_AS_IS", "HARDEN_THEN_REUSE", "REFERENCE_ONLY"}
 DECISION_TYPES = {
     "GOAL": {"label": "Goal", "layer": "Product direction", "layerKey": "product-direction", "order": 10},
     "USER_PROBLEM": {"label": "User / Problem", "layer": "Product direction", "layerKey": "product-direction", "order": 20},
@@ -1053,6 +1055,33 @@ def validate_product_artifacts(
         for field in ["critical_path", "execution_waves", "integration_sequence", "merge_sequence", "deployment_sequence", "feature_flags", "observability_checks", "rollback_sequence"]:
             if not isinstance(document.get(field), list):
                 error(path, "execution.type", f"{field} must be a list", slice_id)
+        promotion = document.get("prototype_promotion")
+        promotion_mode = "NONE"
+        promotion_stack = ""
+        if promotion is not None:
+            if not isinstance(promotion, dict):
+                error(path, "prototype-promotion.type", "prototype_promotion must be a mapping", slice_id)
+            else:
+                for field in ["mode", "handoff_path", "source_commit", "target_stack", "truth_keys"]:
+                    if field not in promotion:
+                        error(path, "prototype-promotion.field", f"prototype_promotion.{field} is required", slice_id)
+                promotion_mode = status(promotion.get("mode"), "NONE")
+                promotion_stack = str(promotion.get("target_stack") or "").lower()
+                if promotion_mode not in PROTOTYPE_PROMOTION_MODES:
+                    error(path, "prototype-promotion.mode", f"Unknown prototype promotion mode '{promotion.get('mode')}'", slice_id)
+                truth_keys = promotion.get("truth_keys")
+                if not isinstance(truth_keys, list):
+                    error(path, "prototype-promotion.type", "prototype_promotion.truth_keys must be a list", slice_id)
+                    truth_keys = []
+                for truth_key in truth_keys:
+                    if not isinstance(truth_key, str):
+                        error(path, "reference.type", "prototype_promotion.truth_keys values must be Truth-key strings", slice_id)
+                    elif truth_key not in known_decision_keys:
+                        error(path, "reference.decision", f"prototype_promotion references unknown Truth key '{truth_key}'", slice_id)
+                if promotion_mode == "PRODUCTION_INTENT":
+                    for field in ["handoff_path", "source_commit", "target_stack"]:
+                        if not isinstance(promotion.get(field), str) or not promotion.get(field):
+                            error(path, "prototype-promotion.field", f"prototype_promotion.{field} is required for PRODUCTION_INTENT", slice_id)
         contracts = document.get("integration_contracts")
         if not isinstance(contracts, list):
             error(path, "execution.type", "integration_contracts must be a list", slice_id)
@@ -1141,6 +1170,72 @@ def validate_product_artifacts(
                     error(path, "reference.type", f"{label}.applicable_skills values must be skill-name strings", slice_id)
                 elif skill_name not in SUPPORTED_IMPLEMENTATION_SKILLS:
                     error(path, "reference.skill", f"{label}.applicable_skills references unsupported '{skill_name}'", slice_id)
+            package_area = str(package.get("area") or "").lower()
+            is_frontend_promotion = promotion_mode == "PRODUCTION_INTENT" and package_area == "frontend"
+            prototype_sources = package.get("prototype_sources")
+            regeneration_exceptions = package.get("regeneration_exceptions")
+            if is_frontend_promotion:
+                if not isinstance(prototype_sources, list) or not prototype_sources:
+                    error(path, "prototype-promotion.sources", f"{label}.prototype_sources must map approved prototype files for a production-intent frontend package", slice_id)
+                if not isinstance(regeneration_exceptions, list):
+                    error(path, "prototype-promotion.exceptions", f"{label}.regeneration_exceptions must be a list", slice_id)
+                if any(name in promotion_stack for name in ["react", "next"]):
+                    skills = package.get("applicable_skills") if isinstance(package.get("applicable_skills"), list) else []
+                    if "vercel-react-best-practices" not in skills:
+                        error(path, "prototype-promotion.skill", f"{label} must use vercel-react-best-practices for the declared {promotion_stack} promotion target", slice_id)
+            if prototype_sources is not None:
+                if not isinstance(prototype_sources, list):
+                    error(path, "prototype-promotion.type", f"{label}.prototype_sources must be a list", slice_id)
+                    prototype_sources = []
+                for source_index, source in enumerate(prototype_sources):
+                    source_label = f"{label}.prototype_sources[{source_index}]"
+                    if not isinstance(source, dict):
+                        error(path, "prototype-promotion.type", f"{source_label} must be a mapping", slice_id)
+                        continue
+                    for field in ["source", "target", "classification", "truth_keys", "hardening"]:
+                        if field not in source:
+                            error(path, "prototype-promotion.field", f"{source_label}.{field} is required", slice_id)
+                    classification = status(source.get("classification"))
+                    if classification not in PROTOTYPE_SOURCE_CLASSIFICATIONS:
+                        error(path, "prototype-promotion.classification", f"{source_label}.classification is invalid", slice_id)
+                    if not isinstance(source.get("source"), str) or not source.get("source"):
+                        error(path, "prototype-promotion.field", f"{source_label}.source must be non-empty text", slice_id)
+                    if not isinstance(source.get("target"), str):
+                        error(path, "prototype-promotion.field", f"{source_label}.target must be text", slice_id)
+                    elif classification != "REFERENCE_ONLY" and not source.get("target"):
+                        error(path, "prototype-promotion.field", f"{source_label}.target is required for reusable prototype code", slice_id)
+                    for field in ["truth_keys", "hardening"]:
+                        if not isinstance(source.get(field), list):
+                            error(path, "prototype-promotion.type", f"{source_label}.{field} must be a list", slice_id)
+                    for truth_key in source.get("truth_keys", []) if isinstance(source.get("truth_keys"), list) else []:
+                        if not isinstance(truth_key, str):
+                            error(path, "reference.type", f"{source_label}.truth_keys values must be Truth-key strings", slice_id)
+                        elif truth_key not in known_decision_keys:
+                            error(path, "reference.decision", f"{source_label} references unknown Truth key '{truth_key}'", slice_id)
+            if regeneration_exceptions is not None:
+                if not isinstance(regeneration_exceptions, list):
+                    error(path, "prototype-promotion.type", f"{label}.regeneration_exceptions must be a list", slice_id)
+                    regeneration_exceptions = []
+                for exception_index, exception in enumerate(regeneration_exceptions):
+                    exception_label = f"{label}.regeneration_exceptions[{exception_index}]"
+                    if not isinstance(exception, dict):
+                        error(path, "prototype-promotion.type", f"{exception_label} must be a mapping", slice_id)
+                        continue
+                    for field in ["source", "reason", "evidence", "truth_keys", "replacement_path"]:
+                        if field not in exception:
+                            error(path, "prototype-promotion.field", f"{exception_label}.{field} is required", slice_id)
+                    for field in ["source", "reason", "evidence", "replacement_path"]:
+                        if not isinstance(exception.get(field), str) or not exception.get(field):
+                            error(path, "prototype-promotion.field", f"{exception_label}.{field} must be non-empty text", slice_id)
+                    exception_truth_keys = exception.get("truth_keys")
+                    if not isinstance(exception_truth_keys, list):
+                        error(path, "prototype-promotion.type", f"{exception_label}.truth_keys must be a list", slice_id)
+                        exception_truth_keys = []
+                    for truth_key in exception_truth_keys:
+                        if not isinstance(truth_key, str):
+                            error(path, "reference.type", f"{exception_label}.truth_keys values must be Truth-key strings", slice_id)
+                        elif truth_key not in known_decision_keys:
+                            error(path, "reference.decision", f"{exception_label} references unknown Truth key '{truth_key}'", slice_id)
             for story_id in package.get("supports", []) if isinstance(package.get("supports"), list) else []:
                 if not isinstance(story_id, str):
                     error(path, "reference.type", f"{label}.supports values must be Story ID strings", slice_id)

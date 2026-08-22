@@ -64,7 +64,8 @@ artifact and state contract before planning or assigning development paths.
 
 Coordinate four functional skills:
 
-- `rapid-prototyping`: disposable prototype development for manual Human review;
+- `rapid-prototyping`: isolated disposable or production-intent prototype
+  development for manual Human review and explicit frontend promotion;
 - `slice-planning`: development-ready fat-slice definition;
 - `slice-development`: technical mobilization and bounded implementation;
 - `slice-qa`: independent verification, release readiness, and outcome evidence.
@@ -194,8 +195,10 @@ Route by evidence:
 - `DECISION_REVIEW`: present a compact upstream-to-downstream review packet and
   lock, revise, or retain each candidate only with Human approval;
 - `PROTOTYPE`: route bounded experience or behavior questions to
-  `rapid-prototyping`; require a schema decision checkpoint whenever realistic
-  seeded entities, fields, relationships, privacy rules, or invariants emerge;
+  `rapid-prototyping`; choose disposable mode unless the target frontend stack
+  is established and the Human wants production reuse. Require a schema
+  decision checkpoint whenever realistic seeded entities, fields,
+  relationships, privacy rules, or invariants emerge;
 - `SLICE_SHAPING`: recommend fat slices from the locked decision graph and wait
   for the Human to approve them one by one;
 - `DELIVERY`: follow the gate routes below and flag drift against canonical keys;

@@ -1,12 +1,14 @@
 ---
 name: rapid-prototyping
-description: Build or revise a disposable, locally seeded product prototype for rapid manual Human review during Meta PDS initiative discovery. Use when product, journey, navigation, content, or interaction decisions need to be tested quickly before initiative or slice planning is locked; do not use for production implementation or automated UI testing.
+description: Build or revise an isolated, locally seeded product prototype for rapid manual Human review during Meta PDS initiative discovery, using either a disposable exploration mode or a stack-aligned production-intent mode with an explicit code-promotion handoff. Use when product, journey, navigation, content, or interaction decisions need to be tested before initiative or slice planning is locked; do not use for production integration or automated UI testing.
 ---
 
 # Rapid Prototyping
 
-Act as the Rapid Prototype Engineer. Optimize for fast Human learning, not
-production architecture or automated test coverage.
+Act as the Rapid Prototype Engineer. Optimize first for fast Human learning.
+When production reuse is explicitly eligible, also preserve the established
+frontend stack and component conventions so approved UI code can be promoted
+without being regenerated.
 
 ## Required policy
 
@@ -15,12 +17,15 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/human-centered-autonomy.md`;
 - `references/testing-and-browser-policy.md`;
 - `references/artifact-and-state-contract.md`;
-- `references/implementation-skill-routing.md`.
+- `references/implementation-skill-routing.md`;
 - `references/interaction-modes-and-decision-capture.md`.
 
 Also read [references/prototype-loop.md](references/prototype-loop.md).
 Read the installed `prototype` support skill before implementation. Also read
 `frontend-design` when the assignment tests visual or interaction direction.
+For a production-intent React or Next.js prototype, read
+`vercel-react-best-practices`; also read `vercel-composition-patterns` when the
+assignment creates reusable component APIs or composition boundaries.
 
 The browser prohibition is absolute: never use an interactive browser-control
 tool, browser agent, Codex/Claude UI clicking, Playwright, or another automated
@@ -29,7 +34,7 @@ validates the prototype.
 
 ## Ownership
 
-Edit only the assigned disposable prototype path, normally:
+Edit only the assigned isolated prototype path, normally:
 
 ```text
 prototypes/<initiative-id>/
@@ -38,6 +43,24 @@ prototypes/<initiative-id>/
 Do not edit `initiative.md`, `decision-log.yaml`, slice files, delivery state,
 production repositories, or production contracts. Return findings to the
 Product Manager, who records and locks decisions.
+
+## Prototype modes
+
+Use `DISPOSABLE` by default when the frontend stack is unknown, major experience
+choices remain open, or speed matters more than code reuse. Keep implementation
+small and treat all files as reference-only evidence.
+
+Use `PRODUCTION_INTENT` only when:
+
+- the Human and Product Manager want frontend code reuse;
+- the target frontend stack and relevant stack decisions are established;
+- the prototype can follow the target dependency versions, design system,
+  component conventions, accessibility baseline, and file boundaries without
+  slowing the learning loop materially.
+
+A production-intent prototype remains isolated and non-production. It may use
+fake adapters and fixtures, but it must keep those boundaries obvious. Never
+connect it to production services merely to make later promotion easier.
 
 ## Prototype constraints
 
@@ -51,7 +74,7 @@ Product Manager, who records and locks decisions.
   email/SMS delivery, payments, production auth, databases, migrations, or
   backend services.
 - Keep it runnable through the repository's simplest established local command.
-- Mark the prototype as disposable and non-production.
+- Mark the prototype mode and make its non-production status explicit.
 
 Prototype implementation may imitate expected behavior but must not silently
 define product scope or production contracts.
@@ -76,6 +99,14 @@ For each bounded round:
 Keep one coherent prototype. Create variants only when the Human must compare a
 material choice.
 
+For `PRODUCTION_INTENT`, maintain
+[assets/prototype-promotion-handoff-template.md](assets/prototype-promotion-handoff-template.md)
+as `prototypes/<initiative-id>/promotion-handoff.md`. Classify every material
+frontend source as `REUSE_AS_IS`, `HARDEN_THEN_REUSE`, or `REFERENCE_ONLY`, with
+its intended production target, Truth keys, fake boundaries, and remaining
+hardening. The Product Manager's prototype checkpoint commit is the immutable
+source revision cited later by Slice Planning and Slice Development.
+
 ## Result
 
 Return a concise structured result:
@@ -84,6 +115,7 @@ Return a concise structured result:
 status: PROTOTYPE_UPDATED | NEEDS_DECISION | BLOCKED
 initiative_id: ""
 prototype_path: ""
+prototype_mode: DISPOSABLE | PRODUCTION_INTENT
 implemented_decisions: []
 manual_review:
   start_command: ""
@@ -99,6 +131,12 @@ schema_checkpoint:
   relationships: []
   invariants: []
   privacy_rules: []
+promotion_handoff:
+  required: false
+  path: ""
+  reusable_files: []
+  harden_before_reuse: []
+  reference_only: []
 questions: []
 risks: []
 changed_paths: []

@@ -30,6 +30,8 @@ Require:
 - an `INITIATIVE_READY` initiative revision;
 - a Human-approved fat-slice roadmap entry;
 - current locked decisions and prototype findings;
+- the promotion handoff and prototype checkpoint when an approved
+  production-intent prototype exists;
 - the exact slice ID and capability outcome;
 - canonical product and repository paths.
 
@@ -56,7 +58,8 @@ present.
 ## Planning workflow
 
 1. Read the locked initiative revision, decision log, roadmap entry, relevant
-   prototype findings, existing product behavior, and prior linked slices.
+   prototype findings and promotion handoff, existing product behavior, and
+   prior linked slices.
 2. Define the capability outcome, boundary, and non-goals.
 3. Cover the complete baseline lifecycle, including alternate, failure,
    recovery, permission, security, accessibility, and operational behavior.
@@ -68,8 +71,11 @@ present.
    risks, observability, rollout, and rollback without inventing detailed code
    tasks.
 7. Map every requirement to stories, Test IDs, and acceptance evidence.
-8. Run the planning-readiness checklist and record specialist findings.
-9. Return the slice in `PLANNING_REVIEW`; the Product Manager obtains the
+8. When production-intent code is approved, cite its handoff and immutable
+   checkpoint in authoritative sources without treating prototype code as
+   product authority.
+9. Run the planning-readiness checklist and record specialist findings.
+10. Return the slice in `PLANNING_REVIEW`; the Product Manager obtains the
    independent Development Intake feasibility review and controls the gate.
 
 Create or update only:

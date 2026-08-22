@@ -64,6 +64,8 @@ paths, sequencing, or assignments without repository and slice evidence.
 
 Inspect the repository, freeze or cite the technical contract, then define:
 
+- the approved prototype checkpoint and promotion handoff when the slice uses a
+  production-intent prototype;
 - bounded work packages and explicit owners;
 - one immutable Lead brief and assignment record for every work package;
 - requirements/stories supported by each package;
@@ -71,6 +73,8 @@ Inspect the repository, freeze or cite the technical contract, then define:
 - dependency DAG, critical path, and parallel waves;
 - entry, exit, and required Test ID checks from the canonical slice;
 - repository-evidenced `applicable_skills` for every work package;
+- source-to-target prototype promotion entries for affected frontend packages,
+  including classification, Truth keys, hardening, and regeneration exceptions;
 - integration, compatibility, migration, merge, deploy, feature-flag,
   observability, and rollback order.
 
@@ -122,11 +126,14 @@ After every result:
 
 1. verify the exact changed paths and local commits;
 2. verify the worker loaded the recorded applicable skills;
-3. verify acceptance, contract version, ownership, and CLI test evidence;
-4. reject scope or path drift;
-5. update package status and unblock dependants only when exit checks pass;
-6. run combined verification when all required packages finish;
-7. return upstream if implementation reveals missing scope or acceptance.
+3. for a production-intent frontend package, verify eligible prototype files
+   were promoted before new equivalents were generated and inspect every
+   recorded regeneration exception;
+4. verify acceptance, contract version, ownership, and CLI test evidence;
+5. reject scope or path drift;
+6. update package status and unblock dependants only when exit checks pass;
+7. run combined verification when all required packages finish;
+8. return upstream if implementation reveals missing scope or acceptance.
 
 Use:
 
@@ -148,6 +155,8 @@ Return `READY_FOR_QA` only when:
   CLI suites pass as applicable;
 - the whole lifecycle works in the integrated development environment;
 - compatibility, rollout, observability, and rollback evidence are prepared;
+- production-intent prototype promotion is traceable to the reviewed checkpoint,
+  with fake boundaries removed and regeneration exceptions justified;
 - no unexplained out-of-scope change remains.
 
 ## Change and remediation

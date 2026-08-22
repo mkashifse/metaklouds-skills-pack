@@ -1,5 +1,5 @@
 initiative_id: INIT-0001
-schema_version: 3
+schema_version: 4
 decisions: []
 
 # Decision entry shape:
@@ -20,4 +20,11 @@ decisions: []
 #   authority: HUMAN | PM
 #   approved_by: ""
 #   decided_at: ""
-#   supersedes: "" # decision key
+#   supersedes: "" # previous revision record ID; empty only for revision 1
+
+# Revision rules:
+# - Keep `key` stable across every revision of one Truth.
+# - Give every revision a unique `id` and the next contiguous `revision` number.
+# - Never edit a LOCKED revision. Add a PROPOSED or TESTING revision instead.
+# - A candidate may coexist with one LOCKED canonical revision until Human approval.
+# - When a candidate is locked, mark the previous LOCKED revision SUPERSEDED.

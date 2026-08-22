@@ -1,5 +1,5 @@
 # Regression and documentation fixture only. Never copy this data into a product repository.
-schema_version: 3
+schema_version: 4
 initiative_id: INIT-0042
 decisions:
   - id: DEC-001
@@ -74,6 +74,24 @@ decisions:
     approved_by: Human Product Owner
     decided_at: "2026-08-20T09:30:00+05:00"
     supersedes: ""
+  - id: DEC-005-R1
+    key: feature.authentication.email-password
+    revision: 1
+    status: SUPERSEDED
+    type: FEATURE_CAPABILITY
+    secondary_types: [SECURITY_PRIVACY]
+    phases: [PHASE-1]
+    question: Which sign-in method ships first?
+    decision: Use passwordless email links as the only initial sign-in method.
+    rationale: The first prototype favored a narrow passwordless journey.
+    evidence: [Prototype checkpoint 03]
+    depends_on: [product.scope.phase-one-authentication]
+    contradicts: []
+    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-API]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-19T15:20:00+05:00"
+    supersedes: ""
   - id: DEC-005
     key: feature.authentication.email-password
     revision: 2
@@ -91,7 +109,25 @@ decisions:
     authority: HUMAN
     approved_by: Human Product Owner
     decided_at: "2026-08-20T09:40:00+05:00"
-    supersedes: ""
+    supersedes: DEC-005-R1
+  - id: DEC-005-R3
+    key: feature.authentication.email-password
+    revision: 3
+    status: TESTING
+    type: FEATURE_CAPABILITY
+    secondary_types: [SECURITY_PRIVACY]
+    phases: [PHASE-2]
+    question: Which sign-in method should follow email and password?
+    decision: Add passkeys as an optional sign-in method while retaining email and password recovery.
+    rationale: Passkeys may reduce repeated password friction without invalidating the locked phase-one journey.
+    evidence: [Prototype checkpoint 09]
+    depends_on: [product.scope.phase-one-authentication]
+    contradicts: []
+    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-API]
+    authority: HUMAN
+    approved_by: ""
+    decided_at: "2026-08-22T18:30:00+05:00"
+    supersedes: DEC-005
   - id: DEC-006
     key: policy.roles.explicit
     revision: 1
@@ -110,6 +146,24 @@ decisions:
     approved_by: Human Product Owner
     decided_at: "2026-08-20T09:50:00+05:00"
     supersedes: ""
+  - id: DEC-007-R1
+    key: ux.navigation.sidebar
+    revision: 1
+    status: SUPERSEDED
+    type: UI_UX
+    secondary_types: []
+    phases: [PHASE-1, PHASE-2]
+    question: Which primary navigation model should the learning workspace use?
+    decision: Use bottom navigation as the primary learning navigation model.
+    rationale: The earliest prototype optimized for a narrow mobile viewport.
+    evidence: [Prototype checkpoint 02]
+    depends_on: [product.user.busy-learners]
+    contradicts: []
+    affected_artifacts: [prototype, SLICE-AUTH-001]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-19T16:00:00+05:00"
+    supersedes: ""
   - id: DEC-007
     key: ux.navigation.sidebar
     revision: 2
@@ -127,7 +181,7 @@ decisions:
     authority: HUMAN
     approved_by: Human Product Owner
     decided_at: "2026-08-20T10:00:00+05:00"
-    supersedes: ""
+    supersedes: DEC-007-R1
   - id: DEC-008
     key: ux.accessibility.keyboard-first
     revision: 1
@@ -218,6 +272,24 @@ decisions:
     approved_by: Human Product Owner
     decided_at: "2026-08-20T10:50:00+05:00"
     supersedes: ""
+  - id: DEC-013-R1
+    key: security.redirect.same-origin
+    revision: 1
+    status: SUPERSEDED
+    type: SECURITY_PRIVACY
+    secondary_types: []
+    phases: [GLOBAL]
+    question: Which destination may be restored after reauthentication?
+    decision: Restore any destination supplied by the redirect query parameter.
+    rationale: The initial prototype preserved navigation context without a trust-boundary check.
+    evidence: [Prototype checkpoint 01]
+    depends_on: [integration.auth-api.versioned]
+    contradicts: []
+    affected_artifacts: [CON-AUTH-SESSION, WP-AUTH-04]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-19T16:30:00+05:00"
+    supersedes: ""
   - id: DEC-013
     key: security.redirect.same-origin
     revision: 2
@@ -235,7 +307,7 @@ decisions:
     authority: HUMAN
     approved_by: Human Product Owner
     decided_at: "2026-08-20T11:00:00+05:00"
-    supersedes: ""
+    supersedes: DEC-013-R1
   - id: DEC-014
     key: stack.frontend.react
     revision: 1

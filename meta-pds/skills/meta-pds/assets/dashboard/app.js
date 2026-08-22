@@ -50,8 +50,10 @@
     LOCKED: "released", PASSED: "released", VERIFIED: "released", ON_TRACK: "released", MERGED: "released", SYNCED: "released", CLEAN: "released", APPROVED: "released",
     IN_PROGRESS: "active", ACTIVE: "active", EXECUTING: "active", MOBILIZING: "active",
     VERIFYING: "verifying", TESTING: "verifying", HUMAN_REVIEW: "verifying", IN_REVIEW: "verifying", OPEN: "verifying", REVIEW_REQUIRED: "verifying",
+    HUMAN_APPROVAL_NEEDED: "verifying", DETECTED: "verifying", TRIAGED: "verifying",
     READY: "ready", READY_FOR_DEVELOPMENT: "ready", EXECUTION_READY: "ready", RELEASE_READY: "ready", AHEAD: "ready",
-    BLOCKED: "blocked", REWORK_REQUIRED: "blocked", REVERIFY_REQUIRED: "blocked", FAILED: "blocked",
+    BACKLOG: "draft",
+    BLOCKED: "blocked", BLOCKED_BY_DRIFT: "blocked", REWORK_REQUIRED: "blocked", REVERIFY_REQUIRED: "blocked", FAILED: "blocked",
     AT_RISK: "blocked", OFF_TRACK: "blocked", BEHIND: "blocked", AHEAD_BEHIND: "blocked", UPSTREAM_GONE: "blocked", CONFLICTING: "blocked", CHANGES_REQUESTED: "blocked"
   });
   const normalizeStatus = (status) => String(status ?? "").trim().replaceAll("-", "_").replaceAll(" ", "_").toUpperCase();
@@ -106,7 +108,9 @@
   function renderHeader() {
     setText("#slice-count", data.slices.length);
     setText("#decision-count", data.decisions.length);
+    setText("#drift-count", data.drifts?.length || 0);
     setText("#branch-count", data.repository?.branches?.length || 0);
+    setText("#task-count", data.workPackages?.length || 0);
     setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);
     const isDemo = data.projection.kind === "demo-fixture";
     $("#demo-indicator").hidden = !isDemo;
@@ -136,15 +140,14 @@
     currentView = view;
     $$(".top-tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === view));
     $$(".view-panel").forEach((panel) => panel.classList.toggle("is-active", panel.dataset.panel === view));
-    $("#slice-summary").classList.toggle("is-hidden", view !== "slices");
     if (history.replaceState) history.replaceState(null, "", `${location.pathname}${location.search}#${view}`);
   }
 
   function bindTopTabs() {
     $$(".top-tab").forEach((tab) => tab.addEventListener("click", () => showView(tab.dataset.view)));
     const requested = location.hash.slice(1);
-    const resolved = requested === "decisions" ? "truth" : requested;
-    showView(["truth", "slices", "repository", "prototype", "activity"].includes(resolved) ? resolved : "slices");
+    const resolved = requested === "decisions" ? "truth" : (requested === "activity" ? "scrum" : requested);
+    showView(["truth", "slices", "drifts", "repository", "prototype", "scrum"].includes(resolved) ? resolved : "slices");
   }
 
   let sliceFilter = "ALL";
@@ -152,7 +155,7 @@
   function matchesFilter(slice) {
     if (sliceFilter === "ALL") return true;
     if (sliceFilter === "ACTIVE") return ["IN_PROGRESS", "VERIFYING"].includes(slice.status);
-    if (sliceFilter === "BLOCKED") return sliceTasks(slice.id).some((task) => task.status === "BLOCKED");
+    if (sliceFilter === "BLOCKED") return sliceTasks(slice.id).some((task) => ["BLOCKED", "BLOCKED_BY_DRIFT"].includes(task.status));
     if (sliceFilter === "READY") return ["READY", "READY_FOR_DEVELOPMENT", "EXECUTION_READY"].includes(slice.status);
     if (sliceFilter === "COMPLETE") return ["RELEASED", "OUTCOME_VALIDATED"].includes(slice.status);
     return true;
@@ -161,7 +164,7 @@
   function renderSliceSummary() {
     const active = data.slices.filter((slice) => ["IN_PROGRESS", "VERIFYING"].includes(slice.status)).length;
     const complete = data.slices.filter((slice) => ["RELEASED", "OUTCOME_VALIDATED"].includes(slice.status)).length;
-    const blocked = data.slices.filter((slice) => sliceTasks(slice.id).some((task) => task.status === "BLOCKED")).length;
+    const blocked = data.slices.filter((slice) => sliceTasks(slice.id).some((task) => ["BLOCKED", "BLOCKED_BY_DRIFT"].includes(task.status))).length;
     $("#slice-summary").innerHTML = [
       ["Total", data.slices.length], ["Active", active], ["Complete", complete], ["Blocked", blocked]
     ].map(([label, value]) => `<span class="summary-chip">${label}<strong>${value}</strong></span>`).join("");
@@ -205,14 +208,20 @@
     return `
       <article class="slice-item ${collapsed ? "is-collapsed" : ""}" data-slice-id="${esc(slice.id)}">
         <header class="slice-main" data-slice-card-header="${esc(slice.id)}">
-          <span class="slice-entity-icon" aria-hidden="true">${icon("layers")}</span>
-          <div class="slice-heading-copy">
-            <div class="slice-title-row">
+          <div class="slice-meta-row">
+            <span class="slice-entity-icon" aria-hidden="true">${icon("layers")}</span>
               <span class="state-dot ${tone(slice.status)}"></span>
-              <span class="slice-code">${String(slice.order).padStart(2, "0")} · ${esc(slice.id)}</span>
-              <h2 class="slice-card-title"><button type="button" data-open-slice="${esc(slice.id)}">${esc(slice.title)}</button></h2>
-            </div>
+            <span class="slice-code">${String(slice.order).padStart(2, "0")} · ${esc(slice.id)}</span>
+            ${badge(slice.status)}
+            <i class="slice-meta-divider" aria-hidden="true"></i>
+            ${progressDisplay(slice.progress, slice.status, `${slice.title} completion`, "compact-progress")}
+            <i class="slice-meta-divider" aria-hidden="true"></i>
+            <span class="compact-stories">Stories <strong>${stories.length}</strong></span>
+            <span class="compact-tasks">Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
+            <span class="compact-tests">Tests <strong>${passedTests}/${tests.length}</strong></span>
+            ${blockers.length ? `<span class="compact-blockers">${blockers.length} blocked</span>` : ""}
           </div>
+          <h2 class="slice-card-title"><button type="button" data-open-slice="${esc(slice.id)}">${esc(slice.title)}</button></h2>
           <div class="slice-body-copy">
             <p class="slice-outcome"><strong>Outcome:</strong> ${esc(slice.outcome)}</p>
             <div class="slice-meta">
@@ -220,14 +229,6 @@
               <span>Revision <strong>${esc(slice.revision)}</strong></span>
               <span>Depends on <strong>${esc(dependencies)}</strong></span>
             </div>
-          </div>
-          <div class="slice-status-summary">
-            ${badge(slice.status)}
-            ${progressDisplay(slice.progress, slice.status, `${slice.title} completion`, "compact-progress")}
-            <span class="compact-stories">Stories <strong>${stories.length}</strong></span>
-            <span class="compact-tasks">Tasks <strong>${doneTasks}/${tasks.length}</strong></span>
-            <span class="compact-tests">Tests <strong>${passedTests}/${tests.length}</strong></span>
-            ${blockers.length ? `<span class="compact-blockers">${blockers.length} blocked</span>` : ""}
           </div>
           <button class="slice-collapse-toggle" type="button" data-toggle-slice-card="${esc(slice.id)}" aria-expanded="${collapsed ? "false" : "true"}" aria-label="${collapsed ? "Expand" : "Collapse"} ${esc(slice.title)} slice">${icon("chevron-down")}</button>
         </header>
@@ -327,32 +328,46 @@
           <details class="decision-item ${decision.hasContradiction ? "is-contradictory" : ""}">
             <summary class="decision-title-bar">
               <i class="decision-rail" aria-hidden="true"></i>
-              <span class="decision-brain" aria-hidden="true">${icon("brain")}</span>
-              <span class="decision-title-main">
-                <span class="decision-card-head">
-                  <span class="decision-identity"><code>${esc(decision.key)}</code><span>${esc(decision.id)} · r${esc(decision.revision)}</span><span class="decision-type-label">${esc(decision.typeLabel)}</span>${decision.secondaryTypes.map((type) => `<span class="decision-type-secondary">${esc(type.label)}</span>`).join("")}</span>
-                  <span class="decision-state">${badge(decision.status, decision.canonical ? "Canonical" : statusLabel(decision.status))}</span>
-                </span>
-                <span class="decision-title-lower">
-                  <strong class="decision-title-question">${esc(decision.title)}</strong>
-                  <span class="decision-title-context">
-                    <span><small>Phases</small><span>${decision.phases.length ? decision.phases.map((phase) => esc(pretty(phase))).join(", ") : "None"}</span></span>
-                    <span><small>Depends on</small><span>${decision.dependsOn.length ? decision.dependsOn.map(esc).join(", ") : "None"}</span></span>
-                    <span><small>Affects</small><span>${decision.affects.length ? decision.affects.map(esc).join(", ") : "Not recorded"}</span></span>
-                  </span>
-                </span>
+              <span class="decision-meta-row">
+                <span class="decision-brain" aria-hidden="true">${icon("brain")}</span>
+                <span class="decision-identity"><span>${esc(decision.id)} · r${esc(decision.revision)}${decision.latestRevision > decision.revision ? ` of ${esc(decision.latestRevision)}` : ""}</span><code>${esc(decision.key)}</code></span>
+                <i class="decision-meta-divider" aria-hidden="true"></i>
+                <span class="decision-type-cluster"><span class="decision-type-label">${esc(decision.typeLabel)}</span>${decision.secondaryTypes.map((type) => `<span class="decision-type-secondary">${esc(type.label)}</span>`).join("")}</span>
+                <i class="decision-meta-divider" aria-hidden="true"></i>
+                <span class="decision-state">${badge(decision.status, decision.canonical ? "Canonical" : statusLabel(decision.status))}</span>
+              </span>
+              <strong class="decision-title-question">${esc(decision.title)}</strong>
+              <span class="decision-property-row">
+                <span><small>Phases</small><span>${decision.phases.length ? decision.phases.map((phase) => esc(pretty(phase))).join(", ") : "None"}</span></span>
+                <span><small>Depends on</small><span>${decision.dependsOn.length ? decision.dependsOn.map(esc).join(", ") : "None"}</span></span>
+                <span><small>Affects</small><span>${decision.affects.length ? decision.affects.map(esc).join(", ") : "Not recorded"}</span></span>
               </span>
               <span class="decision-collapse-icon" aria-hidden="true">${icon("chevron-down")}</span>
             </summary>
             <div class="decision-details">
                 <div class="decision-copy"><p>${esc(decision.summary)}</p>${decision.rationale ? `<small><strong>Why:</strong> ${esc(decision.rationale)}</small>` : ""}</div>
+                ${decision.candidateRevision ? `<section class="decision-candidate">
+                  <div class="decision-revision-heading"><span>${icon("flask")}<strong>Candidate revision</strong></span>${badge(decision.candidateRevision.status)}</div>
+                  <div class="decision-revision-identity"><span>${esc(decision.candidateRevision.id)} · r${esc(decision.candidateRevision.revision)}</span><small>Supersedes ${esc(decision.candidateRevision.supersedes)}</small></div>
+                  <p>${esc(decision.candidateRevision.summary)}</p>
+                  ${decision.candidateRevision.rationale ? `<small><strong>Why:</strong> ${esc(decision.candidateRevision.rationale)}</small>` : ""}
+                  <div class="decision-candidate-note">Canonical r${esc(decision.revision)} remains authoritative until Human approval.</div>
+                </section>` : ""}
                 ${decision.contradictions.length ? `<div class="decision-contradiction">${icon("triangle-alert")}<div><strong>Contradictory decision${decision.contradictions.length > 1 ? "s" : ""}</strong>${decision.contradictions.map((conflict) => `<p><code>${esc(conflict.key)}</code> · ${esc(conflict.title)} · ${badge(conflict.status)}</p>`).join("")}</div></div>` : ""}
+                ${decision.history.length ? `<details class="decision-history">
+                  <summary><span>${icon("activity")}<strong>Revision history</strong></span><span>${decision.history.length} previous ${decision.history.length === 1 ? "revision" : "revisions"}${icon("chevron-down")}</span></summary>
+                  <div class="decision-history-list">${decision.history.map((revision) => `<article class="decision-history-row">
+                    <div class="decision-revision-heading"><span><strong>${esc(revision.id)} · r${esc(revision.revision)}</strong></span>${badge(revision.status)}</div>
+                    <p>${esc(revision.summary)}</p>
+                    <small>${revision.decidedAt ? esc(dateTime(revision.decidedAt)) : "Date not recorded"}${revision.approvedBy ? ` · ${esc(revision.approvedBy)}` : ""}${revision.supersedes ? ` · superseded ${esc(revision.supersedes)}` : ""}</small>
+                  </article>`).join("")}</div>
+                </details>` : ""}
             </div>
           </details>`).join("")}</div>
       </details>`).join("");
   }
 
-  let decisionStatusFilter = "ALL";
+  let decisionStatusFilter = "CANONICAL";
   let decisionGroupFilter = "ALL";
   let decisionTypeFilter = "ALL";
   let decisionPhaseFilter = "ALL";
@@ -367,6 +382,91 @@
     $("#decision-group-filter").addEventListener("change", (event) => { decisionGroupFilter = event.target.value; renderDecisions(); });
     $("#decision-type-filter").addEventListener("change", (event) => { decisionTypeFilter = event.target.value; renderDecisions(); });
     $("#decision-phase-filter").addEventListener("change", (event) => { decisionPhaseFilter = event.target.value; renderDecisions(); });
+  }
+
+  let driftStatusFilter = "ALL";
+  let driftSeverityFilter = "ALL";
+
+  function driftReferenceList(values, emptyLabel = "None") {
+    return values?.length ? values.map((value) => `<code>${esc(value)}</code>`).join("") : `<span>${esc(emptyLabel)}</span>`;
+  }
+
+  function renderDrifts() {
+    const drifts = data.drifts || [];
+    const meta = data.driftMeta || {};
+    $("#drift-summary").innerHTML = [
+      ["Detected", drifts.length, "total"],
+      ["Open", meta.openCount || 0, "open"],
+      ["Auto-resolved", meta.autoResolvedCount || 0, "resolved"],
+      ["Human approval", meta.humanApprovalCount || 0, "human"],
+      ["Critical", meta.criticalCount || 0, "critical"]
+    ].map(([label, value, kind]) => `<div class="drift-stat ${esc(kind)}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("");
+
+    const statuses = [["ALL", "All"], ["OPEN", "Open"], ["AUTO_RESOLVED", "Auto-resolved"], ["HUMAN_APPROVAL_NEEDED", "Human approval"]];
+    $("#drift-status-filters").innerHTML = statuses.map(([value, label]) =>
+      `<button class="filter-button ${driftStatusFilter === value ? "is-active" : ""}" type="button" data-drift-status="${value}">${label}</button>`
+    ).join("");
+    const severities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+    $("#drift-severity-filter").innerHTML = `<option value="ALL">All severities</option>${severities.map((value) => `<option value="${value}">${pretty(value)}</option>`).join("")}`;
+    $("#drift-severity-filter").value = driftSeverityFilter;
+
+    const visible = drifts.filter((drift) => {
+      const statusMatch = driftStatusFilter === "ALL"
+        || (driftStatusFilter === "OPEN" && !["AUTO_RESOLVED", "CLOSED"].includes(drift.status))
+        || drift.status === driftStatusFilter;
+      return statusMatch && (driftSeverityFilter === "ALL" || drift.severity === driftSeverityFilter);
+    });
+    if (!visible.length) {
+      const demoLink = data.projection.kind === "live-project" && !drifts.length
+        ? '<a class="empty-action" href="?demo=1#drifts">Preview bundled drift examples</a>'
+        : "";
+      $("#drift-list").innerHTML = `<div class="empty-state"><p>No drifts match these filters.</p>${demoLink}</div>`;
+      return;
+    }
+    $("#drift-list").innerHTML = visible.map((drift) => `
+      <details class="drift-item ${drift.status === "HUMAN_APPROVAL_NEEDED" ? "needs-human" : ""}">
+        <summary class="drift-title-bar">
+          <span class="drift-meta-row">
+            <span class="drift-icon" aria-hidden="true">${icon("triangle-alert")}</span>
+            <code>${esc(drift.id)}</code>
+            <span class="severity-badge severity-${esc(drift.severity.toLowerCase())}">${esc(pretty(drift.severity))}</span>
+            <i class="drift-meta-divider" aria-hidden="true"></i>
+            ${badge(drift.status)}
+            <i class="drift-meta-divider" aria-hidden="true"></i>
+            <span class="drift-confidence-inline"><span>Conf:</span><strong>${esc(drift.resolutionConfidence)}%</strong></span>
+          </span>
+          <strong class="drift-title">${esc(drift.summary)}</strong>
+          <small class="drift-category">${esc(pretty(drift.type))} · ${esc(pretty(drift.stage))}</small>
+          <span class="drift-chevron" aria-hidden="true">${icon("chevron-down")}</span>
+        </summary>
+        <div class="drift-body">
+          <div class="drift-callout ${drift.status === "HUMAN_APPROVAL_NEEDED" ? "human" : "resolution"}">
+            <span>${drift.status === "HUMAN_APPROVAL_NEEDED" ? "Recommendation" : "Resolution"}</span>
+            <strong>${esc(drift.status === "HUMAN_APPROVAL_NEEDED" ? drift.recommendation : drift.resolution || drift.recommendation || "Pending triage")}</strong>
+            ${drift.impact ? `<p>${esc(drift.impact)}</p>` : ""}
+          </div>
+          <div class="drift-references">
+            <div><span>Affected Truth</span>${driftReferenceList(drift.affectedTruthKeys)}</div>
+            <div><span>Affected slices</span>${driftReferenceList(drift.affectedSlices)}</div>
+            <div><span>Paused work</span>${driftReferenceList(drift.blockedWorkPackages)}</div>
+            <div><span>Continuing work</span>${driftReferenceList(drift.continuingWorkPackages)}</div>
+          </div>
+          ${drift.evidence?.length ? `<div class="drift-evidence"><span>Evidence</span>${drift.evidence.map((value) => `<p>${esc(value)}</p>`).join("")}</div>` : ""}
+        </div>
+      </details>`).join("");
+  }
+
+  function bindDriftControls() {
+    $("#drift-status-filters").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-drift-status]");
+      if (!button) return;
+      driftStatusFilter = button.dataset.driftStatus;
+      renderDrifts();
+    });
+    $("#drift-severity-filter").addEventListener("change", (event) => {
+      driftSeverityFilter = event.target.value;
+      renderDrifts();
+    });
   }
 
   function renderPrototype() {
@@ -384,23 +484,82 @@
       </div>`;
   }
 
-  function renderActivity() {
-    const activityStatus = (kind) => ({
-      approved: "DONE",
-      completed: "DONE",
-      released: "DONE",
-      verifying: "VERIFYING",
-      assigned: "READY",
-      blocked: "BLOCKED",
-      started: "IN_PROGRESS",
-      updated: "IN_PROGRESS"
-    })[String(kind ?? "").toLowerCase()] || "IN_PROGRESS";
-    $("#activity-list").innerHTML = data.activity.length ? data.activity.map((item) => `
-      <article class="simple-item">
-        <span class="simple-code">${esc(time(item.at))}</span>
-        <div class="simple-copy"><h3>${esc(item.title)}</h3><p>${esc(item.detail)}</p></div>
-        ${badge(activityStatus(item.kind), pretty(item.kind))}
-      </article>`).join("") : '<div class="empty-state">No durable delivery events are recorded.</div>';
+  const SCRUM_BUCKETS = Object.freeze({
+    BACKLOG: ["BACKLOG", "BLOCKED", "BLOCKED_BY_DRIFT", "PAUSED"],
+    READY: ["READY"],
+    IN_PROGRESS: ["IN_PROGRESS", "REWORK_REQUIRED"],
+    REVIEW: ["VERIFYING", "REVERIFY_REQUIRED"],
+    DONE: ["DONE"]
+  });
+  let scrumStatusFilter = "ALL";
+  let scrumOwnerFilter = "ALL";
+  let scrumSliceFilter = "ALL";
+  let scrumPriorityFilter = "ALL";
+
+  function scrumBucket(task) {
+    const normalized = normalizeStatus(task.status);
+    return Object.entries(SCRUM_BUCKETS).find(([, statuses]) => statuses.includes(normalized))?.[0] || "BACKLOG";
+  }
+
+  function scrumMatches(task) {
+    return (scrumStatusFilter === "ALL" || scrumBucket(task) === scrumStatusFilter)
+      && (scrumOwnerFilter === "ALL" || task.owner === scrumOwnerFilter)
+      && (scrumSliceFilter === "ALL" || task.sliceId === scrumSliceFilter)
+      && (scrumPriorityFilter === "ALL" || task.priority === scrumPriorityFilter);
+  }
+
+  function scrumOptions(values, selected, allLabel) {
+    return [["ALL", allLabel], ...values.map((value) => [value, value])]
+      .map(([value, label]) => `<option value="${esc(value)}" ${value === selected ? "selected" : ""}>${esc(label)}</option>`).join("");
+  }
+
+  function renderScrumControls() {
+    const filters = [["ALL", "All"], ["BACKLOG", "Backlog"], ["READY", "Ready"], ["IN_PROGRESS", "In Progress"], ["REVIEW", "Review"], ["DONE", "Done"]];
+    $("#scrum-status-filters").innerHTML = filters.map(([value, label]) => {
+      const count = value === "ALL" ? data.workPackages.length : data.workPackages.filter((task) => scrumBucket(task) === value).length;
+      return `<button class="filter-button ${value === scrumStatusFilter ? "is-active" : ""}" type="button" data-scrum-status="${value}">${label}<strong>${count}</strong></button>`;
+    }).join("");
+    const owners = [...new Set(data.workPackages.map((task) => task.owner).filter(Boolean))].sort();
+    const slices = [...new Set(data.workPackages.map((task) => task.sliceId).filter(Boolean))].sort();
+    const priorities = [...new Set(data.workPackages.map((task) => task.priority).filter(Boolean))].sort();
+    $("#scrum-owner-filter").innerHTML = scrumOptions(owners, scrumOwnerFilter, "All assignees");
+    $("#scrum-slice-filter").innerHTML = scrumOptions(slices, scrumSliceFilter, "All slices");
+    $("#scrum-priority-filter").innerHTML = scrumOptions(priorities, scrumPriorityFilter, "All priorities");
+  }
+
+  function scrumTaskRow(task, openTaskId) {
+    return `
+      <details class="scrum-task ${normalizeStatus(task.status) === "IN_PROGRESS" ? "is-active" : ""}" ${task.id === openTaskId ? "open" : ""}>
+        <summary>
+          <span class="scrum-task-identity"><code>${esc(task.id)}</code><b>:</b><strong>${esc(task.title)}</strong></span>
+          <span class="scrum-task-state"><span>${esc(task.owner || "Unassigned")}</span><b>|</b>${badge(task.status)}</span>
+          <span class="scrum-task-chevron">${icon("chevron-down")}</span>
+        </summary>
+        <div class="scrum-task-detail">
+          <div class="markdown-body scrum-task-markdown">${renderMarkdown(taskMarkdown(task))}</div>
+        </div>
+      </details>`;
+  }
+
+  function renderScrum() {
+    renderScrumControls();
+    const tasks = data.workPackages.filter(scrumMatches);
+    const openTask = tasks.find((task) => normalizeStatus(task.status) === "IN_PROGRESS") || null;
+    $("#scrum-task-list").innerHTML = tasks.length
+      ? tasks.map((task) => scrumTaskRow(task, openTask?.id)).join("")
+      : '<div class="empty-state">No tasks match these filters.</div>';
+  }
+
+  function bindScrumControls() {
+    $("#scrum-status-filters").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-scrum-status]");
+      if (!button) return;
+      scrumStatusFilter = button.dataset.scrumStatus;
+      renderScrum();
+    });
+    $("#scrum-owner-filter").addEventListener("change", (event) => { scrumOwnerFilter = event.target.value; renderScrum(); });
+    $("#scrum-slice-filter").addEventListener("change", (event) => { scrumSliceFilter = event.target.value; renderScrum(); });
+    $("#scrum-priority-filter").addEventListener("change", (event) => { scrumPriorityFilter = event.target.value; renderScrum(); });
   }
 
   function repositoryTracking(branch) {
@@ -498,6 +657,18 @@
         output.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
         return;
       }
+      const quote = line.match(/^>\s*(.+)$/);
+      if (quote) {
+        closeList();
+        output.push(`<blockquote>${inlineMarkdown(quote[1])}</blockquote>`);
+        return;
+      }
+      const checkItem = line.match(/^[-*]\s+\[([ xX])\]\s+(.+)$/);
+      if (checkItem) {
+        if (!listOpen) { output.push('<ul class="task-checklist">'); listOpen = true; }
+        output.push(`<li class="${checkItem[1].trim() ? "is-checked" : ""}"><i aria-hidden="true"></i>${inlineMarkdown(checkItem[2])}</li>`);
+        return;
+      }
       const item = line.match(/^[-*]\s+(.+)$/);
       if (item) {
         if (!listOpen) { output.push("<ul>"); listOpen = true; }
@@ -586,9 +757,21 @@
       `## ${heading}`,
       ...(values?.length ? values.map((value) => `- ${value}`) : [`- ${fallback}`]),
     ].join("\n");
+    const leadBrief = task.leadBrief || {};
+    const history = task.history || [];
     return [
-      "## Description",
+      `# ${task.title}`,
       task.description,
+      "## Lead brief",
+      "> **Original instruction — locked**",
+      `> ${leadBrief.instruction || "The original Lead instruction was not recorded in this legacy execution plan."}`,
+      `**Issued by:** ${leadBrief.issuedBy || "Not recorded"} · **Issued at:** ${leadBrief.issuedAt ? dateTime(leadBrief.issuedAt) : "Not recorded"}`,
+      "## Expected outcome",
+      leadBrief.expectedOutcome || task.produces?.[0] || "See the canonical package outputs.",
+      markdownList("Scope", leadBrief.scope?.length ? leadBrief.scope : task.ownedPaths),
+      markdownList("Out of scope", leadBrief.outOfScope?.length ? leadBrief.outOfScope : task.forbiddenPaths),
+      ["## Acceptance criteria", ...(leadBrief.acceptanceCriteria?.length ? leadBrief.acceptanceCriteria : task.exitChecks).map((value) => `- [ ] ${value}`)].join("\n"),
+      leadBrief.clarifications?.length ? ["## Clarifications", ...leadBrief.clarifications.map((item) => `- ${item.at ? `${dateTime(item.at)} · ` : ""}${item.by ? `**${item.by}:** ` : ""}${item.note}`)].join("\n") : "",
       task.blocker ? `## Current blocker\n${task.blocker}` : "",
       markdownList("Supports stories", linkedStories.map((story) => `${story.id} — ${story.title}`)),
       markdownList("Dependencies", task.dependsOn),
@@ -604,8 +787,13 @@
       `- Execution wave: ${task.wave || "Unassigned"}`,
       `- Contract version: ${task.contractVersion || "Unspecified"}`,
       `- Integration owner: ${task.integrationOwner || "Unassigned"}`,
+      `- Priority: ${task.priority || "Unspecified"}`,
+      `- Assigned by: ${task.assignedBy || "Not recorded"}${task.assignedAt ? ` at ${dateTime(task.assignedAt)}` : ""}`,
+      task.branch ? `- Branch: ${task.branch}` : "",
+      task.pullRequest ? `- Pull request: ${task.pullRequest}` : "",
       `- Preserve the parent slice's locked contracts and assigned ${pretty(task.area)} boundary.`,
-      "- Record changed paths, local commit, CLI test evidence, risks, and remaining work before handoff."
+      "- Record changed paths, local commit, CLI test evidence, risks, and remaining work before handoff.",
+      history.length ? ["## Status history", ...history.map((event) => `- ${dateTime(event.at)} — **${pretty(event.kind)}:** ${event.title}`)].join("\n") : ""
     ].filter(Boolean).join("\n\n");
   }
 
@@ -843,11 +1031,14 @@
   renderDataHealth();
   renderSlices();
   renderDecisions();
+  renderDrifts();
   renderPrototype();
-  renderActivity();
+  renderScrum();
   renderRepository();
   bindTopTabs();
   bindSliceList();
   bindDecisionControls();
+  bindDriftControls();
+  bindScrumControls();
   bindModal();
 })();

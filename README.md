@@ -1,24 +1,26 @@
 # Metaklouds Skills Pack
 
-Installable product-to-engineering workflows for Codex and Claude Code.
+A human-centered product delivery system for Codex and Claude Code.
 
-`meta-pds` is the human-centered entrypoint for new initiatives. It coordinates
-rapid prototyping, fat-slice planning, bounded development, independent QA, and
-release evidence while automatically starting or reusing one local delivery
-dashboard per project. It preserves meaningful checkpoints with local commits
-and, when the Human changes delivery topic, nudges them to create and merge a PR
-once the branch satisfies its checks and approvals. The dashboard includes live
-local branch visibility and verified GitHub pull-request status when available.
-It never substitutes bundled sample delivery data for the selected project;
-missing canonical artifacts remain visible as setup diagnostics.
+`meta-pds` is the flagship and the Human's single point of contact. It turns an
+idea into locked product Truth, manually reviewed prototypes, approved fat
+slices, bounded implementation tasks, independent QA, release evidence, and
+outcome validation. The Product Manager coordinates the internal skills and
+specialist workers; the Human receives one concise status, the decisions that
+need judgment, and one recommended next action.
 
-The flagship supports five explicit working modes—Explore, Decision Review,
-Prototype, Slice Shaping, and Delivery—so important choices are captured without
-breaking a brainstorming flow. Canonical decisions use stable semantic keys,
-upstream-to-downstream types, phase assignments, dependencies, and explicit
-contradiction links. The Decisions dashboard exposes that truth map and its
-review queue; bundled example decisions remain regression fixtures and are
-never installed into a user's project.
+Every invocation reconstructs delivery state from repository artifacts and
+runtime evidence instead of relying on chat memory. Meta PDS starts or reuses
+one local dashboard per project, checkpoints meaningful work with local commits,
+and keeps unfinished or approval-dependent work visible without inventing
+progress. Bundled examples are available only through an explicitly labelled
+demo view and are never copied into a user's project.
+
+The flagship supports five working modes—Explore, Decision Review, Prototype,
+Slice Shaping, and Delivery—so consequential choices can be captured without
+breaking a brainstorming flow. Locked Truth uses stable semantic keys,
+append-only revisions, upstream-to-downstream types, phase assignments,
+dependencies, and explicit contradiction links.
 
 The complete profile turns an idea into a validated initiative, plans it as fat
 end-to-end vertical slices, and implements each slice as one releasable unit:
@@ -33,9 +35,9 @@ meta-pds (the Human-facing flagship)
 ```
 
 Meta PDS owns change control and continuously projects authoritative decisions,
-slices, work packages, repository branches, pull requests, and release evidence
-into its installed local dashboard. Earlier Metaklouds delivery workflows are
-retired and are not publicly discoverable or installed.
+slices, Scrum tasks, detected drift, repository branches, pull requests, and
+release evidence into its installed local dashboard. Earlier Metaklouds delivery
+workflows are retired and are not publicly discoverable or installed.
 
 ## Included skills
 
@@ -65,6 +67,42 @@ The eleven upstream support skills are downloaded at pinned revisions from
 their original repositories during installation. See
 [THIRD_PARTY.md](THIRD_PARTY.md) and
 [manifest.json](manifest.json).
+
+## Delivery dashboard
+
+The dashboard is a read-only projection of the selected project's canonical
+artifacts and live repository evidence:
+
+| View | What it shows |
+| --- | --- |
+| **Truth** | Canonical and proposed decisions, revision history, phases, dependencies, contradictions, and affected artifacts |
+| **Slices** | Fat-slice status, outcomes, progress, dependencies, work packages, contracts, and tests |
+| **Drifts Detected** | Auto-resolved and approval-pending drift, confidence, recommendations, evidence, and paused versus continuing work |
+| **Branches** | Current and local branches, working-tree state, commit evidence, and GitHub pull-request status when available |
+| **Scrum Board** | Canonical execution tasks grouped by Backlog, Ready, In Progress, Review, Done, and blocked states |
+
+The dashboard server is owned by the installed `meta-pds` skill. It reuses a
+healthy runtime for the same project and returns both the live URL and, when
+useful, a separate demo URL. No dashboard application or sample data is written
+into the product repository.
+
+## Operating model
+
+- **New project:** Meta PDS explains that no canonical context exists, asks for
+  a short brief, records the authority envelope, and recommends the first
+  discovery action.
+- **Returning project:** it reads the current Truth, slices, Scrum tasks, drift,
+  branches, PRs, and evidence, then gives a compact recap and next action.
+- **Human approval:** only affected dependency paths pause. Independent ready
+  work continues inside the approved authority envelope.
+- **Drift control:** safe, reversible, high-confidence drift may be resolved and
+  logged automatically. Ambiguous or consequential drift carries a recommendation
+  and waits for Human approval.
+- **Git control:** workers make bounded local checkpoints. Pushes, PR creation,
+  merges, releases, migrations, and other external actions remain with the
+  Product Manager and require the recorded authority.
+- **Completion:** a component, task, or PR is not a completed slice. A slice
+  completes only after whole-slice QA, release evidence, and the release gate.
 
 ## Install for Codex
 
@@ -133,6 +171,17 @@ It routes internally to its four functional skills and selects the installed
 implementation and testing skills from actual repository evidence. Users do
 not need to coordinate those skills directly.
 
+For a bounded autonomous delivery window, state the objective, completion
+condition, authority limits, and stopping time explicitly. The proposed Codex
+scheduled-supervision design uses a thread-attached heartbeat to wake Meta PDS,
+while canonical project artifacts remain the memory and authority source. The
+design includes a single-supervisor lease, overlap protection, daily resume
+briefs, approval-aware continuation, and terminal shutdown conditions. It is
+documented in
+[`scheduled-supervision-strategy.md`](meta-pds/skills/meta-pds/references/scheduled-supervision-strategy.md)
+and remains **proposed** until the delivery-state schema, validator, dashboard,
+and automation lifecycle implement it together.
+
 For visual inspection without initializing a project, open the explicitly
 labelled demo URL printed by the dashboard launcher. Demo delivery data is
 served by the same per-project runtime, never copied into the repository, and
@@ -153,11 +202,52 @@ Do not create nested repositories or submodules. Frontend and backend remain
 path-isolated and integrate through an explicit versioned contract. A slice is
 complete only after independent whole-slice QA and release evidence pass.
 
+Canonical delivery artifacts live under `docs/meta-pds/`:
+
+```text
+docs/meta-pds/
+├── initiative.md
+├── decision-log.yaml
+├── delivery-state.yaml
+├── drift-log.yaml              # created when drift is first detected
+├── delivery-events.jsonl       # optional append-only audit
+├── slices/
+├── execution/
+└── reports/
+```
+
+Truth and delivery state stay in these artifacts. The dashboard never becomes
+a second source of truth.
+
 ## Installation contract
 
 Use `scripts/install.sh` to install the pack. Generic repository skill scanners
 can discover the five bundled Meta PDS skills, but they cannot fetch the eleven
 required upstream supports and therefore do not produce a complete profile.
+
+## Repository layout and validation
+
+```text
+metaklouds-skills-pack/
+├── README.md
+├── THIRD_PARTY.md
+├── manifest.json
+├── scripts/install.sh
+└── meta-pds/
+    ├── manifest.json
+    ├── scripts/install.sh
+    └── skills/
+        ├── meta-pds/
+        ├── rapid-prototyping/
+        ├── slice-planning/
+        ├── slice-development/
+        └── slice-qa/
+```
+
+Before publishing a change, run the Meta PDS test suite and perform an isolated
+installer smoke test against a temporary destination. The installer must leave
+the user's existing skills recoverable, keep upstream dependencies pinned, and
+install the dashboard with the flagship skill.
 
 ## License
 

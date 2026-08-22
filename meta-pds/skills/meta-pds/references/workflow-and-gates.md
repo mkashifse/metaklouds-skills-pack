@@ -92,7 +92,8 @@ Requires a valid execution plan with:
 
 Requires every work package completed or explicitly dispositioned, local
 commits and changed paths recorded, required development tests passing, the
-frozen contract satisfied, and no unexplained scope change.
+frozen contract satisfied, no unexplained scope change, and no unresolved drift
+that affects the slice's acceptance, contract, or release evidence.
 
 ### `RELEASE_READY`
 
@@ -109,15 +110,27 @@ success measures. Mark `REPLAN_REQUIRED` when the outcome is not supported.
 
 ## Scheduling
 
-Maintain one active planning slice and one active development slice. Start only
-work packages whose dependencies are `DONE` and entry checks pass:
+Maintain one active planning slice and one active development slice. A newly
+assigned package remains `BACKLOG` while prerequisites are incomplete, becomes
+`READY` when every dependency is `DONE` and entry checks pass, and becomes
+`IN_PROGRESS` only when its assigned worker actually starts:
 
 ```text
-BLOCKED → READY → IN_PROGRESS → VERIFYING → DONE
+BACKLOG → READY → IN_PROGRESS → VERIFYING → DONE
 ```
+
+Use `BLOCKED`, `BLOCKED_BY_DRIFT`, `PAUSED`, `REWORK_REQUIRED`, and
+`REVERIFY_REQUIRED` as exception states rather than disguising them as ordinary
+backlog work.
 
 A contract revision marks affected work `REVERIFY_REQUIRED` and recomputes the
 ready queue.
+
+Detected drift pauses only its affected dependency closure. Use
+`BLOCKED_BY_DRIFT` with the Drift ID for packages waiting on Human approval and
+continue independent `READY` work. Apply the confidence and escalation policy
+in `drift-control.md`; do not hold the whole development slice unless every safe
+path depends on the unresolved drift.
 
 ## Retry circuit breaker
 
@@ -133,13 +146,17 @@ Stop and escalate when any occurs unless the Human extends the boundary:
 At meaningful checkpoints and every resume, report:
 
 ```text
-Current phase:
+Current phase and interaction mode:
 Active planning slice:
 Active execution slice:
 Recently locked decisions:
+Active Scrum Board tasks and assignees:
 Work completed:
 Current blockers and risks:
+Open drift and resolution status:
 Human decision required:
+Current branch and verified PR state:
 Recommended next action:
 Safe alternatives:
+Dashboard:
 ```

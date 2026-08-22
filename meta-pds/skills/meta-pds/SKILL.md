@@ -29,8 +29,18 @@ when brainstorming, capturing or reviewing decisions, prototyping, or shaping
 slices from an unstructured feature request.
 
 Read [references/change-priority-resume.md](references/change-priority-resume.md)
-when resuming, pausing, reprioritizing, correcting a released slice, or handling
-a locked-decision change.
+when the project has no canonical Meta PDS context, or when resuming, pausing,
+reprioritizing, correcting a released slice, or handling a locked-decision
+change.
+
+Read [references/drift-control.md](references/drift-control.md) whenever drift is
+detected, at development and QA checkpoints, before auto-resolving a mismatch,
+or while routing Human approval without stopping independent work.
+
+Read [references/scheduled-supervision-strategy.md](references/scheduled-supervision-strategy.md)
+when designing, configuring, or reviewing unattended continuation with Codex
+scheduled tasks. Treat its proposed state additions as non-operative until the
+artifact schema, validator, and dashboard implement them together.
 
 Read [references/git-checkpoints-and-topic-handoffs.md](references/git-checkpoints-and-topic-handoffs.md)
 before creating or switching branches, committing work, performing external Git
@@ -86,12 +96,17 @@ On every invocation:
    and give the one-time, gate-aware PR/merge nudge defined in the Git reference.
    Do not treat clarifications or status questions as topic changes.
 6. Reconcile contradictions conservatively and record them.
-7. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
+7. Reconcile open drift, keep its dependent work paused, and continue the
+   independent ready queue according to the drift-control policy.
+8. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
    gate while any structural error remains; surface the exact file and
    diagnostic instead of inferring missing data.
-8. Present current phase, active planning and execution slices, completed and
-   paused slices, blockers, risks, and one recommended next action.
-9. Continue when the requested route is valid. If the user gave no route,
+9. Use the first-contact or evidence-based recap response contract in the
+   resume reference. Present current phase and mode, active planning and
+   execution slices, active Scrum Board tasks, completed and paused work,
+   blockers, drift, Human decisions, Git/PR state, and one recommended next
+   action without asking the Human to restate yesterday's context.
+10. Continue when the requested route is valid. If the user gave no route,
    recommend the highest-value valid action and concise alternatives.
 
 For a new initiative, capture a short brief and establish an authority envelope
@@ -103,17 +118,31 @@ simulated progress. The existing project runtime reparses newly created
 canonical artifacts on refresh, so no runtime replacement or example-to-live
 transition is required.
 
+The Product Manager owns first-contact and resume messaging. Functional leads
+and workers return structured evidence to the Product Manager and never send a
+second greeting, recap, or competing next action directly to the Human.
+
 ## Human interaction
 
 - Ask focused questions in small, high-value batches.
 - Record uncertain decisions as `PROPOSED` or `TESTING`.
+- Treat locked Truth as append-only: never edit a locked revision; create a new
+  uniquely identified revision under the same key, link it to the previous
+  revision ID, and keep the locked revision canonical until Human approval.
 - In `EXPLORE`, persist meaningful candidate-decision clusters without
   interrupting the Human's flow; review them at a natural pause or resume.
 - Lock consequential decisions only after Human approval.
 - Recommend an answer and impact before asking for a decision.
 - Suppress worker chatter; surface decisions, blockers, drift, risk, evidence,
   and the next action.
+- Record every development assignment as one canonical execution-plan work
+  package with an immutable Lead brief. Assignment places dependency-waiting
+  work in `BACKLOG` or executable work in `READY`; only an actual worker start
+  moves it to `IN_PROGRESS`. The dashboard projects these packages in the
+  read-only Scrum Board rather than maintaining a separate task store.
 - Pause only affected work while awaiting a Human decision.
+- Auto-resolve only safe, reversible, high-confidence drift; durably record the
+  resolution and evidence even when no Human interruption is needed.
 
 The Product Manager must not write prototype or production code, invent missing
 scope, alter acceptance, or approve unsupported claims.

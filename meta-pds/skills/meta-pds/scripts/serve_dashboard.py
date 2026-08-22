@@ -35,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 9
+RUNTIME_VERSION = 12
 SUPPORTED_IMPLEMENTATION_SKILLS = {
     "prototype",
     "vercel-react-best-practices",
@@ -72,6 +72,20 @@ DECISION_TYPES = {
 ALLOWED_INTERACTION_MODES = {"EXPLORE", "DECISION_REVIEW", "PROTOTYPE", "SLICE_SHAPING", "DELIVERY"}
 DECISION_KEY_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*$")
 DECISION_PHASE_PATTERN = re.compile(r"^PHASE-[1-9][0-9]*$")
+DRIFT_ID_PATTERN = re.compile(r"^DRIFT-[A-Za-z0-9-]+$")
+DRIFT_STATUSES = {
+    "DETECTED", "TRIAGED", "AUTO_RESOLVED", "HUMAN_APPROVAL_NEEDED",
+    "REVERIFY_REQUIRED", "CLOSED",
+}
+DRIFT_SEVERITIES = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
+DRIFT_AMBIGUITIES = {"LOW", "MEDIUM", "HIGH"}
+DRIFT_STAGES = {"PLANNING", "MOBILIZATION", "IMPLEMENTATION", "INTEGRATION", "QA", "RELEASE", "OPERATIONS"}
+DRIFT_TYPES = {
+    "SCOPE", "ACCEPTANCE", "UI_UX", "SCHEMA", "API_CONTRACT", "ARCHITECTURE",
+    "SECURITY_PRIVACY", "DEPENDENCY", "TESTING", "IMPLEMENTATION", "OPERATIONS",
+}
+DRIFT_APPROVAL_STATUSES = {"NOT_REQUIRED", "PENDING", "APPROVED", "REJECTED"}
+AUTO_RESOLUTION_MIN_CONFIDENCE = 85
 
 
 class ArtifactError(RuntimeError):
@@ -458,8 +472,8 @@ ALLOWED_SLICE_STATUSES = {
     "REWORK_REQUIRED", "REVERIFY_REQUIRED", "REPLAN_REQUIRED", "BLOCKED", "PAUSED", "SUPERSEDED",
 }
 ALLOWED_PACKAGE_STATUSES = {
-    "BLOCKED", "READY", "IN_PROGRESS", "VERIFYING", "DONE", "REWORK_REQUIRED",
-    "REVERIFY_REQUIRED", "PAUSED",
+    "BACKLOG", "BLOCKED", "READY", "IN_PROGRESS", "VERIFYING", "DONE", "REWORK_REQUIRED",
+    "REVERIFY_REQUIRED", "BLOCKED_BY_DRIFT", "PAUSED",
 }
 ALLOWED_INITIATIVE_STATUSES = {
     "DRAFT", "DISCOVERING", "PROTOTYPING", "INITIATIVE_REVIEW", "INITIATIVE_READY",
@@ -581,17 +595,20 @@ def validate_product_artifacts(
     decisions_path = base / "decision-log.yaml"
     decisions = load_yaml(decisions_path)
     decision_schema = 0
-    decision_entries_by_key: dict[str, dict[str, Any]] = {}
+    decision_entries_by_key: dict[str, list[dict[str, Any]]] = {}
+    decision_entries_by_id: dict[str, dict[str, Any]] = {}
     known_decision_keys: set[str] = set()
     if decisions is not None:
         for field in ["schema_version", "initiative_id", "decisions"]:
             if field not in decisions:
                 error(decisions_path, "decision-log.field", f"Top-level field '{field}' is required")
         decision_schema = decisions.get("schema_version") if isinstance(decisions.get("schema_version"), int) else 0
-        if decision_schema not in {2, 3}:
-            error(decisions_path, "schema.version", "schema_version must be 2 or 3")
+        if decision_schema not in {2, 3, 4}:
+            error(decisions_path, "schema.version", "schema_version must be 2, 3, or 4")
         elif decision_schema == 2:
-            error(decisions_path, "schema.legacy", "decision-log schema v2 is supported for reading; migrate to v3 for canonical keys, types, phases, and contradictions", severity="warning")
+            error(decisions_path, "schema.legacy", "decision-log schema v2 is supported for reading; migrate to v4 for append-only Truth revisions", severity="warning")
+        elif decision_schema == 3:
+            error(decisions_path, "schema.legacy", "decision-log schema v3 is supported for reading; migrate to v4 for append-only Truth revisions", severity="warning")
         if initiative_id and decisions.get("initiative_id") != initiative_id:
             error(decisions_path, "initiative.mismatch", "initiative_id does not match initiative.md")
         entries = decisions.get("decisions")
@@ -600,13 +617,14 @@ def validate_product_artifacts(
             entries = []
         seen_decisions: set[str] = set()
         seen_keys: set[str] = set()
+        seen_revisions: set[tuple[str, int]] = set()
         for index, entry in enumerate(entries):
             label = f"decisions[{index}]"
             if not isinstance(entry, dict):
                 error(decisions_path, "decision.type", f"{label} must be a mapping")
                 continue
             required_fields = ["id", "revision", "status", "question", "decision", "affected_artifacts", "authority"]
-            if decision_schema == 3:
+            if decision_schema in {3, 4}:
                 required_fields.extend([
                     "key", "type", "secondary_types", "phases", "rationale", "evidence",
                     "depends_on", "contradicts", "approved_by", "decided_at", "supersedes",
@@ -621,19 +639,27 @@ def validate_product_artifacts(
                 error(decisions_path, "id.duplicate-decision", f"Duplicate decision ID '{decision_id}'")
             else:
                 seen_decisions.add(decision_id)
+                decision_entries_by_id[decision_id] = entry
             decision_key = entry.get("key") or (f"legacy.{str(decision_id).lower()}" if decision_id else "")
             if not isinstance(decision_key, str) or not DECISION_KEY_PATTERN.fullmatch(decision_key):
                 error(decisions_path, "decision.key", f"{label}.key must be a lowercase dot- or hyphen-separated semantic key")
-            elif decision_key in seen_keys:
+            elif decision_schema in {2, 3} and decision_key in seen_keys:
                 error(decisions_path, "id.duplicate-decision-key", f"Duplicate decision key '{decision_key}'")
             else:
                 seen_keys.add(decision_key)
                 known_decision_keys.add(decision_key)
-                decision_entries_by_key[decision_key] = entry
+                decision_entries_by_key.setdefault(decision_key, []).append(entry)
             if status(entry.get("status")) not in {"PROPOSED", "TESTING", "LOCKED", "SUPERSEDED"}:
                 error(decisions_path, "decision.status", f"{label}.status is invalid")
-            if not isinstance(entry.get("revision"), int):
+            revision = entry.get("revision")
+            if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
                 error(decisions_path, "decision.type", f"{label}.revision must be an integer")
+            elif decision_schema == 4:
+                revision_identity = (decision_key, revision)
+                if revision_identity in seen_revisions:
+                    error(decisions_path, "id.duplicate-decision-revision", f"Duplicate revision {revision} for decision key '{decision_key}'")
+                else:
+                    seen_revisions.add(revision_identity)
             if entry.get("authority") not in {"HUMAN", "PM"}:
                 error(decisions_path, "decision.authority", f"{label}.authority must be HUMAN or PM")
             primary_type = str(entry.get("type") or "FEATURE_CAPABILITY")
@@ -662,9 +688,63 @@ def validate_product_artifacts(
                 if field in entry and not isinstance(entry.get(field), str):
                     error(decisions_path, "decision.type", f"{label}.{field} must be text")
 
+        representative_by_key: dict[str, dict[str, Any]] = {}
+        if decision_schema == 4:
+            for decision_key, records in decision_entries_by_key.items():
+                ordered = sorted(records, key=lambda record: safe_int(record.get("revision"), 0))
+                revisions = [safe_int(record.get("revision"), 0) for record in ordered]
+                if revisions != list(range(1, len(ordered) + 1)):
+                    error(decisions_path, "decision.revision-sequence", f"Decision '{decision_key}' revisions must be contiguous and start at 1")
+                locked = [record for record in ordered if status(record.get("status")) == "LOCKED"]
+                candidates = [record for record in ordered if status(record.get("status")) in {"PROPOSED", "TESTING"}]
+                if len(locked) > 1:
+                    error(decisions_path, "decision.multiple-locked", f"Decision '{decision_key}' has more than one active locked revision")
+                if len(candidates) > 1:
+                    error(decisions_path, "decision.multiple-candidates", f"Decision '{decision_key}' has more than one active candidate revision")
+                if locked and candidates and safe_int(candidates[-1].get("revision"), 0) <= safe_int(locked[-1].get("revision"), 0):
+                    error(decisions_path, "decision.candidate-order", f"Decision '{decision_key}' candidate must follow its locked revision")
+                representative_by_key[decision_key] = locked[-1] if locked else (candidates[-1] if candidates else ordered[-1])
+                for index, record in enumerate(ordered):
+                    supersedes = record.get("supersedes")
+                    if index == 0:
+                        if supersedes:
+                            error(decisions_path, "reference.decision-revision", f"Decision '{decision_key}' revision 1 cannot supersede another revision")
+                        continue
+                    previous = ordered[index - 1]
+                    previous_id = str(previous.get("id") or "")
+                    if supersedes != previous_id:
+                        error(decisions_path, "reference.decision-revision", f"Decision '{decision_key}' revision {record.get('revision')} must supersede '{previous_id}'")
+                    referenced = decision_entries_by_id.get(str(supersedes or ""))
+                    if referenced is None:
+                        error(decisions_path, "reference.decision-revision", f"Decision '{decision_key}' supersedes unknown revision ID '{supersedes}'")
+                    elif str(referenced.get("key") or "") != decision_key:
+                        error(decisions_path, "reference.decision-revision", f"Decision '{decision_key}' cannot supersede a revision from another Truth")
+                    if status(record.get("status")) == "LOCKED" and status(previous.get("status")) != "SUPERSEDED":
+                        error(decisions_path, "decision.superseded-status", f"Decision '{decision_key}' revision {previous.get('revision')} must be SUPERSEDED before revision {record.get('revision')} is locked")
+        else:
+            representative_by_key = {
+                decision_key: records[-1]
+                for decision_key, records in decision_entries_by_key.items()
+                if records
+            }
+
+        for decision_key, records in decision_entries_by_key.items():
+            for record in records:
+                if record is representative_by_key.get(decision_key):
+                    continue
+                for field in ["depends_on", "contradicts"]:
+                    references = record.get(field, []) if isinstance(record.get(field, []), list) else []
+                    for referenced_key in references:
+                        if not isinstance(referenced_key, str):
+                            error(decisions_path, "reference.type", f"Decision '{decision_key}' {field} values must be decision keys")
+                        elif referenced_key == decision_key:
+                            error(decisions_path, "reference.decision", f"Decision '{decision_key}' cannot {field} itself")
+                        elif referenced_key not in known_decision_keys:
+                            error(decisions_path, "reference.decision", f"Decision '{decision_key}' {field} unknown key '{referenced_key}'")
+
         dependency_graph: dict[str, list[str]] = {key: [] for key in known_decision_keys}
         checked_contradictions: set[tuple[str, str]] = set()
-        for decision_key, entry in decision_entries_by_key.items():
+        for decision_key, entry in representative_by_key.items():
             for field in ["depends_on", "contradicts"]:
                 references = entry.get(field, []) if isinstance(entry.get(field, []), list) else []
                 for referenced_key in references:
@@ -681,14 +761,15 @@ def validate_product_artifacts(
                         if pair in checked_contradictions:
                             continue
                         checked_contradictions.add(pair)
-                        other = decision_entries_by_key[referenced_key]
+                        other = representative_by_key[referenced_key]
                         if status(entry.get("status")) == "LOCKED" and status(other.get("status")) == "LOCKED":
                             error(decisions_path, "decision.locked-contradiction", f"Locked decisions '{decision_key}' and '{referenced_key}' contradict each other")
-            supersedes = entry.get("supersedes")
-            if supersedes == decision_key:
-                error(decisions_path, "reference.decision", f"Decision '{decision_key}' cannot supersede itself")
-            elif supersedes and supersedes not in known_decision_keys:
-                error(decisions_path, "reference.decision", f"Decision '{decision_key}' supersedes unknown key '{supersedes}'")
+            if decision_schema in {2, 3}:
+                supersedes = entry.get("supersedes")
+                if supersedes == decision_key:
+                    error(decisions_path, "reference.decision", f"Decision '{decision_key}' cannot supersede itself")
+                elif supersedes and supersedes not in known_decision_keys:
+                    error(decisions_path, "reference.decision", f"Decision '{decision_key}' supersedes unknown key '{supersedes}'")
         visiting_decisions: set[str] = set()
         visited_decisions: set[str] = set()
 
@@ -946,8 +1027,11 @@ def validate_product_artifacts(
         ]:
             if field not in document:
                 error(path, "execution.field", f"Top-level field '{field}' is required", slice_id)
-        if document.get("schema_version") != 2:
-            error(path, "schema.version", "schema_version must be 2", slice_id)
+        execution_schema = document.get("schema_version")
+        if execution_schema not in {2, 3}:
+            error(path, "schema.version", "schema_version must be 2 or 3", slice_id)
+        elif execution_schema == 2:
+            error(path, "schema.legacy", "execution-plan schema v2 is supported for reading; migrate to v3 for immutable Lead briefs and Scrum Board assignment metadata", slice_id, severity="warning")
         if document.get("slice_id") != path.stem:
             error(path, "execution.filename", "slice_id must match the filename", slice_id)
         if slice_id in execution_slice_ids:
@@ -1012,6 +1096,10 @@ def validate_product_artifacts(
             ]:
                 if field not in package:
                     error(path, "package.field", f"{label}.{field} is required", slice_id)
+            if execution_schema == 3:
+                for field in ["priority", "assigned_by", "assigned_at", "lead_brief"]:
+                    if field not in package:
+                        error(path, "package.field", f"{label}.{field} is required by execution schema v3", slice_id)
             package_id = package.get("id")
             if not isinstance(package_id, str) or not package_id:
                 error(path, "package.id", f"{label}.id must be a non-empty string", slice_id)
@@ -1028,6 +1116,23 @@ def validate_product_artifacts(
             for field in ["title", "description", "area", "owner"]:
                 if not isinstance(package.get(field), str) or not package.get(field):
                     error(path, "package.field", f"{label}.{field} must be non-empty text", slice_id)
+            if execution_schema == 3:
+                for field in ["priority", "assigned_by", "assigned_at"]:
+                    if not isinstance(package.get(field), str) or not package.get(field):
+                        error(path, "package.field", f"{label}.{field} must be non-empty text", slice_id)
+                lead_brief = package.get("lead_brief")
+                if not isinstance(lead_brief, dict):
+                    error(path, "package.lead-brief", f"{label}.lead_brief must be a mapping", slice_id)
+                else:
+                    for field in ["issued_by", "issued_at", "instruction", "expected_outcome", "scope", "out_of_scope", "acceptance_criteria", "clarifications"]:
+                        if field not in lead_brief:
+                            error(path, "package.lead-brief", f"{label}.lead_brief.{field} is required", slice_id)
+                    for field in ["issued_by", "issued_at", "instruction", "expected_outcome"]:
+                        if not isinstance(lead_brief.get(field), str) or not lead_brief.get(field):
+                            error(path, "package.lead-brief", f"{label}.lead_brief.{field} must be non-empty text", slice_id)
+                    for field in ["scope", "out_of_scope", "acceptance_criteria", "clarifications"]:
+                        if not isinstance(lead_brief.get(field), list):
+                            error(path, "package.lead-brief", f"{label}.lead_brief.{field} must be a list", slice_id)
             for field in ["depends_on", "supports", "required_tests", "applicable_skills", "inputs", "produces", "owned_paths", "forbidden_paths", "entry_checks", "exit_checks"]:
                 if not isinstance(package.get(field, []), list):
                     error(path, "package.type", f"{label}.{field} must be a list", slice_id)
@@ -1110,6 +1215,125 @@ def validate_product_artifacts(
                         error(path, "reference.type", f"{label}.work_packages values must be Work-package ID strings", slice_id)
                     elif package_id not in package_by_id:
                         error(path, "reference.package", f"{label}.work_packages references unknown '{package_id}'", slice_id)
+
+    drift_path = base / "drift-log.yaml"
+    drift_document = load_yaml(drift_path, required=False)
+    if drift_document is not None:
+        for field in ["schema_version", "initiative_id", "drifts"]:
+            if field not in drift_document:
+                error(drift_path, "drift-log.field", f"Top-level field '{field}' is required")
+        if drift_document.get("schema_version") != 1:
+            error(drift_path, "schema.version", "drift-log schema_version must be 1")
+        if initiative_id and drift_document.get("initiative_id") != initiative_id:
+            error(drift_path, "initiative.mismatch", "initiative_id does not match initiative.md")
+        drift_entries = drift_document.get("drifts")
+        if not isinstance(drift_entries, list):
+            error(drift_path, "drift-log.type", "drifts must be a list")
+            drift_entries = []
+        seen_drift_ids: set[str] = set()
+        for index, entry in enumerate(drift_entries):
+            label = f"drifts[{index}]"
+            if not isinstance(entry, dict):
+                error(drift_path, "drift.type", f"{label} must be a mapping")
+                continue
+            required_fields = [
+                "id", "detected_at", "detected_by", "stage", "type", "summary", "evidence",
+                "affected_truth_keys", "affected_slices", "affected_work_packages", "severity",
+                "ambiguity", "detection_confidence", "resolution_confidence", "status", "owner",
+                "recommendation", "impact", "blocked_work_packages", "continuing_work_packages",
+                "resolution", "resolved_by", "resolved_at", "approval", "occurrence_count",
+            ]
+            for field in required_fields:
+                if field not in entry:
+                    error(drift_path, "drift.field", f"{label}.{field} is required")
+            drift_id = entry.get("id")
+            if not isinstance(drift_id, str) or not DRIFT_ID_PATTERN.fullmatch(drift_id):
+                error(drift_path, "drift.id", f"{label}.id must start with 'DRIFT-' and contain only letters, numbers, or hyphens")
+            elif drift_id in seen_drift_ids:
+                error(drift_path, "id.duplicate-drift", f"Duplicate drift ID '{drift_id}'")
+            else:
+                seen_drift_ids.add(drift_id)
+            drift_status = status(entry.get("status"))
+            severity = status(entry.get("severity"))
+            ambiguity = status(entry.get("ambiguity"))
+            if drift_status not in DRIFT_STATUSES:
+                error(drift_path, "drift.status", f"{label}.status is invalid")
+            if severity not in DRIFT_SEVERITIES:
+                error(drift_path, "drift.severity", f"{label}.severity is invalid")
+            if ambiguity not in DRIFT_AMBIGUITIES:
+                error(drift_path, "drift.ambiguity", f"{label}.ambiguity is invalid")
+            if status(entry.get("stage")) not in DRIFT_STAGES:
+                error(drift_path, "drift.stage", f"{label}.stage is invalid")
+            if status(entry.get("type")) not in DRIFT_TYPES:
+                error(drift_path, "drift.category", f"{label}.type is invalid")
+            for field in ["summary", "detected_by", "owner"]:
+                if not isinstance(entry.get(field), str) or not entry.get(field):
+                    error(drift_path, "drift.field", f"{label}.{field} must be non-empty text")
+            for field in ["recommendation", "impact", "resolution", "resolved_by", "resolved_at", "detected_at"]:
+                if field in entry and not isinstance(entry.get(field), str):
+                    error(drift_path, "drift.type", f"{label}.{field} must be text")
+            for field in ["evidence", "affected_truth_keys", "affected_slices", "affected_work_packages", "blocked_work_packages", "continuing_work_packages"]:
+                if not isinstance(entry.get(field), list):
+                    error(drift_path, "drift.type", f"{label}.{field} must be a list")
+            for field in ["detection_confidence", "resolution_confidence"]:
+                value = entry.get(field)
+                if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 100:
+                    error(drift_path, "drift.confidence", f"{label}.{field} must be an integer from 0 to 100")
+            occurrence_count = entry.get("occurrence_count")
+            if not isinstance(occurrence_count, int) or isinstance(occurrence_count, bool) or occurrence_count < 1:
+                error(drift_path, "drift.occurrence", f"{label}.occurrence_count must be a positive integer")
+            for truth_key in entry.get("affected_truth_keys", []) if isinstance(entry.get("affected_truth_keys"), list) else []:
+                if not isinstance(truth_key, str) or truth_key not in known_decision_keys:
+                    error(drift_path, "reference.decision", f"{label}.affected_truth_keys references unknown '{truth_key}'")
+            for slice_id in entry.get("affected_slices", []) if isinstance(entry.get("affected_slices"), list) else []:
+                if not isinstance(slice_id, str) or slice_id not in known_slice_ids:
+                    error(drift_path, "reference.slice", f"{label}.affected_slices references unknown '{slice_id}'", str(slice_id))
+            for field in ["affected_work_packages", "blocked_work_packages", "continuing_work_packages"]:
+                for package_id in entry.get(field, []) if isinstance(entry.get(field), list) else []:
+                    if not isinstance(package_id, str) or package_id not in global_package_ids:
+                        error(drift_path, "reference.package", f"{label}.{field} references unknown '{package_id}'")
+            blocked = set(entry.get("blocked_work_packages", [])) if isinstance(entry.get("blocked_work_packages"), list) else set()
+            continuing = set(entry.get("continuing_work_packages", [])) if isinstance(entry.get("continuing_work_packages"), list) else set()
+            if blocked & continuing:
+                error(drift_path, "drift.schedule", f"{label} cannot block and continue the same work package")
+            approval = entry.get("approval")
+            if not isinstance(approval, dict):
+                error(drift_path, "drift.approval", f"{label}.approval must be a mapping")
+                approval = {}
+            for field in ["required", "status", "approved_by", "decided_at"]:
+                if field not in approval:
+                    error(drift_path, "drift.approval", f"{label}.approval.{field} is required")
+            approval_required = approval.get("required")
+            approval_status = status(approval.get("status"))
+            if not isinstance(approval_required, bool):
+                error(drift_path, "drift.approval", f"{label}.approval.required must be true or false")
+            if approval_status not in DRIFT_APPROVAL_STATUSES:
+                error(drift_path, "drift.approval", f"{label}.approval.status is invalid")
+            if drift_status == "AUTO_RESOLVED":
+                confidence = entry.get("resolution_confidence")
+                unsafe_auto_resolution = (
+                    severity in {"HIGH", "CRITICAL"}
+                    or ambiguity == "HIGH"
+                    or status(entry.get("type")) in {"SCOPE", "ACCEPTANCE", "API_CONTRACT", "SECURITY_PRIVACY"}
+                    or not isinstance(confidence, int)
+                    or isinstance(confidence, bool)
+                    or confidence < AUTO_RESOLUTION_MIN_CONFIDENCE
+                )
+                if unsafe_auto_resolution:
+                    error(drift_path, "drift.auto-resolution", f"{label} cannot auto-resolve consequential, severe, highly ambiguous, or below-{AUTO_RESOLUTION_MIN_CONFIDENCE}% confidence drift")
+                if not isinstance(entry.get("resolution"), str) or not entry.get("resolution"):
+                    error(drift_path, "drift.resolution", f"{label}.resolution is required for AUTO_RESOLVED")
+                if approval_required is not False or approval_status != "NOT_REQUIRED":
+                    error(drift_path, "drift.approval", f"{label} AUTO_RESOLVED drift must use approval.required false and NOT_REQUIRED")
+            if drift_status == "HUMAN_APPROVAL_NEEDED":
+                if not isinstance(entry.get("recommendation"), str) or not entry.get("recommendation"):
+                    error(drift_path, "drift.recommendation", f"{label}.recommendation is required while Human approval is needed")
+                if not isinstance(entry.get("impact"), str) or not entry.get("impact"):
+                    error(drift_path, "drift.impact", f"{label}.impact is required while Human approval is needed")
+                if approval_required is not True or approval_status != "PENDING":
+                    error(drift_path, "drift.approval", f"{label} HUMAN_APPROVAL_NEEDED drift must use approval.required true and PENDING")
+            if drift_status == "CLOSED" and (not isinstance(entry.get("resolution"), str) or not entry.get("resolution")):
+                error(drift_path, "drift.resolution", f"{label}.resolution is required for CLOSED")
 
     reports_dir = base / "reports"
     all_report_paths = sorted(reports_dir.glob("*.md")) if reports_dir.exists() else []
@@ -1227,7 +1451,9 @@ def package_progress(packages: list[dict[str, Any]]) -> float:
         "IN_PROGRESS": 0.5,
         "REWORK_REQUIRED": 0.35,
         "READY": 0.0,
+        "BACKLOG": 0.0,
         "BLOCKED": 0.0,
+        "BLOCKED_BY_DRIFT": 0.0,
         "PAUSED": 0.0,
     }
     if not packages:
@@ -1258,9 +1484,11 @@ def story_status(packages: list[dict[str, Any]], slice_status: str) -> str:
     if not packages:
         return "PLANNED"
     states = {status(item.get("status")) for item in packages}
+    if states <= {"BACKLOG"}:
+        return "PLANNED"
     if states <= TERMINAL_PACKAGE_STATUSES:
         return "VERIFYING"
-    if "BLOCKED" in states:
+    if states & {"BLOCKED", "BLOCKED_BY_DRIFT"}:
         return "BLOCKED"
     if states & ACTIVE_PACKAGE_STATUSES:
         return "IN_PROGRESS"
@@ -1277,7 +1505,7 @@ def execution_records(base: Path) -> dict[str, dict[str, Any]]:
             except (ArtifactError, OSError):
                 continue
             slice_id = str(record.get("slice_id") or path.stem)
-            if record.get("schema_version") != 2 or slice_id != path.stem or slice_id in records:
+            if record.get("schema_version") not in {2, 3} or slice_id != path.stem or slice_id in records:
                 continue
             record["_path"] = path
             records[slice_id] = record
@@ -1506,7 +1734,7 @@ def build_uninitialized_dashboard_data(
     error_count = sum(item["severity"] == "error" for item in diagnostics)
     warning_count = sum(item["severity"] == "warning" for item in diagnostics)
     return {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
         "projection": {"kind": projection_kind, "generatedAt": now, "source": projection_source, "staleAfterMinutes": 0},
         "dataHealth": {
             "status": "INVALID" if error_count else ("WARNING" if warning_count else "VALID"),
@@ -1540,6 +1768,12 @@ def build_uninitialized_dashboard_data(
             "reviewCount": 0,
             "contradictionCount": 0,
         },
+        "driftMeta": {
+            "openCount": 0,
+            "autoResolvedCount": 0,
+            "humanApprovalCount": 0,
+            "criticalCount": 0,
+        },
         "attention": [],
         "prototype": {
             "id": "No active prototype",
@@ -1557,6 +1791,7 @@ def build_uninitialized_dashboard_data(
             "manualReview": "Not requested",
         },
         "decisions": [],
+        "drifts": [],
         "slices": [],
         "stories": [],
         "workPackages": [],
@@ -1591,13 +1826,19 @@ def build_dashboard_data(
         decisions_doc = read_yaml(base / "decision-log.yaml")
     except (ArtifactError, OSError):
         decisions_doc = {}
+    try:
+        drift_doc = read_yaml(base / "drift-log.yaml") if (base / "drift-log.yaml").exists() else {}
+    except (ArtifactError, OSError):
+        drift_doc = {}
     if initiative_meta.get("schema_version") != 2:
         raise ArtifactError("initiative.md uses an unsupported schema_version")
     if delivery.get("schema_version") not in {2, 3}:
         raise ArtifactError("delivery-state.yaml uses an unsupported schema_version")
     decision_schema = decisions_doc.get("schema_version")
-    if decision_schema is not None and decision_schema not in {2, 3}:
+    if decision_schema is not None and decision_schema not in {2, 3, 4}:
         decisions_doc = {}
+    if drift_doc.get("schema_version") not in {None, 1}:
+        drift_doc = {}
     executions = execution_records(base)
     reports = report_records(base)
 
@@ -1667,15 +1908,43 @@ def build_dashboard_data(
             required_tests = [str(value) for value in list_value(item.get("required_tests"))]
             test_records = [tests_by_id[test_id] for test_id in required_tests if test_id in tests_by_id]
             owner = str(item.get("owner") or "Unassigned")
+            lead_brief = item.get("lead_brief") if isinstance(item.get("lead_brief"), dict) else {}
+            clarifications = []
+            for clarification in list_value(lead_brief.get("clarifications")):
+                if isinstance(clarification, dict):
+                    clarifications.append({
+                        "at": str(clarification.get("at") or ""),
+                        "by": str(clarification.get("by") or ""),
+                        "note": str(clarification.get("note") or ""),
+                    })
+                elif clarification:
+                    clarifications.append({"at": "", "by": "", "note": str(clarification)})
             parsed_packages.append({
                 "id": str(item["id"]),
                 "sliceId": slice_id,
                 "title": str(item.get("title") or item["id"]),
                 "description": str(item.get("description") or ""),
                 "status": status(item.get("status"), "BLOCKED"),
+                "priority": str(item.get("priority") or meta.get("priority") or row.get("Priority") or "—"),
                 "area": str(item.get("area") or "unassigned"),
                 "owner": owner,
                 "ownerInitials": str(item.get("owner_initials") or owner_initials(owner)),
+                "assignedBy": str(item.get("assigned_by") or ""),
+                "assignedAt": str(item.get("assigned_at") or ""),
+                "startedAt": str(item.get("started_at") or ""),
+                "updatedAt": str(item.get("updated_at") or ""),
+                "branch": str(item.get("branch") or ""),
+                "pullRequest": str(item.get("pull_request") or ""),
+                "leadBrief": {
+                    "issuedBy": str(lead_brief.get("issued_by") or ""),
+                    "issuedAt": str(lead_brief.get("issued_at") or ""),
+                    "instruction": str(lead_brief.get("instruction") or ""),
+                    "expectedOutcome": str(lead_brief.get("expected_outcome") or ""),
+                    "scope": [str(value) for value in list_value(lead_brief.get("scope"))],
+                    "outOfScope": [str(value) for value in list_value(lead_brief.get("out_of_scope"))],
+                    "acceptanceCriteria": [str(value) for value in list_value(lead_brief.get("acceptance_criteria"))],
+                    "clarifications": clarifications,
+                },
                 "wave": wave_by_package.get(str(item["id"]), ""),
                 "contractVersion": str(item.get("contract_version") or execution.get("contract_version") or ""),
                 "storyIds": [str(value) for value in list_value(item.get("supports"))],
@@ -1775,29 +2044,58 @@ def build_dashboard_data(
     slices.sort(key=lambda item: (item["order"], item["id"]))
 
     raw_decisions = [item for item in list_value(decisions_doc.get("decisions")) if isinstance(item, dict)]
-    decision_by_key: dict[str, dict[str, Any]] = {}
-    explicit_contradictions: dict[str, set[str]] = {}
-    superseded_keys: set[str] = set()
+    records_by_key: dict[str, list[dict[str, Any]]] = {}
     for item in raw_decisions:
         decision_id = str(item.get("id") or "DEC-UNKNOWN")
         decision_key = str(item.get("key") or f"legacy.{decision_id.lower()}")
-        decision_by_key[decision_key] = item
+        records_by_key.setdefault(decision_key, []).append(item)
+
+    current_by_key: dict[str, dict[str, Any]] = {}
+    candidate_by_key: dict[str, dict[str, Any]] = {}
+    history_by_key: dict[str, list[dict[str, Any]]] = {}
+    for decision_key, records in records_by_key.items():
+        ordered = sorted(records, key=lambda record: safe_int(record.get("revision"), 0))
+        locked = [record for record in ordered if status(record.get("status")) == "LOCKED"]
+        candidates = [record for record in ordered if status(record.get("status")) in {"PROPOSED", "TESTING"}]
+        current = locked[-1] if locked else (candidates[-1] if candidates else ordered[-1])
+        current_by_key[decision_key] = current
+        if locked and candidates:
+            candidate_by_key[decision_key] = candidates[-1]
+        history_by_key[decision_key] = sorted(
+            [record for record in ordered if status(record.get("status")) == "SUPERSEDED"],
+            key=lambda record: safe_int(record.get("revision"), 0),
+            reverse=True,
+        )
+
+    decision_by_key = current_by_key
+    explicit_contradictions: dict[str, set[str]] = {}
+    for decision_key, item in decision_by_key.items():
         explicit_contradictions[decision_key] = {
             str(value) for value in list_value(item.get("contradicts")) if isinstance(value, str)
         }
-        if status(item.get("status")) == "LOCKED" and isinstance(item.get("supersedes"), str) and item.get("supersedes"):
-            superseded_keys.add(str(item["supersedes"]))
     for decision_key, references in list(explicit_contradictions.items()):
         for referenced_key in references:
             if referenced_key in explicit_contradictions:
                 explicit_contradictions[referenced_key].add(decision_key)
 
+    def project_revision(item: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "id": str(item.get("id") or "DEC-UNKNOWN"),
+            "revision": safe_int(item.get("revision"), 1),
+            "status": status(item.get("status"), "PROPOSED"),
+            "title": str(item.get("question") or item.get("decision") or "Decision"),
+            "summary": str(item.get("decision") or item.get("rationale") or ""),
+            "rationale": str(item.get("rationale") or ""),
+            "approvedBy": str(item.get("approved_by") or ""),
+            "decidedAt": str(item.get("decided_at") or ""),
+            "authority": str(item.get("authority") or "PM"),
+            "evidence": [str(value) for value in list_value(item.get("evidence"))],
+            "supersedes": str(item.get("supersedes") or ""),
+        }
+
     decisions = []
-    for item in raw_decisions:
-        if not isinstance(item, dict):
-            continue
+    for decision_key, item in decision_by_key.items():
         decision_id = str(item.get("id") or "DEC-UNKNOWN")
-        decision_key = str(item.get("key") or f"legacy.{decision_id.lower()}")
         primary_type = str(item.get("type") or "FEATURE_CAPABILITY")
         type_meta = DECISION_TYPES.get(primary_type, DECISION_TYPES["FEATURE_CAPABILITY"])
         current_status = status(item.get("status"), "PROPOSED")
@@ -1816,7 +2114,8 @@ def build_dashboard_data(
                 "status": referenced_status,
                 "typeLabel": DECISION_TYPES.get(referenced_type, DECISION_TYPES["FEATURE_CAPABILITY"])["label"],
             })
-        canonical = current_status == "LOCKED" and decision_key not in superseded_keys and not locked_contradiction
+        candidate = candidate_by_key.get(decision_key)
+        canonical = current_status == "LOCKED" and not locked_contradiction
         secondary_types = []
         for secondary_type in list_value(item.get("secondary_types")):
             if isinstance(secondary_type, str) and secondary_type in DECISION_TYPES:
@@ -1842,11 +2141,15 @@ def build_dashboard_data(
             "hasContradiction": bool(contradictions),
             "lockedContradiction": locked_contradiction,
             "canonical": canonical,
-            "needsReview": current_status in {"PROPOSED", "TESTING"} or bool(contradictions),
+            "needsReview": current_status in {"PROPOSED", "TESTING"} or candidate is not None or bool(contradictions),
             "affects": [str(value) for value in list_value(item.get("affected_artifacts"))],
             "authority": str(item.get("authority") or "PM"),
             "approvedBy": str(item.get("approved_by") or ""),
             "supersedes": str(item.get("supersedes") or ""),
+            "revisionCount": len(records_by_key.get(decision_key, [])),
+            "latestRevision": max((safe_int(record.get("revision"), 0) for record in records_by_key.get(decision_key, [])), default=safe_int(item.get("revision"), 1)),
+            "history": [project_revision(record) for record in history_by_key.get(decision_key, [])],
+            "candidateRevision": project_revision(candidate) if candidate else None,
         })
     decisions.sort(key=lambda item: (item["typeOrder"], item["key"]))
 
@@ -1874,6 +2177,55 @@ def build_dashboard_data(
         "canonicalCount": sum(decision["canonical"] for decision in decisions),
         "reviewCount": sum(decision["needsReview"] for decision in decisions),
         "contradictionCount": sum(decision["hasContradiction"] for decision in decisions),
+        "revisionCount": len(raw_decisions),
+        "historyCount": sum(len(decision["history"]) for decision in decisions),
+        "candidateCount": sum(decision["candidateRevision"] is not None for decision in decisions),
+    }
+
+    drifts = []
+    for item in list_value(drift_doc.get("drifts")):
+        if not isinstance(item, dict):
+            continue
+        approval = item.get("approval") if isinstance(item.get("approval"), dict) else {}
+        drift_status = status(item.get("status"), "DETECTED")
+        drifts.append({
+            "id": str(item.get("id") or "DRIFT-UNKNOWN"),
+            "detectedAt": str(item.get("detected_at") or ""),
+            "detectedBy": str(item.get("detected_by") or "Unknown"),
+            "stage": status(item.get("stage"), "IMPLEMENTATION"),
+            "type": status(item.get("type"), "IMPLEMENTATION"),
+            "summary": str(item.get("summary") or "Detected drift"),
+            "evidence": [str(value) for value in list_value(item.get("evidence"))],
+            "affectedTruthKeys": [str(value) for value in list_value(item.get("affected_truth_keys"))],
+            "affectedSlices": [str(value) for value in list_value(item.get("affected_slices"))],
+            "affectedWorkPackages": [str(value) for value in list_value(item.get("affected_work_packages"))],
+            "severity": status(item.get("severity"), "MEDIUM"),
+            "ambiguity": status(item.get("ambiguity"), "MEDIUM"),
+            "detectionConfidence": safe_int(item.get("detection_confidence"), 0),
+            "resolutionConfidence": safe_int(item.get("resolution_confidence"), 0),
+            "status": drift_status,
+            "owner": str(item.get("owner") or "Product Manager"),
+            "recommendation": str(item.get("recommendation") or ""),
+            "impact": str(item.get("impact") or ""),
+            "blockedWorkPackages": [str(value) for value in list_value(item.get("blocked_work_packages"))],
+            "continuingWorkPackages": [str(value) for value in list_value(item.get("continuing_work_packages"))],
+            "resolution": str(item.get("resolution") or ""),
+            "resolvedBy": str(item.get("resolved_by") or ""),
+            "resolvedAt": str(item.get("resolved_at") or ""),
+            "approval": {
+                "required": bool(approval.get("required")),
+                "status": status(approval.get("status"), "NOT_REQUIRED"),
+                "approvedBy": str(approval.get("approved_by") or ""),
+                "decidedAt": str(approval.get("decided_at") or ""),
+            },
+            "occurrenceCount": safe_int(item.get("occurrence_count"), 1),
+        })
+    drifts.sort(key=lambda item: (item["detectedAt"], item["id"]), reverse=True)
+    drift_meta = {
+        "openCount": sum(item["status"] not in {"AUTO_RESOLVED", "CLOSED"} for item in drifts),
+        "autoResolvedCount": sum(item["status"] == "AUTO_RESOLVED" for item in drifts),
+        "humanApprovalCount": sum(item["status"] == "HUMAN_APPROVAL_NEEDED" for item in drifts),
+        "criticalCount": sum(item["severity"] == "CRITICAL" for item in drifts),
     }
 
     attention = []
@@ -1894,6 +2246,17 @@ def build_dashboard_data(
         else:
             title, detail, affects = f"Blocker {index}", str(blocker), []
         attention.append({"id": f"BLOCKER-{index}", "kind": "blocker", "title": str(title), "detail": str(detail), "age": "Current", "affects": affects})
+    for drift in drifts:
+        if drift["status"] != "HUMAN_APPROVAL_NEEDED":
+            continue
+        attention.append({
+            "id": drift["id"],
+            "kind": "drift",
+            "title": "Human approval needed for detected drift",
+            "detail": drift["recommendation"],
+            "age": "Current",
+            "affects": drift["blockedWorkPackages"],
+        })
 
     events = []
     events_path = base / "delivery-events.jsonl"
@@ -1914,6 +2277,12 @@ def build_dashboard_data(
                 "kind": item.get("kind") or "updated",
             })
     events.sort(key=lambda item: str(item["at"]), reverse=True)
+    for package in work_packages:
+        package_id = package["id"]
+        package["history"] = [
+            event for event in events
+            if package_id in f"{event.get('title', '')} {event.get('detail', '')}"
+        ][:12]
 
     initiative_title = str(initiative_meta.get("title") or first_heading(initiative_body))
     objective = normalized_paragraph(markdown_section(initiative_body, "Goals, objectives, and expected outcomes"))
@@ -1933,7 +2302,7 @@ def build_dashboard_data(
     error_count = sum(item["severity"] == "error" for item in diagnostics)
     warning_count = sum(item["severity"] == "warning" for item in diagnostics)
     return {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
         "projection": {"kind": projection_kind, "generatedAt": now, "source": projection_source, "staleAfterMinutes": 0},
         "dataHealth": {
             "status": "INVALID" if error_count else ("WARNING" if warning_count else "VALID"),
@@ -1954,6 +2323,7 @@ def build_dashboard_data(
             "nextAction": next_action_record,
         },
         "decisionMeta": decision_meta,
+        "driftMeta": drift_meta,
         "attention": attention,
         "prototype": {
             "id": str(prototype.get("id") or "No active prototype"),
@@ -1971,6 +2341,7 @@ def build_dashboard_data(
             "manualReview": str(prototype.get("manual_review") or "Not requested"),
         },
         "decisions": decisions,
+        "drifts": drifts,
         "slices": slices,
         "stories": stories,
         "workPackages": work_packages,
@@ -2304,8 +2675,16 @@ def prepare_projection_fixture(skill_root: Path) -> tempfile.TemporaryDirectory[
 
     decisions = (skill_root / "assets" / "decision-log-example.yaml").read_text(encoding="utf-8")
     (base / "decision-log.yaml").write_text(decisions, encoding="utf-8")
+    drifts = (skill_root / "assets" / "drift-log-example.yaml").read_text(encoding="utf-8")
+    (base / "drift-log.yaml").write_text(drifts, encoding="utf-8")
 
     demo_events = [
+        {
+            "at": "2026-08-22T00:41:00+05:00",
+            "kind": "human-approval-needed",
+            "title": "Schema drift needs Human approval",
+            "detail": "DRIFT-005 recommends restoring the locked role_ids event field; dependent packages paused while frontend and email work continue.",
+        },
         {
             "at": "2026-08-22T00:42:00+05:00",
             "kind": "blocked",
@@ -2319,10 +2698,22 @@ def prepare_projection_fixture(skill_root: Path) -> tempfile.TemporaryDirectory[
             "detail": "Integration Engineer submitted WP-AUTH-05 evidence against CON-AUTH-EMAIL v1.",
         },
         {
+            "at": "2026-08-22T00:35:00+05:00",
+            "kind": "auto-resolved",
+            "title": "Recovery copy drift auto-resolved",
+            "detail": "DRIFT-004 restored approved neutral copy at 96% resolution confidence without stopping independent work.",
+        },
+        {
             "at": "2026-08-22T00:30:00+05:00",
             "kind": "started",
             "title": "Frontend authentication journeys started",
             "detail": "Frontend Engineer started WP-AUTH-04 using the locked API contract and approved prototype checkpoint 07.",
+        },
+        {
+            "at": "2026-08-22T00:28:00+05:00",
+            "kind": "auto-resolved",
+            "title": "Reset expiry test drift auto-resolved",
+            "detail": "DRIFT-003 corrected the test fixture and passed the focused suite at 94% resolution confidence.",
         },
         {
             "at": "2026-08-22T00:24:00+05:00",

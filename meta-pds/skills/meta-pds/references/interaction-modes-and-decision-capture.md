@@ -30,10 +30,13 @@ captured candidate is durable but not approved. Preserve one unique semantic
 `key`, a primary `type`, applicable `phases`, upstream `depends_on` keys, and
 explicit `contradicts` keys.
 
-Only a non-superseded `LOCKED` decision without an unresolved locked
+Only the active `LOCKED` revision without an unresolved locked
 contradiction is canonical product truth. Never auto-lock a consequential
-choice. Never overwrite a locked decision; create a new candidate and link it
-through `supersedes` or `contradicts`.
+choice. Never overwrite a locked decision; append a uniquely identified
+candidate revision under the same key and link `supersedes` to the immediately
+previous revision ID. Keep the current locked revision authoritative until
+Human approval. On approval, mark it `SUPERSEDED` and lock the candidate.
+Use `contradicts` for incompatible Truth keys, not revision history.
 
 Do not interrupt `EXPLORE` unless the discussion introduces an irreversible,
 destructive, security-sensitive, legally material, or locked-decision conflict.

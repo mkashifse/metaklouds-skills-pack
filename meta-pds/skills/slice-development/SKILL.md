@@ -65,6 +65,7 @@ paths, sequencing, or assignments without repository and slice evidence.
 Inspect the repository, freeze or cite the technical contract, then define:
 
 - bounded work packages and explicit owners;
+- one immutable Lead brief and assignment record for every work package;
 - requirements/stories supported by each package;
 - inputs, outputs, owned and forbidden paths;
 - dependency DAG, critical path, and parallel waves;
@@ -73,7 +74,10 @@ Inspect the repository, freeze or cite the technical contract, then define:
 - integration, compatibility, migration, merge, deploy, feature-flag,
   observability, and rollback order.
 
-Use the exact structured fields in the execution-plan template. Give every
+Use the exact structured fields in the execution-plan template. Record the
+Product Manager assignment separately from the Development Lead's immutable
+original instruction, expected outcome, scope, exclusions, and acceptance
+criteria; append later clarification without replacing the original brief. Give every
 contract and work package a stable ID; packages cite stories through `supports`,
 dependencies through `depends_on`, and the slice's canonical test definitions
 through `required_tests`. Do not copy test definitions into the execution plan.
@@ -99,7 +103,9 @@ blockers.
 
 ### Execution
 
-Launch only `READY` packages. Use the minimum applicable worker roles:
+Launch only `READY` packages. Assigned work with incomplete prerequisites stays
+in `BACKLOG`; assignment alone never implies that implementation started. Use
+the minimum applicable worker roles:
 
 - Frontend Engineer;
 - Backend/Domain Engineer;
@@ -125,7 +131,7 @@ After every result:
 Use:
 
 ```text
-BLOCKED → READY → IN_PROGRESS → VERIFYING → DONE
+BACKLOG → READY → IN_PROGRESS → VERIFYING → DONE
 ```
 
 Contract changes mark affected and dependent packages `REVERIFY_REQUIRED` and

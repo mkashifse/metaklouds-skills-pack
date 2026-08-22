@@ -85,11 +85,59 @@
       "license": "No repository license declared"
     },
     {
+      "name": "frontend-design",
+      "kind": "upstream",
+      "repository": "https://github.com/anthropics/skills.git",
+      "revision": "3b3fad96af16a10759d930941b4520ba0c40edae",
+      "path": "skills/frontend-design",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "vercel-composition-patterns",
+      "kind": "upstream",
+      "repository": "https://github.com/vercel-labs/agent-skills.git",
+      "revision": "dd089a8c752c966dee8bf0f27cb625ba193ffd9e",
+      "path": "skills/composition-patterns",
+      "license": "MIT (declared by skill)"
+    },
+    {
       "name": "fastapi",
       "kind": "upstream",
       "repository": "https://github.com/fastapi/fastapi.git",
       "revision": "95f8322ee1dcda7ceace7b1c4f6c9915b36d748f",
       "path": "fastapi/.agents/skills/fastapi",
+      "license": "MIT"
+    },
+    {
+      "name": "nodejs-backend-patterns",
+      "kind": "upstream",
+      "repository": "https://github.com/wshobson/agents.git",
+      "revision": "367cb6a4a182cf7e9b0a17c9429f7411ddd9cf35",
+      "path": "plugins/javascript-typescript/skills/nodejs-backend-patterns",
+      "license": "MIT"
+    },
+    {
+      "name": "python-testing-patterns",
+      "kind": "upstream",
+      "repository": "https://github.com/wshobson/agents.git",
+      "revision": "367cb6a4a182cf7e9b0a17c9429f7411ddd9cf35",
+      "path": "plugins/python-development/skills/python-testing-patterns",
+      "license": "MIT"
+    },
+    {
+      "name": "vitest",
+      "kind": "upstream",
+      "repository": "https://github.com/antfu/skills.git",
+      "revision": "a74f281a27dadc02397bc1a174b0f2c97531b6ae",
+      "path": "skills/vitest",
+      "license": "MIT"
+    },
+    {
+      "name": "playwright-best-practices",
+      "kind": "upstream",
+      "repository": "https://github.com/currents-dev/playwright-best-practices-skill.git",
+      "revision": "283d5cbc5d11aac1abda058b16ad22c317d54dc0",
+      "path": "playwright-best-practices",
       "license": "MIT"
     },
     {

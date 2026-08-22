@@ -34,7 +34,7 @@ the active delivery team.
 
 ## Included skills
 
-The full installer provides sixteen skills:
+The full installer provides twenty-two skills:
 
 | Skill | Ownership | Purpose |
 | --- | --- | --- |
@@ -51,7 +51,13 @@ The full installer provides sixteen skills:
 | `change-management` | Metaklouds | Control runtime decisions, approvals, impact analysis, and synchronization |
 | `prototype` | Upstream | Keep exploratory prototypes fast, explicit, and disposable |
 | `vercel-react-best-practices` | Upstream | Guide React and Next.js implementation |
+| `frontend-design` | Upstream | Create distinctive, intentional production interfaces |
+| `vercel-composition-patterns` | Upstream | Structure scalable React components and reusable APIs |
 | `fastapi` | Upstream | Guide FastAPI and Pydantic implementation |
+| `nodejs-backend-patterns` | Upstream | Build production Node.js and TypeScript APIs |
+| `python-testing-patterns` | Upstream | Test Python APIs, async services, databases, and integrations with pytest |
+| `vitest` | Upstream | Test TypeScript and frontend units, components, mocks, and coverage |
+| `playwright-best-practices` | Upstream | Build reliable Playwright E2E, component, API, visual, and accessibility tests |
 | `supabase` | Upstream | Guide Supabase implementation and security |
 | `supabase-postgres-best-practices` | Upstream | Guide Postgres schemas, migrations, RLS, and performance |
 
@@ -170,7 +176,7 @@ skills declared in [manifest.json](manifest.json). For example:
 npx skills add mkashifse/metaklouds-skills-pack --all
 ```
 
-This shortcut does not install the five upstream implementation dependencies;
+This shortcut does not install the eleven upstream implementation and testing dependencies;
 use `scripts/install.sh` for the complete pack.
 
 ## License

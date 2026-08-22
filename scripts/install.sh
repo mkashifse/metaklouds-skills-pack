@@ -88,7 +88,7 @@ fi
 if [[ "$only_count" -gt 0 ]]; then
   for selected_skill in "${only_skills[@]}"; do
     case "$selected_skill" in
-      meta-pds|rapid-prototyping|slice-planning|slice-development|slice-qa|continuous-delivery-manager|delivery-monitoring-dashboard|meta-grill-team|vertical-slice-team|dev-team|change-management|prototype|vercel-react-best-practices|fastapi|supabase|supabase-postgres-best-practices)
+      meta-pds|rapid-prototyping|slice-planning|slice-development|slice-qa|continuous-delivery-manager|delivery-monitoring-dashboard|meta-grill-team|vertical-slice-team|dev-team|change-management|prototype|vercel-react-best-practices|frontend-design|vercel-composition-patterns|fastapi|nodejs-backend-patterns|python-testing-patterns|vitest|playwright-best-practices|supabase|supabase-postgres-best-practices)
         ;;
       *)
         echo "Error: unknown skill for --only: $selected_skill" >&2
@@ -230,10 +230,46 @@ fetch_and_install \
   "vercel-react-best-practices"
 
 fetch_and_install \
+  "https://github.com/anthropics/skills.git" \
+  "3b3fad96af16a10759d930941b4520ba0c40edae" \
+  "skills/frontend-design" \
+  "frontend-design"
+
+fetch_and_install \
+  "https://github.com/vercel-labs/agent-skills.git" \
+  "dd089a8c752c966dee8bf0f27cb625ba193ffd9e" \
+  "skills/composition-patterns" \
+  "vercel-composition-patterns"
+
+fetch_and_install \
   "https://github.com/fastapi/fastapi.git" \
   "95f8322ee1dcda7ceace7b1c4f6c9915b36d748f" \
   "fastapi/.agents/skills/fastapi" \
   "fastapi"
+
+fetch_and_install \
+  "https://github.com/wshobson/agents.git" \
+  "367cb6a4a182cf7e9b0a17c9429f7411ddd9cf35" \
+  "plugins/javascript-typescript/skills/nodejs-backend-patterns" \
+  "nodejs-backend-patterns"
+
+fetch_and_install \
+  "https://github.com/wshobson/agents.git" \
+  "367cb6a4a182cf7e9b0a17c9429f7411ddd9cf35" \
+  "plugins/python-development/skills/python-testing-patterns" \
+  "python-testing-patterns"
+
+fetch_and_install \
+  "https://github.com/antfu/skills.git" \
+  "a74f281a27dadc02397bc1a174b0f2c97531b6ae" \
+  "skills/vitest" \
+  "vitest"
+
+fetch_and_install \
+  "https://github.com/currents-dev/playwright-best-practices-skill.git" \
+  "283d5cbc5d11aac1abda058b16ad22c317d54dc0" \
+  "playwright-best-practices" \
+  "playwright-best-practices"
 
 fetch_and_install \
   "https://github.com/supabase/agent-skills.git" \

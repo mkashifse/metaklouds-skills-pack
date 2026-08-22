@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 from urllib.request import urlopen
 
+from check_dependencies import INTERNAL_SKILLS, SUPPORT_SKILLS, dependency_status
 from serve_dashboard import (
     ArtifactError,
     build_dashboard_data,
@@ -120,10 +121,34 @@ class MetaPDSContractTests(unittest.TestCase):
             self.assertTrue((suite_root / relative_path).is_file(), relative_path)
 
         pack_manifest = json.loads((suite_root.parent / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(2, pack_manifest["schema_version"])
+        self.assertEqual("meta-pds", pack_manifest["default_profile"]["entrypoint"])
+        self.assertEqual(16, len(pack_manifest["default_profile"]["skills"]))
         bundled_skills = {item["name"]: item["path"] for item in pack_manifest["skills"] if item["kind"] == "bundled"}
         self.assertEqual("meta-pds/skills/meta-pds", bundled_skills["meta-pds"])
         for skill_name in ["rapid-prototyping", "slice-planning", "slice-development", "slice-qa"]:
             self.assertIn(skill_name, bundled_skills)
+        self.assertEqual(5, len(bundled_skills))
+        self.assertEqual(
+            set(pack_manifest["default_profile"]["skills"]),
+            {item["name"] for item in pack_manifest["skills"]},
+        )
+
+    def test_dependency_check_reports_complete_and_missing_profiles(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="meta-pds-skills-") as temporary_root:
+            skills_root = Path(temporary_root)
+            for skill_name in (*INTERNAL_SKILLS, *SUPPORT_SKILLS):
+                skill_directory = skills_root / skill_name
+                skill_directory.mkdir()
+                (skill_directory / "SKILL.md").write_text(f"---\nname: {skill_name}\n---\n")
+            ready = dependency_status(skills_root)
+            self.assertEqual("ready", ready["status"])
+            self.assertEqual({"internal": [], "support": []}, ready["missing"])
+
+            (skills_root / "vitest" / "SKILL.md").unlink()
+            incomplete = dependency_status(skills_root)
+            self.assertEqual("incomplete", incomplete["status"])
+            self.assertEqual(["vitest"], incomplete["missing"]["support"])
 
     def test_ensure_dashboard_reuses_one_runtime_for_project(self) -> None:
         first = ensure_dashboard(self.root, SKILL_ROOT, port=0, startup_timeout=5)
@@ -206,6 +231,11 @@ class MetaPDSContractTests(unittest.TestCase):
         projection = self.projection()
         self.assertEqual(7, len(projection["workPackages"]))
         self.assertIn("docs/meta-pds/execution/BROKEN.yaml", {item["file"] for item in projection["dataHealth"]["diagnostics"]})
+
+    def test_execution_rejects_unsupported_applicable_skill(self) -> None:
+        path = self.base / "execution" / "SLICE-AUTH-001.yaml"
+        path.write_text(path.read_text().replace("applicable_skills: []", "applicable_skills: [obsolete-delivery-skill]", 1))
+        self.assertIn("reference.skill", {item["code"] for item in self.diagnostics()})
 
     def test_unrelated_broken_report_is_quarantined(self) -> None:
         reports = self.base / "reports"

@@ -22,6 +22,8 @@ before creating, reconciling, or advancing canonical artifacts. Read
 launching the Human-facing delivery dashboard. Read
 [references/testing-and-browser-policy.md](references/testing-and-browser-policy.md)
 before any prototype, development-test, QA, or release-verification launch.
+Read [references/implementation-skill-routing.md](references/implementation-skill-routing.md)
+before assigning prototype, implementation, database, or test work.
 
 Read [references/change-priority-resume.md](references/change-priority-resume.md)
 when resuming, pausing, reprioritizing, correcting a released slice, or handling
@@ -64,26 +66,29 @@ not independently advance suite gates.
 On every invocation:
 
 1. Locate the canonical product root.
-2. Run `scripts/serve_dashboard.py <product-root> --ensure`. This starts one
+2. Run `scripts/check_dependencies.py`. Missing internal or support skills
+   block only work that requires them; report the exact missing names and the
+   repair instruction while continuing safe dashboard and state inspection.
+3. Run `scripts/serve_dashboard.py <product-root> --ensure`. This starts one
    background dashboard for the resolved project or reuses its healthy existing
    runtime. Capture its reported URL and always give that clickable URL to the
    Human. Do not launch another server manually. The dashboard always reads the
    resolved project; before canonical artifacts exist, show its live repository
    evidence and explicit missing-artifact diagnostics without sample data.
-3. Read actual Meta PDS artifacts, repository state, available runtime evidence,
+4. Read actual Meta PDS artifacts, repository state, available runtime evidence,
    and Git branch/worktree state. Never rely on conversation memory as delivery
    state.
-4. Detect whether the Human moved to another initiative, slice, defect, or
+5. Detect whether the Human moved to another initiative, slice, defect, or
    unrelated objective. If so, checkpoint understood in-scope changes locally
    and give the one-time, gate-aware PR/merge nudge defined in the Git reference.
    Do not treat clarifications or status questions as topic changes.
-5. Reconcile contradictions conservatively and record them.
-6. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
+6. Reconcile contradictions conservatively and record them.
+7. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
    gate while any structural error remains; surface the exact file and
    diagnostic instead of inferring missing data.
-7. Present current phase, active planning and execution slices, completed and
+8. Present current phase, active planning and execution slices, completed and
    paused slices, blockers, risks, and one recommended next action.
-8. Continue when the requested route is valid. If the user gave no route,
+9. Continue when the requested route is valid. If the user gave no route,
    recommend the highest-value valid action and concise alternatives.
 
 For a new initiative, capture a short brief and establish an authority envelope

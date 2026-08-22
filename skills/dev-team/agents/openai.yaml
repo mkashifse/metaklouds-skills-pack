@@ -1,4 +1,0 @@
-interface:
-  display_name: "Dev Team"
-  short_description: "Map and release one fat slice end to end"
-  default_prompt: "Use $dev-team to map this approved fat vertical slice into user stories and engineering tasks, then implement, verify, and release it through an EM, frontend engineer, and backend engineer."

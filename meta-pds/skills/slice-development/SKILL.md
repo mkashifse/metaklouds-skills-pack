@@ -17,6 +17,7 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/workflow-and-gates.md`;
 - `references/artifact-and-state-contract.md`;
 - `references/testing-and-browser-policy.md`;
+- `references/implementation-skill-routing.md`;
 - `references/change-priority-resume.md` when scope, contract, priority, or
   released behavior is implicated.
 
@@ -68,6 +69,7 @@ Inspect the repository, freeze or cite the technical contract, then define:
 - inputs, outputs, owned and forbidden paths;
 - dependency DAG, critical path, and parallel waves;
 - entry, exit, and required Test ID checks from the canonical slice;
+- repository-evidenced `applicable_skills` for every work package;
 - integration, compatibility, migration, merge, deploy, feature-flag,
   observability, and rollback order.
 
@@ -113,11 +115,12 @@ not a release or a substitute user story.
 After every result:
 
 1. verify the exact changed paths and local commits;
-2. verify acceptance, contract version, ownership, and CLI test evidence;
-3. reject scope or path drift;
-4. update package status and unblock dependants only when exit checks pass;
-5. run combined verification when all required packages finish;
-6. return upstream if implementation reveals missing scope or acceptance.
+2. verify the worker loaded the recorded applicable skills;
+3. verify acceptance, contract version, ownership, and CLI test evidence;
+4. reject scope or path drift;
+5. update package status and unblock dependants only when exit checks pass;
+6. run combined verification when all required packages finish;
+7. return upstream if implementation reveals missing scope or acceptance.
 
 Use:
 

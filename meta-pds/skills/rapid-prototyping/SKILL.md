@@ -14,9 +14,12 @@ Resolve the installed sibling `meta-pds` skill and read:
 
 - `references/human-centered-autonomy.md`;
 - `references/testing-and-browser-policy.md`;
-- `references/artifact-and-state-contract.md`.
+- `references/artifact-and-state-contract.md`;
+- `references/implementation-skill-routing.md`.
 
 Also read [references/prototype-loop.md](references/prototype-loop.md).
+Read the installed `prototype` support skill before implementation. Also read
+`frontend-design` when the assignment tests visual or interaction direction.
 
 The browser prohibition is absolute: never use an interactive browser-control
 tool, browser agent, Codex/Claude UI clicking, Playwright, or another automated

@@ -12,29 +12,26 @@ local branch visibility and verified GitHub pull-request status when available.
 It never substitutes bundled sample delivery data for the selected project;
 missing canonical artifacts remain visible as setup diagnostics.
 
-The pack turns an idea into a validated initiative, plans it as fat end-to-end
-vertical slices, and implements each slice as one releasable unit under a
-single continuous-delivery control loop:
+The complete profile turns an idea into a validated initiative, plans it as fat
+end-to-end vertical slices, and implements each slice as one releasable unit:
 
 ```text
-continuous-delivery-manager
-  -> meta-grill-team
-    -> vertical-slice-team
-      -> dev-team
-  -> delivery-monitoring-dashboard (non-blocking projection worker)
+meta-pds (the Human-facing flagship)
+  -> rapid-prototyping
+  -> slice-planning
+  -> slice-development
+  -> slice-qa
+  -> stack-specific implementation and testing support
 ```
 
-Runtime discoveries are handled by `change-management`, so team leads can lock
-contained decisions, request human approval for material changes, run a quick
-impact analysis, and keep unaffected work moving.
-
-The monitoring worker continuously projects authoritative decisions, slices,
-stories, and release evidence into a docs-only JSON dashboard without blocking
-the active delivery team.
+Meta PDS owns change control and continuously projects authoritative decisions,
+slices, work packages, repository branches, pull requests, and release evidence
+into its installed local dashboard. Earlier Metaklouds delivery workflows are
+retired and are not publicly discoverable or installed.
 
 ## Included skills
 
-The full installer provides twenty-two skills:
+The full installer provides the sixteen-skill Meta PDS profile:
 
 | Skill | Ownership | Purpose |
 | --- | --- | --- |
@@ -43,12 +40,6 @@ The full installer provides twenty-two skills:
 | `slice-planning` | Metaklouds | Define implementation-ready fat slices |
 | `slice-development` | Metaklouds | Mobilize and execute bounded slice work packages |
 | `slice-qa` | Metaklouds | Independently verify release and outcome evidence |
-| `continuous-delivery-manager` | Metaklouds | Orchestrate the complete initiative, Git, and release control loop |
-| `delivery-monitoring-dashboard` | Metaklouds | Keep the docs-only monitoring JSON synchronized in a non-blocking worker |
-| `meta-grill-team` | Metaklouds | Define the initiative while building a JSON-backed React prototype |
-| `vertical-slice-team` | Metaklouds | Convert an approved initiative into fat, end-to-end vertical slices |
-| `dev-team` | Metaklouds | Map one fat slice into stories/tasks, implement it, test it, and release it |
-| `change-management` | Metaklouds | Control runtime decisions, approvals, impact analysis, and synchronization |
 | `prototype` | Upstream | Keep exploratory prototypes fast, explicit, and disposable |
 | `vercel-react-best-practices` | Upstream | Guide React and Next.js implementation |
 | `frontend-design` | Upstream | Create distinctive, intentional production interfaces |
@@ -61,9 +52,10 @@ The full installer provides twenty-two skills:
 | `supabase` | Upstream | Guide Supabase implementation and security |
 | `supabase-postgres-best-practices` | Upstream | Guide Postgres schemas, migrations, RLS, and performance |
 
-The eleven Metaklouds skills are bundled in this repository. Upstream skills are
-downloaded at pinned revisions from their original repositories during
-installation. See [THIRD_PARTY.md](THIRD_PARTY.md) and
+The flagship and its four functional skills are bundled in this repository.
+The eleven upstream support skills are downloaded at pinned revisions from
+their original repositories during installation. See
+[THIRD_PARTY.md](THIRD_PARTY.md) and
 [manifest.json](manifest.json).
 
 ## Install for Codex
@@ -104,15 +96,14 @@ git pull
 ```
 
 `--force` does not delete the current copy. It moves every replaced skill to a
-timestamped backup beside the installation directory.
+timestamped `metaklouds-skills-backups` directory outside the discoverable
+skills directory. A complete-profile install also moves any earlier legacy
+Metaklouds workflows there so they remain recoverable but inactive.
 
-To update only CDM and its monitoring worker while preserving all other
-installed skills:
+Selecting the flagship always installs its complete dependency profile:
 
 ```bash
-./scripts/install.sh codex --force \
-  --only continuous-delivery-manager \
-  --only delivery-monitoring-dashboard
+./scripts/install.sh codex --force --only meta-pds
 ```
 
 For an isolated or CI installation, provide an explicit destination:
@@ -130,54 +121,30 @@ Use $meta-pds to start or resume this product initiative.
 ```
 
 Meta PDS starts or reuses the project's local dashboard and returns its URL.
-The earlier continuous-delivery workflow remains available through:
+It routes internally to its four functional skills and selects the installed
+implementation and testing skills from actual repository evidence. Users do
+not need to coordinate those skills directly.
+
+The canonical product documents, prototype, frontend, and backend live in one
+product repository:
 
 ```text
-Use $continuous-delivery-manager to deliver this initiative and keep its
-monitoring dashboard synchronized.
-```
-
-CDM routes to the stage skills. They can also be invoked directly:
-
-```text
-Use $meta-grill-team to define this initiative and build its React prototype.
-Use $vertical-slice-team to plan fat, end-to-end vertical slices.
-Use $dev-team to implement and release this entire vertical slice.
-Use $delivery-monitoring-dashboard to refresh monitoring-data.json from the
-current delivery documents.
-```
-
-The canonical product documents should live in a root repository. Keep the
-prototype there and nest the independently versioned
-production repositories beneath its working directory:
-
-```text
-workapp-root/                  # docs + prototypes; direct pushes to main
-├── docs/
+product-root/
+├── docs/meta-pds/
 ├── prototypes/
-├── workapp-frontend/          # separate .git; one PR per fat slice
-└── workapp-backend/           # separate .git; one PR per fat slice
+├── frontend/
+└── backend/
 ```
 
-The root `.gitignore` must ignore the exact frontend/backend directories. Do
-not create submodules or accidentally stage nested repository contents. For
-each slice, use one shared slice key and branch name in both code repositories,
-create exactly one frontend PR plus one backend PR, and create no root PR.
-Freeze compatibility, merge/deploy order, feature flags, and rollback in the
-root integration contract before implementation. A slice is complete only
-after both PRs and whole-slice E2E evidence pass.
+Do not create nested repositories or submodules. Frontend and backend remain
+path-isolated and integrate through an explicit versioned contract. A slice is
+complete only after independent whole-slice QA and release evidence pass.
 
-## Install only the bundled Metaklouds skills
+## Installation contract
 
-Agents compatible with the open skills format can discover the eleven bundled
-skills declared in [manifest.json](manifest.json). For example:
-
-```bash
-npx skills add mkashifse/metaklouds-skills-pack --all
-```
-
-This shortcut does not install the eleven upstream implementation and testing dependencies;
-use `scripts/install.sh` for the complete pack.
+Use `scripts/install.sh` to install the pack. Generic repository skill scanners
+can discover the five bundled Meta PDS skills, but they cannot fetch the eleven
+required upstream supports and therefore do not produce a complete profile.
 
 ## License
 

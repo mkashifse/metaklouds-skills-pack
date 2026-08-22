@@ -14,6 +14,7 @@ Every package declares:
 - owned and forbidden paths within the single product repository;
 - entry checks and exit checks;
 - required canonical Test IDs, CLI checks, and evidence;
+- repository-evidenced applicable support skills;
 - integration owner and dependants.
 
 Do not use changed line count as the sole size measure. Split a package when it
@@ -35,6 +36,12 @@ Do not pass the full conversation or unrelated slice history. Before context
 pressure causes compaction or degraded reasoning, checkpoint the package with a
 local commit, tests, status, remaining work, and exact resume instruction. A
 fresh worker resumes from artifacts and evidence.
+
+Before launch, read the Meta PDS implementation-skill routing reference. Record
+the selected names in the package's `applicable_skills` field, verify that each
+is installed, and require the worker to read those skills. Do not select a
+framework skill without repository evidence or broaden the package to justify
+an installed skill.
 
 ## Scheduling
 

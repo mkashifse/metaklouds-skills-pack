@@ -63,6 +63,7 @@ work_packages:
     entry_checks: []
     exit_checks: []
     required_tests: [TC-0001]
+    applicable_skills: []
     integration_owner: ""
 
 validation:

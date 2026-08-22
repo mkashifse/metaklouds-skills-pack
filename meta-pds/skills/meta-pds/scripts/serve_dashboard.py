@@ -36,6 +36,19 @@ STATIC_FILES = {
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
 RUNTIME_VERSION = 3
+SUPPORTED_IMPLEMENTATION_SKILLS = {
+    "prototype",
+    "vercel-react-best-practices",
+    "frontend-design",
+    "vercel-composition-patterns",
+    "fastapi",
+    "nodejs-backend-patterns",
+    "python-testing-patterns",
+    "vitest",
+    "playwright-best-practices",
+    "supabase",
+    "supabase-postgres-best-practices",
+}
 
 
 class ArtifactError(RuntimeError):
@@ -859,7 +872,7 @@ def validate_product_artifacts(
             for field in [
                 "id", "title", "description", "area", "owner", "status", "blocker", "contract_version",
                 "depends_on", "supports", "inputs", "produces", "owned_paths", "forbidden_paths",
-                "entry_checks", "exit_checks", "required_tests", "integration_owner",
+                "entry_checks", "exit_checks", "required_tests", "applicable_skills", "integration_owner",
             ]:
                 if field not in package:
                     error(path, "package.field", f"{label}.{field} is required", slice_id)
@@ -879,9 +892,14 @@ def validate_product_artifacts(
             for field in ["title", "description", "area", "owner"]:
                 if not isinstance(package.get(field), str) or not package.get(field):
                     error(path, "package.field", f"{label}.{field} must be non-empty text", slice_id)
-            for field in ["depends_on", "supports", "required_tests", "inputs", "produces", "owned_paths", "forbidden_paths", "entry_checks", "exit_checks"]:
+            for field in ["depends_on", "supports", "required_tests", "applicable_skills", "inputs", "produces", "owned_paths", "forbidden_paths", "entry_checks", "exit_checks"]:
                 if not isinstance(package.get(field, []), list):
                     error(path, "package.type", f"{label}.{field} must be a list", slice_id)
+            for skill_name in package.get("applicable_skills", []) if isinstance(package.get("applicable_skills"), list) else []:
+                if not isinstance(skill_name, str):
+                    error(path, "reference.type", f"{label}.applicable_skills values must be skill-name strings", slice_id)
+                elif skill_name not in SUPPORTED_IMPLEMENTATION_SKILLS:
+                    error(path, "reference.skill", f"{label}.applicable_skills references unsupported '{skill_name}'", slice_id)
             for story_id in package.get("supports", []) if isinstance(package.get("supports"), list) else []:
                 if not isinstance(story_id, str):
                     error(path, "reference.type", f"{label}.supports values must be Story ID strings", slice_id)
@@ -1524,6 +1542,7 @@ def build_dashboard_data(
                 "entryChecks": [str(value) for value in list_value(item.get("entry_checks"))],
                 "exitChecks": [str(value) for value in list_value(item.get("exit_checks"))],
                 "requiredTestIds": required_tests,
+                "applicableSkills": [str(value) for value in list_value(item.get("applicable_skills"))],
                 "integrationOwner": str(item.get("integration_owner") or "Unassigned"),
                 "tests": {
                     "passed": sum(status(test.get("status")) == "PASSED" for test in test_records),

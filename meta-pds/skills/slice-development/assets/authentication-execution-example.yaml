@@ -137,6 +137,7 @@ work_packages:
       - Privacy-safe errors and token rules are explicit
       - Frontend and backend can implement without cross-area source imports
     required_tests: [TC-AUTH-08]
+    applicable_skills: []
     integration_owner: Development Lead
 
   - id: WP-AUTH-02
@@ -177,6 +178,7 @@ work_packages:
       - Refresh rotation and replay constraints hold under concurrency
       - Repository tests and migration tests pass through CLI
     required_tests: [TC-AUTH-04, TC-AUTH-09]
+    applicable_skills: []
     integration_owner: Backend Engineer
 
   - id: WP-AUTH-03
@@ -219,6 +221,7 @@ work_packages:
       - Throttling and audit events cover success and failure paths
       - Backend unit, contract, security, and integration suites pass
     required_tests: [TC-AUTH-01, TC-AUTH-02, TC-AUTH-03, TC-AUTH-04, TC-AUTH-06, TC-AUTH-07, TC-AUTH-08, TC-AUTH-11]
+    applicable_skills: []
     integration_owner: Integration Engineer
 
   - id: WP-AUTH-04
@@ -258,6 +261,7 @@ work_packages:
       - Unsafe intended destinations fall back safely
       - Frontend component and route tests pass through CLI
     required_tests: [TC-AUTH-01, TC-AUTH-03, TC-AUTH-05, TC-AUTH-06, TC-AUTH-10]
+    applicable_skills: [frontend-design]
     integration_owner: Integration Engineer
 
   - id: WP-AUTH-05
@@ -298,6 +302,7 @@ work_packages:
       - Fixtures contain no live credentials or personal data
       - Adapter contract tests pass through CLI
     required_tests: [TC-AUTH-02, TC-AUTH-06, TC-AUTH-11]
+    applicable_skills: []
     integration_owner: Backend Engineer
 
   - id: WP-AUTH-06
@@ -339,6 +344,7 @@ work_packages:
       - Feature-flag enable, disable, and rollback procedures are verified
       - No cross-area source import or unexplained scope drift exists
     required_tests: [TC-AUTH-01, TC-AUTH-02, TC-AUTH-03, TC-AUTH-04, TC-AUTH-05, TC-AUTH-06, TC-AUTH-07, TC-AUTH-08, TC-AUTH-09, TC-AUTH-10, TC-AUTH-11]
+    applicable_skills: []
     integration_owner: Development Lead
 
   - id: WP-AUTH-07
@@ -379,6 +385,7 @@ work_packages:
       - Reports, traces, screenshots, and videos are stored as files
       - QA receives exact commands, revisions, environment, and evidence paths
     required_tests: [TC-AUTH-01, TC-AUTH-03, TC-AUTH-05, TC-AUTH-06, TC-AUTH-10, TC-AUTH-12]
+    applicable_skills: [playwright-best-practices]
     integration_owner: Development Lead
 
 validation:

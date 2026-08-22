@@ -1,4 +1,0 @@
-interface:
-  display_name: "Delivery Monitoring Dashboard"
-  short_description: "Sync delivery evidence into dashboard JSON"
-  default_prompt: "Use $delivery-monitoring-dashboard to reconcile the docs-only monitoring dashboard JSON with the latest authoritative delivery documents and verified release evidence."

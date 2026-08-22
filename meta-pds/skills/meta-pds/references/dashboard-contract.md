@@ -144,7 +144,8 @@ horizontally rather than creating a second header row.
 
 1. visible canonical data-health diagnostics, with projection source details
    kept in the footer rather than the header;
-2. decisions ordered from upstream product intent to downstream operations,
+2. a leftmost `Truth` tab containing decisions ordered from upstream product
+   intent to downstream operations,
    grouped by layer and filterable by status, primary type, and phase; show the
    unique canonical key, record ID, revision, primary and secondary labels,
    dependency keys, affected artifacts, canonical status, and explicit
@@ -182,8 +183,8 @@ horizontally rather than creating a second header row.
 8. dependencies and clickable contracts in the slice properties rail; selecting
    a contract reuses the detail dialog and renders its canonical Markdown or
    slice-recorded required behavior;
-9. separate top tabs for slices, decisions, prototype checkpoints, and durable
-   activity, with compact slice totals integrated into the tabs.
+9. separate top tabs ordered Truth, Slices, Branches, and Activity, plus the
+   prototype utility; keep compact totals integrated into the relevant tabs.
 10. a separate Branches tab showing the current and default branches, dirty-path
     count, every local branch's head, upstream and ahead/behind state, associated
     PR when verified, plus a pull-request list with live state, draft/review/merge

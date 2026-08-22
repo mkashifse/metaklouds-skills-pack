@@ -30,11 +30,11 @@
           <strong>Meta PDS</strong>
         </a>
         <nav class="top-tabs" aria-label="Dashboard views">
+          <button class="top-tab" type="button" data-view="truth">
+            <svg class="lucide-icon" aria-hidden="true"><use href="#icon-brain"></use></svg>Truth <span id="decision-count">0</span>
+          </button>
           <button class="top-tab is-active" type="button" data-view="slices">
             <svg class="lucide-icon" aria-hidden="true"><use href="#icon-layers"></use></svg>Slices <span id="slice-count">0</span>
-          </button>
-          <button class="top-tab" type="button" data-view="decisions">
-            <svg class="lucide-icon" aria-hidden="true"><use href="#icon-brain"></use></svg>Decisions <span id="decision-count">0</span>
           </button>
           <button class="top-tab" type="button" data-view="repository" aria-label="Branches and pull requests">
             <svg class="lucide-icon" aria-hidden="true"><use href="#icon-git-pull-request"></use></svg>Branches <span id="branch-count">0</span>
@@ -66,7 +66,7 @@
         <div class="slice-list" id="slice-list"></div>
       </section>
 
-      <section class="view-panel" id="view-decisions" data-panel="decisions">
+      <section class="view-panel" id="view-truth" data-panel="truth">
         <div class="decision-summary" id="decision-summary"></div>
         <div class="decision-tools">
           <div class="filter-group" id="decision-status-filters" aria-label="Filter decisions by state"></div>

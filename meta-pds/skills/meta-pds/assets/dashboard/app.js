@@ -114,7 +114,7 @@
     demoBanner.innerHTML = isDemo ? `
       <div class="demo-marker"><span>Demo</span><strong>Example decision map</strong></div>
       <p>Bundled examples for visual review. They are not project decisions and are never written into this repository.</p>
-      <a href="/#decisions">Return to live project data</a>` : "";
+      <a href="/#truth">Return to live project data</a>` : "";
     setText("#view-authority", isDemo
       ? "Read-only demo view · Bundled examples are not canonical product truth"
       : "Read-only live view · Canonical Meta PDS artifacts remain authoritative");
@@ -148,7 +148,8 @@
   function bindTopTabs() {
     $$(".top-tab").forEach((tab) => tab.addEventListener("click", () => showView(tab.dataset.view)));
     const requested = location.hash.slice(1);
-    showView(["slices", "decisions", "repository", "prototype", "activity"].includes(requested) ? requested : "slices");
+    const resolved = requested === "decisions" ? "truth" : requested;
+    showView(["truth", "slices", "repository", "prototype", "activity"].includes(resolved) ? resolved : "slices");
   }
 
   let sliceFilter = "ALL";
@@ -303,7 +304,7 @@
     });
     if (!filtered.length) {
       const demoLink = data.projection.kind === "live-project"
-        ? '<a class="empty-action" href="?demo=1#decisions">Preview bundled demo decisions</a>'
+        ? '<a class="empty-action" href="?demo=1#truth">Preview bundled demo decisions</a>'
         : "";
       $("#decision-list").innerHTML = `<div class="empty-state"><p>No decisions match these filters.</p>${demoLink}</div>`;
       return;

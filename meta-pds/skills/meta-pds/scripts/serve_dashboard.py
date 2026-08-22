@@ -35,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 5
+RUNTIME_VERSION = 6
 SUPPORTED_IMPLEMENTATION_SKILLS = {
     "prototype",
     "vercel-react-best-practices",
@@ -2404,7 +2404,7 @@ def main() -> int:
     if args.ensure:
         result = ensure_dashboard(args.product_root, skill_root, args.host, args.port)
         print(f"Meta PDS dashboard: {result['url']}")
-        print(f"Meta PDS demo: {result['url']}/?demo=1#decisions")
+        print(f"Meta PDS demo: {result['url']}/?demo=1#truth")
         print(f"Dashboard runtime: {result['status']} for {result['projectRoot']}")
         base = args.product_root.resolve() / "docs" / "meta-pds"
         if not (base / "initiative.md").is_file() or not (base / "delivery-state.yaml").is_file():

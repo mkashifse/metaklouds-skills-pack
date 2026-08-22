@@ -16,6 +16,7 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/testing-and-browser-policy.md`;
 - `references/artifact-and-state-contract.md`;
 - `references/implementation-skill-routing.md`.
+- `references/interaction-modes-and-decision-capture.md`.
 
 Also read [references/prototype-loop.md](references/prototype-loop.md).
 Read the installed `prototype` support skill before implementation. Also read
@@ -55,6 +56,13 @@ Product Manager, who records and locks decisions.
 Prototype implementation may imitate expected behavior but must not silently
 define product scope or production contracts.
 
+When realistic seed data introduces or changes entities, fields, relationships,
+constraints, invariants, ownership, retention, or privacy behavior, stop at a
+schema checkpoint. Return a candidate decision packet containing those facts,
+the affected journeys, and open alternatives. Do not lock it or edit the
+canonical decision log; the Product Manager records the semantic decision key,
+phase, dependencies, and contradictions and asks the Human to approve it.
+
 ## Rapid loop
 
 For each bounded round:
@@ -83,6 +91,14 @@ manual_review:
   seeded_scenarios: []
   reset_steps: []
 findings: []
+candidate_decisions: []
+schema_checkpoint:
+  required: false
+  entities: []
+  fields: []
+  relationships: []
+  invariants: []
+  privacy_rules: []
 questions: []
 risks: []
 changed_paths: []

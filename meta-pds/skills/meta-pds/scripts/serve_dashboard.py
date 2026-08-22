@@ -35,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 3
+RUNTIME_VERSION = 4
 SUPPORTED_IMPLEMENTATION_SKILLS = {
     "prototype",
     "vercel-react-best-practices",
@@ -49,6 +49,29 @@ SUPPORTED_IMPLEMENTATION_SKILLS = {
     "supabase",
     "supabase-postgres-best-practices",
 }
+DECISION_TYPES = {
+    "GOAL": {"label": "Goal", "layer": "Product direction", "layerKey": "product-direction", "order": 10},
+    "USER_PROBLEM": {"label": "User / Problem", "layer": "Product direction", "layerKey": "product-direction", "order": 20},
+    "OUTCOME_METRIC": {"label": "Outcome / Metric", "layer": "Product direction", "layerKey": "product-direction", "order": 30},
+    "SCOPE_PRIORITY": {"label": "Scope / Priority", "layer": "Product direction", "layerKey": "product-direction", "order": 40},
+    "FEATURE_CAPABILITY": {"label": "Feature / Capability", "layer": "Product behavior", "layerKey": "product-behavior", "order": 50},
+    "BUSINESS_RULE": {"label": "Business Rule", "layer": "Product behavior", "layerKey": "product-behavior", "order": 60},
+    "UI_UX": {"label": "UI / UX", "layer": "Experience", "layerKey": "experience", "order": 70},
+    "CONTENT_ACCESSIBILITY": {"label": "Content / Accessibility", "layer": "Experience", "layerKey": "experience", "order": 80},
+    "DOMAIN_MODEL": {"label": "Domain Model", "layer": "Domain & data", "layerKey": "domain-data", "order": 90},
+    "SCHEMA": {"label": "Schema", "layer": "Domain & data", "layerKey": "domain-data", "order": 100},
+    "ARCHITECTURE": {"label": "Architecture", "layer": "System design", "layerKey": "system-design", "order": 110},
+    "API_INTEGRATION": {"label": "API / Integration", "layer": "System design", "layerKey": "system-design", "order": 120},
+    "SECURITY_PRIVACY": {"label": "Security / Privacy", "layer": "System design", "layerKey": "system-design", "order": 130},
+    "STACK": {"label": "Stack", "layer": "Technology", "layerKey": "technology", "order": 140},
+    "DATABASE_STORAGE": {"label": "Database / Storage", "layer": "Technology", "layerKey": "technology", "order": 150},
+    "TESTING_QUALITY": {"label": "Testing / Quality", "layer": "Quality", "layerKey": "quality", "order": 160},
+    "RELEASE_MIGRATION": {"label": "Release / Migration", "layer": "Delivery", "layerKey": "delivery", "order": 170},
+    "OBSERVABILITY_OPERATIONS": {"label": "Observability / Operations", "layer": "Operations", "layerKey": "operations", "order": 180},
+}
+ALLOWED_INTERACTION_MODES = {"EXPLORE", "DECISION_REVIEW", "PROTOTYPE", "SLICE_SHAPING", "DELIVERY"}
+DECISION_KEY_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*$")
+DECISION_PHASE_PATTERN = re.compile(r"^PHASE-[1-9][0-9]*$")
 
 
 class ArtifactError(RuntimeError):
@@ -557,12 +580,18 @@ def validate_product_artifacts(
 
     decisions_path = base / "decision-log.yaml"
     decisions = load_yaml(decisions_path)
+    decision_schema = 0
+    decision_entries_by_key: dict[str, dict[str, Any]] = {}
+    known_decision_keys: set[str] = set()
     if decisions is not None:
         for field in ["schema_version", "initiative_id", "decisions"]:
             if field not in decisions:
                 error(decisions_path, "decision-log.field", f"Top-level field '{field}' is required")
-        if decisions.get("schema_version") != 2:
-            error(decisions_path, "schema.version", "schema_version must be 2")
+        decision_schema = decisions.get("schema_version") if isinstance(decisions.get("schema_version"), int) else 0
+        if decision_schema not in {2, 3}:
+            error(decisions_path, "schema.version", "schema_version must be 2 or 3")
+        elif decision_schema == 2:
+            error(decisions_path, "schema.legacy", "decision-log schema v2 is supported for reading; migrate to v3 for canonical keys, types, phases, and contradictions", severity="warning")
         if initiative_id and decisions.get("initiative_id") != initiative_id:
             error(decisions_path, "initiative.mismatch", "initiative_id does not match initiative.md")
         entries = decisions.get("decisions")
@@ -570,12 +599,19 @@ def validate_product_artifacts(
             error(decisions_path, "decision-log.type", "decisions must be a list")
             entries = []
         seen_decisions: set[str] = set()
+        seen_keys: set[str] = set()
         for index, entry in enumerate(entries):
             label = f"decisions[{index}]"
             if not isinstance(entry, dict):
                 error(decisions_path, "decision.type", f"{label} must be a mapping")
                 continue
-            for field in ["id", "revision", "status", "question", "decision", "affected_artifacts", "authority"]:
+            required_fields = ["id", "revision", "status", "question", "decision", "affected_artifacts", "authority"]
+            if decision_schema == 3:
+                required_fields.extend([
+                    "key", "type", "secondary_types", "phases", "rationale", "evidence",
+                    "depends_on", "contradicts", "approved_by", "decided_at", "supersedes",
+                ])
+            for field in required_fields:
                 if field not in entry:
                     error(decisions_path, "decision.field", f"{label}.{field} is required")
             decision_id = entry.get("id")
@@ -585,28 +621,110 @@ def validate_product_artifacts(
                 error(decisions_path, "id.duplicate-decision", f"Duplicate decision ID '{decision_id}'")
             else:
                 seen_decisions.add(decision_id)
+            decision_key = entry.get("key") or (f"legacy.{str(decision_id).lower()}" if decision_id else "")
+            if not isinstance(decision_key, str) or not DECISION_KEY_PATTERN.fullmatch(decision_key):
+                error(decisions_path, "decision.key", f"{label}.key must be a lowercase dot- or hyphen-separated semantic key")
+            elif decision_key in seen_keys:
+                error(decisions_path, "id.duplicate-decision-key", f"Duplicate decision key '{decision_key}'")
+            else:
+                seen_keys.add(decision_key)
+                known_decision_keys.add(decision_key)
+                decision_entries_by_key[decision_key] = entry
             if status(entry.get("status")) not in {"PROPOSED", "TESTING", "LOCKED", "SUPERSEDED"}:
                 error(decisions_path, "decision.status", f"{label}.status is invalid")
             if not isinstance(entry.get("revision"), int):
                 error(decisions_path, "decision.type", f"{label}.revision must be an integer")
             if entry.get("authority") not in {"HUMAN", "PM"}:
                 error(decisions_path, "decision.authority", f"{label}.authority must be HUMAN or PM")
-            if not isinstance(entry.get("affected_artifacts", []), list):
-                error(decisions_path, "decision.type", f"{label}.affected_artifacts must be a list")
+            primary_type = str(entry.get("type") or "FEATURE_CAPABILITY")
+            if primary_type not in DECISION_TYPES:
+                error(decisions_path, "decision.category", f"{label}.type is not a supported decision type")
+            for field in ["secondary_types", "phases", "evidence", "depends_on", "contradicts", "affected_artifacts"]:
+                if not isinstance(entry.get(field, []), list):
+                    error(decisions_path, "decision.type", f"{label}.{field} must be a list")
+            secondary_types = entry.get("secondary_types", []) if isinstance(entry.get("secondary_types", []), list) else []
+            if len(secondary_types) != len(set(str(value) for value in secondary_types)):
+                error(decisions_path, "decision.category", f"{label}.secondary_types must not contain duplicates")
+            for secondary_type in secondary_types:
+                if not isinstance(secondary_type, str) or secondary_type not in DECISION_TYPES:
+                    error(decisions_path, "decision.category", f"{label}.secondary_types references unsupported '{secondary_type}'")
+                elif secondary_type == primary_type:
+                    error(decisions_path, "decision.category", f"{label}.secondary_types must not repeat the primary type")
+            phases = entry.get("phases", ["GLOBAL"]) if isinstance(entry.get("phases", ["GLOBAL"]), list) else []
+            if not phases:
+                error(decisions_path, "decision.phase", f"{label}.phases must contain GLOBAL or at least one PHASE-N value")
+            for phase in phases:
+                if not isinstance(phase, str) or (phase != "GLOBAL" and not DECISION_PHASE_PATTERN.fullmatch(phase)):
+                    error(decisions_path, "decision.phase", f"{label}.phases contains invalid phase '{phase}'")
+            if "GLOBAL" in phases and len(phases) > 1:
+                error(decisions_path, "decision.phase", f"{label}.phases cannot combine GLOBAL with numbered phases")
+            for field in ["question", "decision", "rationale", "approved_by", "decided_at", "supersedes"]:
+                if field in entry and not isinstance(entry.get(field), str):
+                    error(decisions_path, "decision.type", f"{label}.{field} must be text")
+
+        dependency_graph: dict[str, list[str]] = {key: [] for key in known_decision_keys}
+        checked_contradictions: set[tuple[str, str]] = set()
+        for decision_key, entry in decision_entries_by_key.items():
+            for field in ["depends_on", "contradicts"]:
+                references = entry.get(field, []) if isinstance(entry.get(field, []), list) else []
+                for referenced_key in references:
+                    if not isinstance(referenced_key, str):
+                        error(decisions_path, "reference.type", f"Decision '{decision_key}' {field} values must be decision keys")
+                    elif referenced_key == decision_key:
+                        error(decisions_path, "reference.decision", f"Decision '{decision_key}' cannot {field} itself")
+                    elif referenced_key not in known_decision_keys:
+                        error(decisions_path, "reference.decision", f"Decision '{decision_key}' {field} unknown key '{referenced_key}'")
+                    elif field == "depends_on":
+                        dependency_graph[decision_key].append(referenced_key)
+                    else:
+                        pair = tuple(sorted((decision_key, referenced_key)))
+                        if pair in checked_contradictions:
+                            continue
+                        checked_contradictions.add(pair)
+                        other = decision_entries_by_key[referenced_key]
+                        if status(entry.get("status")) == "LOCKED" and status(other.get("status")) == "LOCKED":
+                            error(decisions_path, "decision.locked-contradiction", f"Locked decisions '{decision_key}' and '{referenced_key}' contradict each other")
+            supersedes = entry.get("supersedes")
+            if supersedes == decision_key:
+                error(decisions_path, "reference.decision", f"Decision '{decision_key}' cannot supersede itself")
+            elif supersedes and supersedes not in known_decision_keys:
+                error(decisions_path, "reference.decision", f"Decision '{decision_key}' supersedes unknown key '{supersedes}'")
+        visiting_decisions: set[str] = set()
+        visited_decisions: set[str] = set()
+
+        def visit_decision(decision_key: str) -> None:
+            if decision_key in visiting_decisions:
+                error(decisions_path, "dependency.decision-cycle", f"Decision dependency cycle includes '{decision_key}'")
+                return
+            if decision_key in visited_decisions:
+                return
+            visiting_decisions.add(decision_key)
+            for dependency_key in dependency_graph.get(decision_key, []):
+                visit_decision(dependency_key)
+            visiting_decisions.remove(decision_key)
+            visited_decisions.add(decision_key)
+
+        for decision_key in dependency_graph:
+            visit_decision(decision_key)
 
     delivery_path = base / "delivery-state.yaml"
     delivery = load_yaml(delivery_path)
     state_slice_ids: set[str] = set()
     if delivery is not None:
+        delivery_schema = delivery.get("schema_version") if isinstance(delivery.get("schema_version"), int) else 0
         required_fields = [
             "schema_version", "initiative_id", "initiative_status", "active_planning_slice",
             "active_execution_slice", "slice_states", "blockers", "next_recommended_action",
         ]
+        if delivery_schema == 3:
+            required_fields.extend(["interaction_mode", "decision_review"])
         for field in required_fields:
             if field not in delivery:
                 error(delivery_path, "delivery-state.field", f"Top-level field '{field}' is required")
-        if delivery.get("schema_version") != 2:
-            error(delivery_path, "schema.version", "schema_version must be 2")
+        if delivery_schema not in {2, 3}:
+            error(delivery_path, "schema.version", "schema_version must be 2 or 3")
+        elif delivery_schema == 2:
+            error(delivery_path, "schema.legacy", "delivery-state schema v2 is supported for reading; migrate to v3 for interaction modes and decision review state", severity="warning")
         if initiative_id and delivery.get("initiative_id") != initiative_id:
             error(delivery_path, "initiative.mismatch", "initiative_id does not match initiative.md")
         if initiative_revision is not None and delivery.get("initiative_revision") != initiative_revision:
@@ -645,6 +763,24 @@ def validate_product_artifacts(
             error(delivery_path, "delivery-state.type", "next_recommended_action must be text or a mapping")
         if delivery.get("prototype") is not None and not isinstance(delivery.get("prototype"), dict):
             error(delivery_path, "delivery-state.type", "prototype must be null or a mapping")
+        interaction_mode = status(delivery.get("interaction_mode"), "EXPLORE")
+        if interaction_mode not in ALLOWED_INTERACTION_MODES:
+            error(delivery_path, "delivery-state.mode", f"Unknown interaction_mode '{delivery.get('interaction_mode')}'")
+        decision_review = delivery.get("decision_review", {"pending_keys": [], "last_checkpoint_at": ""})
+        if not isinstance(decision_review, dict):
+            error(delivery_path, "delivery-state.type", "decision_review must be a mapping")
+        else:
+            pending_keys = decision_review.get("pending_keys", [])
+            if not isinstance(pending_keys, list):
+                error(delivery_path, "delivery-state.type", "decision_review.pending_keys must be a list")
+            else:
+                for decision_key in pending_keys:
+                    if not isinstance(decision_key, str):
+                        error(delivery_path, "reference.type", "decision_review.pending_keys values must be decision keys")
+                    elif decision_key not in known_decision_keys:
+                        error(delivery_path, "reference.decision", f"decision_review.pending_keys references unknown key '{decision_key}'")
+            if not isinstance(decision_review.get("last_checkpoint_at", ""), str):
+                error(delivery_path, "delivery-state.type", "decision_review.last_checkpoint_at must be text")
 
     slices_dir = base / "slices"
     all_slice_paths = sorted(slices_dir.glob("*.md")) if slices_dir.exists() else []
@@ -1370,7 +1506,7 @@ def build_uninitialized_dashboard_data(
     error_count = sum(item["severity"] == "error" for item in diagnostics)
     warning_count = sum(item["severity"] == "warning" for item in diagnostics)
     return {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "projection": {"kind": projection_kind, "generatedAt": now, "source": projection_source, "staleAfterMinutes": 0},
         "dataHealth": {
             "status": "INVALID" if error_count else ("WARNING" if warning_count else "VALID"),
@@ -1394,6 +1530,15 @@ def build_uninitialized_dashboard_data(
                 "owner": "Product Manager",
                 "impact": "Enables delivery planning views without substituting sample data.",
             },
+        },
+        "decisionMeta": {
+            "interactionMode": "EXPLORE",
+            "types": [{"id": key, **value} for key, value in DECISION_TYPES.items()],
+            "phases": [],
+            "pendingKeys": [],
+            "canonicalCount": 0,
+            "reviewCount": 0,
+            "contradictionCount": 0,
         },
         "attention": [],
         "prototype": {
@@ -1448,10 +1593,10 @@ def build_dashboard_data(
         decisions_doc = {}
     if initiative_meta.get("schema_version") != 2:
         raise ArtifactError("initiative.md uses an unsupported schema_version")
-    if delivery.get("schema_version") != 2:
+    if delivery.get("schema_version") not in {2, 3}:
         raise ArtifactError("delivery-state.yaml uses an unsupported schema_version")
     decision_schema = decisions_doc.get("schema_version")
-    if decision_schema is not None and decision_schema != 2:
+    if decision_schema is not None and decision_schema not in {2, 3}:
         decisions_doc = {}
     executions = execution_records(base)
     reports = report_records(base)
@@ -1629,19 +1774,107 @@ def build_dashboard_data(
 
     slices.sort(key=lambda item: (item["order"], item["id"]))
 
+    raw_decisions = [item for item in list_value(decisions_doc.get("decisions")) if isinstance(item, dict)]
+    decision_by_key: dict[str, dict[str, Any]] = {}
+    explicit_contradictions: dict[str, set[str]] = {}
+    superseded_keys: set[str] = set()
+    for item in raw_decisions:
+        decision_id = str(item.get("id") or "DEC-UNKNOWN")
+        decision_key = str(item.get("key") or f"legacy.{decision_id.lower()}")
+        decision_by_key[decision_key] = item
+        explicit_contradictions[decision_key] = {
+            str(value) for value in list_value(item.get("contradicts")) if isinstance(value, str)
+        }
+        if status(item.get("status")) == "LOCKED" and isinstance(item.get("supersedes"), str) and item.get("supersedes"):
+            superseded_keys.add(str(item["supersedes"]))
+    for decision_key, references in list(explicit_contradictions.items()):
+        for referenced_key in references:
+            if referenced_key in explicit_contradictions:
+                explicit_contradictions[referenced_key].add(decision_key)
+
     decisions = []
-    for item in list_value(decisions_doc.get("decisions")):
+    for item in raw_decisions:
         if not isinstance(item, dict):
             continue
+        decision_id = str(item.get("id") or "DEC-UNKNOWN")
+        decision_key = str(item.get("key") or f"legacy.{decision_id.lower()}")
+        primary_type = str(item.get("type") or "FEATURE_CAPABILITY")
+        type_meta = DECISION_TYPES.get(primary_type, DECISION_TYPES["FEATURE_CAPABILITY"])
+        current_status = status(item.get("status"), "PROPOSED")
+        contradictions = []
+        locked_contradiction = False
+        for referenced_key in sorted(explicit_contradictions.get(decision_key, set())):
+            referenced = decision_by_key.get(referenced_key)
+            if not referenced:
+                continue
+            referenced_type = str(referenced.get("type") or "FEATURE_CAPABILITY")
+            referenced_status = status(referenced.get("status"), "PROPOSED")
+            locked_contradiction = locked_contradiction or referenced_status == "LOCKED"
+            contradictions.append({
+                "key": referenced_key,
+                "title": str(referenced.get("question") or referenced.get("decision") or referenced_key),
+                "status": referenced_status,
+                "typeLabel": DECISION_TYPES.get(referenced_type, DECISION_TYPES["FEATURE_CAPABILITY"])["label"],
+            })
+        canonical = current_status == "LOCKED" and decision_key not in superseded_keys and not locked_contradiction
+        secondary_types = []
+        for secondary_type in list_value(item.get("secondary_types")):
+            if isinstance(secondary_type, str) and secondary_type in DECISION_TYPES:
+                secondary_types.append({"id": secondary_type, "label": DECISION_TYPES[secondary_type]["label"]})
         decisions.append({
-            "id": str(item.get("id") or "DEC-UNKNOWN"),
+            "id": decision_id,
+            "key": decision_key,
             "title": str(item.get("question") or item.get("decision") or "Decision"),
             "summary": str(item.get("decision") or item.get("rationale") or ""),
-            "status": status(item.get("status"), "PROPOSED"),
+            "rationale": str(item.get("rationale") or ""),
+            "status": current_status,
             "revision": safe_int(item.get("revision"), 1),
             "updatedAt": str(item.get("decided_at") or delivery.get("last_verified_at") or datetime.now(timezone.utc).isoformat()),
+            "type": primary_type,
+            "typeLabel": type_meta["label"],
+            "layer": type_meta["layer"],
+            "layerKey": type_meta["layerKey"],
+            "typeOrder": type_meta["order"],
+            "secondaryTypes": secondary_types,
+            "phases": [str(value) for value in list_value(item.get("phases"))] or ["GLOBAL"],
+            "dependsOn": [str(value) for value in list_value(item.get("depends_on"))],
+            "contradictions": contradictions,
+            "hasContradiction": bool(contradictions),
+            "lockedContradiction": locked_contradiction,
+            "canonical": canonical,
+            "needsReview": current_status in {"PROPOSED", "TESTING"} or bool(contradictions),
             "affects": [str(value) for value in list_value(item.get("affected_artifacts"))],
+            "authority": str(item.get("authority") or "PM"),
+            "approvedBy": str(item.get("approved_by") or ""),
+            "supersedes": str(item.get("supersedes") or ""),
         })
+    decisions.sort(key=lambda item: (item["typeOrder"], item["key"]))
+
+    phase_values = {phase for decision in decisions for phase in decision["phases"]}
+    phases = sorted(
+        phase_values,
+        key=lambda phase: (0, 0) if phase == "GLOBAL" else (1, safe_int(str(phase).removeprefix("PHASE-"), 0)),
+    )
+    initiative_status = status(delivery.get("initiative_status"), "UNKNOWN")
+    fallback_modes = {
+        "DISCOVERING": "EXPLORE",
+        "INITIATIVE_REVIEW": "DECISION_REVIEW",
+        "PROTOTYPING": "PROTOTYPE",
+        "INITIATIVE_READY": "SLICE_SHAPING",
+    }
+    interaction_mode = status(delivery.get("interaction_mode"), fallback_modes.get(initiative_status, "DELIVERY"))
+    if interaction_mode not in ALLOWED_INTERACTION_MODES:
+        interaction_mode = "EXPLORE"
+    decision_review = delivery.get("decision_review") if isinstance(delivery.get("decision_review"), dict) else {}
+    decision_meta = {
+        "interactionMode": interaction_mode,
+        "types": [{"id": key, **value} for key, value in DECISION_TYPES.items()],
+        "phases": phases,
+        "pendingKeys": [str(value) for value in list_value(decision_review.get("pending_keys"))],
+        "canonicalCount": sum(decision["canonical"] for decision in decisions),
+        "reviewCount": sum(decision["needsReview"] for decision in decisions),
+        "contradictionCount": sum(decision["hasContradiction"] for decision in decisions),
+    }
 
     attention = []
     human_decision = delivery.get("human_decision_required")
@@ -1700,7 +1933,7 @@ def build_dashboard_data(
     error_count = sum(item["severity"] == "error" for item in diagnostics)
     warning_count = sum(item["severity"] == "warning" for item in diagnostics)
     return {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "projection": {"kind": projection_kind, "generatedAt": now, "source": projection_source, "staleAfterMinutes": 0},
         "dataHealth": {
             "status": "INVALID" if error_count else ("WARNING" if warning_count else "VALID"),
@@ -1712,7 +1945,7 @@ def build_dashboard_data(
             "id": str(initiative_meta.get("initiative_id") or delivery.get("initiative_id") or "UNKNOWN"),
             "name": initiative_title,
             "shortName": initiative_title,
-            "phase": status(delivery.get("initiative_status"), "UNKNOWN"),
+            "phase": initiative_status,
             "health": status(delivery.get("health"), "UNKNOWN"),
             "progress": round(sum(item["progress"] for item in slices) / len(slices)) if slices else 0,
             "objective": objective,
@@ -1720,6 +1953,7 @@ def build_dashboard_data(
             "currentRevision": safe_int(delivery.get("initiative_revision") or initiative_meta.get("revision"), 1),
             "nextAction": next_action_record,
         },
+        "decisionMeta": decision_meta,
         "attention": attention,
         "prototype": {
             "id": str(prototype.get("id") or "No active prototype"),
@@ -2047,6 +2281,11 @@ def prepare_projection_fixture(skill_root: Path) -> tempfile.TemporaryDirectory[
     delivery = (skill_root / "assets" / "delivery-state-template.yaml").read_text(encoding="utf-8")
     delivery = delivery.replace("INIT-0001", "INIT-0042").replace("initiative_status: DISCOVERING", "initiative_status: EXECUTING")
     delivery = delivery.replace("initiative_revision: 1", "initiative_revision: 3")
+    delivery = delivery.replace("interaction_mode: EXPLORE", "interaction_mode: DELIVERY")
+    delivery = delivery.replace(
+        "decision_review:\n  pending_keys: []\n  last_checkpoint_at: \"\"",
+        "decision_review:\n  pending_keys: [release.auth.feature-flag, operations.auth-events, ux.navigation.topbar, storage.document.primary]\n  last_checkpoint_at: \"2026-08-22T00:20:00+05:00\"",
+    )
     delivery = delivery.replace("health: UNKNOWN", "health: ON_TRACK").replace("active_execution_slice: null", "active_execution_slice: SLICE-AUTH-001")
     delivery = delivery.replace(
         "slice_states: []",
@@ -2057,59 +2296,7 @@ def prepare_projection_fixture(skill_root: Path) -> tempfile.TemporaryDirectory[
     delivery = delivery.replace('impact: ""', 'impact: "Unblocks complete lifecycle integration and Playwright CLI verification."')
     (base / "delivery-state.yaml").write_text(delivery, encoding="utf-8")
 
-    decisions = (skill_root / "assets" / "decision-log-template.yaml").read_text(encoding="utf-8").replace("INIT-0001", "INIT-0042")
-    decisions = decisions.replace(
-        "decisions: []",
-        """decisions:
-  - id: DEC-003
-    revision: 2
-    status: LOCKED
-    question: Which sign-in method ships in the initial learning-platform release?
-    decision: Email and password are the initial sign-in methods.
-    rationale: This supports the approved learner journeys while preserving a bounded path for future identity providers.
-    evidence: [Prototype checkpoint 07, Authentication slice review]
-    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-API, WP-AUTH-03, WP-AUTH-04]
-    authority: HUMAN
-    approved_by: Human Product Owner
-    decided_at: \"2026-08-21T22:40:00+05:00\"
-    supersedes: \"\"
-  - id: DEC-006
-    revision: 1
-    status: LOCKED
-    question: How are learner and instructor permissions represented?
-    decision: Learner and instructor roles remain explicit.
-    rationale: Explicit roles keep authorization behavior observable and prevent implicit privilege expansion.
-    evidence: [Initiative review, Authentication threat-boundary review]
-    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-SESSION]
-    authority: HUMAN
-    approved_by: Human Product Owner
-    decided_at: \"2026-08-21T22:48:00+05:00\"
-    supersedes: \"\"
-  - id: DEC-009
-    revision: 2
-    status: LOCKED
-    question: Which destination may be restored after reauthentication?
-    decision: Restore only an authorized same-origin destination; otherwise use learner home.
-    rationale: The learner keeps legitimate context without enabling open redirects or unauthorized navigation.
-    evidence: [Prototype checkpoint 07, Security review]
-    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-SESSION, WP-AUTH-04]
-    authority: HUMAN
-    approved_by: Human Product Owner
-    decided_at: \"2026-08-21T23:02:00+05:00\"
-    supersedes: \"\"
-  - id: DEC-012
-    revision: 1
-    status: TESTING
-    question: Which transactional email provider should production use?
-    decision: Keep the auth-v1 email adapter provider-neutral while delivery evidence is evaluated.
-    rationale: Provider selection must not block local authentication delivery or leak vendor behavior into the domain contract.
-    evidence: [CON-AUTH-EMAIL v1 verification in progress]
-    affected_artifacts: [CON-AUTH-EMAIL, WP-AUTH-05, WP-AUTH-06]
-    authority: PM
-    approved_by: Product Manager
-    decided_at: \"2026-08-22T00:12:00+05:00\"
-    supersedes: \"\"""",
-    )
+    decisions = (skill_root / "assets" / "decision-log-example.yaml").read_text(encoding="utf-8")
     (base / "decision-log.yaml").write_text(decisions, encoding="utf-8")
 
     demo_events = [

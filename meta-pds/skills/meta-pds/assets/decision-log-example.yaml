@@ -1,0 +1,364 @@
+# Regression and documentation fixture only. Never copy this data into a product repository.
+schema_version: 3
+initiative_id: INIT-0042
+decisions:
+  - id: DEC-001
+    key: product.goal.guided-learning
+    revision: 1
+    status: LOCKED
+    type: GOAL
+    secondary_types: []
+    phases: [GLOBAL]
+    question: What product outcome anchors this initiative?
+    decision: Help learners complete a guided course journey with confidence.
+    rationale: A single outcome keeps downstream scope and delivery choices coherent.
+    evidence: [Initiative review]
+    depends_on: []
+    contradicts: []
+    affected_artifacts: [initiative.md]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T09:00:00+05:00"
+    supersedes: ""
+  - id: DEC-002
+    key: product.user.busy-learners
+    revision: 1
+    status: LOCKED
+    type: USER_PROBLEM
+    secondary_types: []
+    phases: [GLOBAL]
+    question: Whose problem is solved first?
+    decision: Busy adult learners need a clear way to resume learning without losing context.
+    rationale: The primary user problem determines the first journey and success evidence.
+    evidence: [Discovery interview synthesis]
+    depends_on: [product.goal.guided-learning]
+    contradicts: []
+    affected_artifacts: [initiative.md]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T09:10:00+05:00"
+    supersedes: ""
+  - id: DEC-003
+    key: product.metric.course-completion
+    revision: 1
+    status: LOCKED
+    type: OUTCOME_METRIC
+    secondary_types: []
+    phases: [PHASE-1, PHASE-2, PHASE-3]
+    question: Which outcome proves the guided journey is working?
+    decision: Measure completion of the next recommended lesson and full course completion.
+    rationale: The metric connects early interaction evidence to the product goal.
+    evidence: [Initiative review]
+    depends_on: [product.goal.guided-learning, product.user.busy-learners]
+    contradicts: []
+    affected_artifacts: [initiative.md, SLICE-AUTH-001]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T09:20:00+05:00"
+    supersedes: ""
+  - id: DEC-004
+    key: product.scope.phase-one-authentication
+    revision: 1
+    status: LOCKED
+    type: SCOPE_PRIORITY
+    secondary_types: []
+    phases: [PHASE-1]
+    question: What must phase one establish before learning features expand?
+    decision: Ship bounded authentication and role-aware session restoration first.
+    rationale: Trusted identity is the narrow prerequisite for learner continuity.
+    evidence: [Roadmap review]
+    depends_on: [product.user.busy-learners]
+    contradicts: []
+    affected_artifacts: [initiative.md, SLICE-AUTH-001]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T09:30:00+05:00"
+    supersedes: ""
+  - id: DEC-005
+    key: feature.authentication.email-password
+    revision: 2
+    status: LOCKED
+    type: FEATURE_CAPABILITY
+    secondary_types: [SECURITY_PRIVACY]
+    phases: [PHASE-1]
+    question: Which sign-in method ships first?
+    decision: Email and password are the initial sign-in methods.
+    rationale: This supports the approved journeys while preserving a bounded path for future identity providers.
+    evidence: [Prototype checkpoint 07]
+    depends_on: [product.scope.phase-one-authentication]
+    contradicts: []
+    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-API]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T09:40:00+05:00"
+    supersedes: ""
+  - id: DEC-006
+    key: policy.roles.explicit
+    revision: 1
+    status: LOCKED
+    type: BUSINESS_RULE
+    secondary_types: [SECURITY_PRIVACY]
+    phases: [GLOBAL]
+    question: How are learner and instructor permissions represented?
+    decision: Learner and instructor roles remain explicit.
+    rationale: Explicit roles prevent implicit privilege expansion.
+    evidence: [Authorization review]
+    depends_on: [feature.authentication.email-password]
+    contradicts: []
+    affected_artifacts: [SLICE-AUTH-001, CON-AUTH-SESSION]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T09:50:00+05:00"
+    supersedes: ""
+  - id: DEC-007
+    key: ux.navigation.sidebar
+    revision: 2
+    status: LOCKED
+    type: UI_UX
+    secondary_types: []
+    phases: [PHASE-1, PHASE-2]
+    question: Which primary navigation model should the learning workspace use?
+    decision: Use a persistent sidebar for primary learning navigation.
+    rationale: The sidebar keeps course context visible across the reviewed desktop journeys.
+    evidence: [Prototype checkpoint 07]
+    depends_on: [product.user.busy-learners]
+    contradicts: []
+    affected_artifacts: [prototype, SLICE-AUTH-001]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T10:00:00+05:00"
+    supersedes: ""
+  - id: DEC-008
+    key: ux.accessibility.keyboard-first
+    revision: 1
+    status: LOCKED
+    type: CONTENT_ACCESSIBILITY
+    secondary_types: [UI_UX]
+    phases: [GLOBAL]
+    question: Which baseline accessibility behavior is non-negotiable?
+    decision: Every primary journey must be keyboard reachable with visible focus and clear labels.
+    rationale: Accessibility is part of the core experience rather than deferred polish.
+    evidence: [UX review]
+    depends_on: [ux.navigation.sidebar]
+    contradicts: []
+    affected_artifacts: [prototype, SLICE-AUTH-001]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T10:10:00+05:00"
+    supersedes: ""
+  - id: DEC-009
+    key: domain.profile.role-membership
+    revision: 1
+    status: LOCKED
+    type: DOMAIN_MODEL
+    secondary_types: []
+    phases: [GLOBAL]
+    question: How does a profile relate to authorization roles?
+    decision: A profile owns one or more explicit role memberships with independent lifecycle state.
+    rationale: Role membership needs a stable domain identity separate from profile presentation.
+    evidence: [Schema workshop]
+    depends_on: [policy.roles.explicit]
+    contradicts: []
+    affected_artifacts: [CON-AUTH-DATA, SLICE-AUTH-001]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T10:20:00+05:00"
+    supersedes: ""
+  - id: DEC-010
+    key: data.profile.schema-v1
+    revision: 1
+    status: LOCKED
+    type: SCHEMA
+    secondary_types: [DOMAIN_MODEL]
+    phases: [PHASE-1]
+    question: Which profile fields are canonical in schema version one?
+    decision: Store profile identity, display name, locale, timezone, and auditable role memberships.
+    rationale: These fields support the approved journeys without inventing optional personal data.
+    evidence: [Prototype seed review, Schema workshop]
+    depends_on: [domain.profile.role-membership]
+    contradicts: []
+    affected_artifacts: [CON-AUTH-DATA]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T10:30:00+05:00"
+    supersedes: ""
+  - id: DEC-011
+    key: architecture.single-repository
+    revision: 1
+    status: LOCKED
+    type: ARCHITECTURE
+    secondary_types: []
+    phases: [GLOBAL]
+    question: How should frontend and API code be organized initially?
+    decision: Keep the bounded product in one repository with explicit application boundaries.
+    rationale: Shared versioning reduces coordination overhead while boundaries preserve later options.
+    evidence: [Architecture review]
+    depends_on: [product.scope.phase-one-authentication]
+    contradicts: []
+    affected_artifacts: [initiative.md, execution-plan]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T10:40:00+05:00"
+    supersedes: ""
+  - id: DEC-012
+    key: integration.auth-api.versioned
+    revision: 1
+    status: LOCKED
+    type: API_INTEGRATION
+    secondary_types: []
+    phases: [PHASE-1]
+    question: How is the authentication boundary changed safely?
+    decision: Version the authentication API and session contract together as auth-v1.
+    rationale: Explicit contract versioning makes frontend and backend integration evidence comparable.
+    evidence: [Contract review]
+    depends_on: [architecture.single-repository, data.profile.schema-v1]
+    contradicts: []
+    affected_artifacts: [CON-AUTH-API, CON-AUTH-SESSION]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T10:50:00+05:00"
+    supersedes: ""
+  - id: DEC-013
+    key: security.redirect.same-origin
+    revision: 2
+    status: LOCKED
+    type: SECURITY_PRIVACY
+    secondary_types: []
+    phases: [GLOBAL]
+    question: Which destination may be restored after reauthentication?
+    decision: Restore only an authorized same-origin destination; otherwise use learner home.
+    rationale: This retains legitimate context without enabling open redirects.
+    evidence: [Threat-boundary review]
+    depends_on: [integration.auth-api.versioned]
+    contradicts: []
+    affected_artifacts: [CON-AUTH-SESSION, WP-AUTH-04]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T11:00:00+05:00"
+    supersedes: ""
+  - id: DEC-014
+    key: stack.frontend.react
+    revision: 1
+    status: LOCKED
+    type: STACK
+    secondary_types: []
+    phases: [PHASE-1]
+    question: Which frontend stack implements the approved interaction model?
+    decision: Use React with the repository's existing build system.
+    rationale: It matches the established codebase and avoids a parallel runtime.
+    evidence: [Repository inspection]
+    depends_on: [architecture.single-repository, ux.navigation.sidebar]
+    contradicts: []
+    affected_artifacts: [execution-plan]
+    authority: PM
+    approved_by: Product Manager
+    decided_at: "2026-08-20T11:10:00+05:00"
+    supersedes: ""
+  - id: DEC-015
+    key: storage.postgres.primary
+    revision: 1
+    status: LOCKED
+    type: DATABASE_STORAGE
+    secondary_types: []
+    phases: [GLOBAL]
+    question: Which primary store owns transactional product data?
+    decision: PostgreSQL is the canonical transactional store.
+    rationale: Relational constraints support the locked profile and membership model.
+    evidence: [Data architecture review]
+    depends_on: [data.profile.schema-v1]
+    contradicts: []
+    affected_artifacts: [CON-AUTH-DATA, execution-plan]
+    authority: HUMAN
+    approved_by: Human Product Owner
+    decided_at: "2026-08-20T11:20:00+05:00"
+    supersedes: ""
+  - id: DEC-016
+    key: quality.playwright.cli
+    revision: 1
+    status: LOCKED
+    type: TESTING_QUALITY
+    secondary_types: []
+    phases: [PHASE-1]
+    question: How are production user journeys verified reproducibly?
+    decision: Run Playwright from the CLI for approved production journeys; prototype review remains manual.
+    rationale: CLI evidence is reproducible without violating the rapid-prototype browser boundary.
+    evidence: [Quality policy review]
+    depends_on: [integration.auth-api.versioned, ux.accessibility.keyboard-first]
+    contradicts: []
+    affected_artifacts: [SLICE-AUTH-001, test-plan]
+    authority: PM
+    approved_by: Product Manager
+    decided_at: "2026-08-20T11:30:00+05:00"
+    supersedes: ""
+  - id: DEC-017
+    key: release.auth.feature-flag
+    revision: 1
+    status: TESTING
+    type: RELEASE_MIGRATION
+    secondary_types: []
+    phases: [PHASE-1]
+    question: How should authentication be introduced to existing environments?
+    decision: Release the new authentication journey behind a reversible feature flag.
+    rationale: A reversible boundary limits migration risk while evidence is collected.
+    evidence: [Release planning]
+    depends_on: [quality.playwright.cli]
+    contradicts: []
+    affected_artifacts: [release-plan, SLICE-AUTH-001]
+    authority: PM
+    approved_by: Product Manager
+    decided_at: "2026-08-20T11:40:00+05:00"
+    supersedes: ""
+  - id: DEC-018
+    key: operations.auth-events
+    revision: 1
+    status: PROPOSED
+    type: OBSERVABILITY_OPERATIONS
+    secondary_types: []
+    phases: [PHASE-1]
+    question: Which operational events are required before release?
+    decision: Record authentication success, safe failure categories, lockout, and session restoration without credentials or tokens.
+    rationale: Operators need actionable signals that preserve user privacy.
+    evidence: [Operations review pending]
+    depends_on: [security.redirect.same-origin, release.auth.feature-flag]
+    contradicts: []
+    affected_artifacts: [operations-plan, SLICE-AUTH-001]
+    authority: PM
+    approved_by: ""
+    decided_at: ""
+    supersedes: ""
+  - id: DEC-019
+    key: ux.navigation.topbar
+    revision: 1
+    status: TESTING
+    type: UI_UX
+    secondary_types: []
+    phases: [PHASE-3]
+    question: Should phase three replace the sidebar with top navigation?
+    decision: Test a compact top navigation model for broad desktop pages.
+    rationale: Later information architecture may need more horizontal workspace.
+    evidence: [Future prototype requested]
+    depends_on: [product.metric.course-completion]
+    contradicts: [ux.navigation.sidebar]
+    affected_artifacts: [future-prototype]
+    authority: PM
+    approved_by: ""
+    decided_at: ""
+    supersedes: ""
+  - id: DEC-020
+    key: storage.document.primary
+    revision: 1
+    status: PROPOSED
+    type: DATABASE_STORAGE
+    secondary_types: []
+    phases: [PHASE-3]
+    question: Should phase three replace relational storage with a document database?
+    decision: Evaluate a document database as the primary product store for phase three.
+    rationale: The alternative remains unproven against the locked relational domain constraints.
+    evidence: [Architecture exploration]
+    depends_on: [data.profile.schema-v1]
+    contradicts: [storage.postgres.primary]
+    affected_artifacts: [future-architecture-review]
+    authority: PM
+    approved_by: ""
+    decided_at: ""
+    supersedes: ""

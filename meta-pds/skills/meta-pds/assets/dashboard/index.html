@@ -66,7 +66,15 @@
       </section>
 
       <section class="view-panel" id="view-decisions" data-panel="decisions">
-        <div class="simple-list" id="decision-list"></div>
+        <div class="decision-summary" id="decision-summary"></div>
+        <div class="decision-tools">
+          <div class="filter-group" id="decision-status-filters" aria-label="Filter decisions by state"></div>
+          <div class="decision-selectors">
+            <label>Type<select id="decision-type-filter" aria-label="Filter decisions by type"></select></label>
+            <label>Phase<select id="decision-phase-filter" aria-label="Filter decisions by phase"></select></label>
+          </div>
+        </div>
+        <div class="decision-list" id="decision-list"></div>
       </section>
 
       <section class="view-panel" id="view-prototype" data-panel="prototype">

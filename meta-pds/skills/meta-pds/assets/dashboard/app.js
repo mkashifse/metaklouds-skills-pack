@@ -261,12 +261,83 @@
   }
 
   function renderDecisions() {
-    $("#decision-list").innerHTML = data.decisions.length ? data.decisions.map((decision) => `
-      <article class="simple-item">
-        <span class="simple-code">${esc(decision.id)} · r${esc(decision.revision)}</span>
-        <div class="simple-copy"><h3>${esc(decision.title)}</h3><p>${esc(decision.summary)} · Affects ${esc(decision.affects.join(", "))}</p></div>
-        ${badge(decision.status)}
-      </article>`).join("") : '<div class="empty-state">No decisions are recorded.</div>';
+    const meta = data.decisionMeta || {};
+    $("#decision-summary").innerHTML = [
+      ["Current mode", pretty(meta.interactionMode || "EXPLORE"), "mode"],
+      ["Total decisions", data.decisions.length, "total"],
+      ["Canonical truth", meta.canonicalCount || 0, "canonical"],
+      ["Needs review", meta.reviewCount || 0, "review"],
+      ["Contradictions", meta.contradictionCount || 0, "contradictions"]
+    ].map(([label, value, kind]) => `<div class="decision-stat ${esc(kind)}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("");
+
+    const statuses = [
+      ["ALL", "All"], ["CANONICAL", "Canonical"], ["NEEDS_REVIEW", "Needs review"], ["CONTRADICTORY", "Contradictory"]
+    ];
+    $("#decision-status-filters").innerHTML = statuses.map(([value, label]) =>
+      `<button class="filter-button ${decisionStatusFilter === value ? "is-active" : ""}" type="button" data-decision-status="${value}">${label}</button>`
+    ).join("");
+    $("#decision-type-filter").innerHTML = `<option value="ALL">All types</option>${(meta.types || []).map((type) => `<option value="${esc(type.id)}">${esc(type.label)}</option>`).join("")}`;
+    $("#decision-phase-filter").innerHTML = `<option value="ALL">All phases</option>${(meta.phases || []).map((phase) => `<option value="${esc(phase)}">${esc(pretty(phase))}</option>`).join("")}`;
+    $("#decision-type-filter").value = decisionTypeFilter;
+    $("#decision-phase-filter").value = decisionPhaseFilter;
+
+    const filtered = data.decisions.filter((decision) => {
+      const statusMatch = decisionStatusFilter === "ALL"
+        || (decisionStatusFilter === "CANONICAL" && decision.canonical)
+        || (decisionStatusFilter === "NEEDS_REVIEW" && decision.needsReview)
+        || (decisionStatusFilter === "CONTRADICTORY" && decision.hasContradiction);
+      const typeMatch = decisionTypeFilter === "ALL" || decision.type === decisionTypeFilter || decision.secondaryTypes?.some((type) => type.id === decisionTypeFilter);
+      const phaseMatch = decisionPhaseFilter === "ALL" || decision.phases?.includes(decisionPhaseFilter);
+      return statusMatch && typeMatch && phaseMatch;
+    });
+    if (!filtered.length) {
+      $("#decision-list").innerHTML = '<div class="empty-state">No decisions match these filters.</div>';
+      return;
+    }
+    const groups = [];
+    filtered.forEach((decision) => {
+      let group = groups.find((candidate) => candidate.layer === decision.layer);
+      if (!group) {
+        group = { layer: decision.layer, layerKey: decision.layerKey, decisions: [] };
+        groups.push(group);
+      }
+      group.decisions.push(decision);
+    });
+    $("#decision-list").innerHTML = groups.map((group) => `
+      <section class="decision-group layer-${esc(group.layerKey)}">
+        <header><span>${esc(group.layer)}</span><strong>${group.decisions.length}</strong></header>
+        <div class="decision-group-list">${group.decisions.map((decision) => `
+          <article class="decision-item ${decision.hasContradiction ? "is-contradictory" : ""}">
+            <i class="decision-rail" aria-hidden="true"></i>
+            <div class="decision-card-head">
+              <div class="decision-identity"><code>${esc(decision.key)}</code><span>${esc(decision.id)} · r${esc(decision.revision)}</span></div>
+              <div class="decision-labels"><span class="decision-type-label">${esc(decision.typeLabel)}</span>${decision.secondaryTypes.map((type) => `<span class="decision-type-secondary">${esc(type.label)}</span>`).join("")}</div>
+              <div class="decision-state">${decision.canonical ? '<span class="decision-canonical">Canonical truth</span>' : ""}${badge(decision.status)}</div>
+            </div>
+            <div class="decision-copy"><h3>${esc(decision.title)}</h3><p>${esc(decision.summary)}</p>${decision.rationale ? `<small><strong>Why:</strong> ${esc(decision.rationale)}</small>` : ""}</div>
+            <div class="decision-context">
+              <div><span>Phases</span><p class="decision-phases">${decision.phases.map((phase) => `<em>${esc(pretty(phase))}</em>`).join("")}</p></div>
+              <div><span>Depends on</span><p>${decision.dependsOn.length ? decision.dependsOn.map((key) => `<code>${esc(key)}</code>`).join(" ") : "None"}</p></div>
+              <div><span>Affects</span><p>${decision.affects.length ? decision.affects.map(esc).join(", ") : "Not recorded"}</p></div>
+            </div>
+            ${decision.contradictions.length ? `<div class="decision-contradiction">${icon("triangle-alert")}<div><strong>Contradictory decision${decision.contradictions.length > 1 ? "s" : ""}</strong>${decision.contradictions.map((conflict) => `<p><code>${esc(conflict.key)}</code> · ${esc(conflict.title)} · ${badge(conflict.status)}</p>`).join("")}</div></div>` : ""}
+          </article>`).join("")}</div>
+      </section>`).join("");
+  }
+
+  let decisionStatusFilter = "ALL";
+  let decisionTypeFilter = "ALL";
+  let decisionPhaseFilter = "ALL";
+
+  function bindDecisionControls() {
+    $("#decision-status-filters").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-decision-status]");
+      if (!button) return;
+      decisionStatusFilter = button.dataset.decisionStatus;
+      renderDecisions();
+    });
+    $("#decision-type-filter").addEventListener("change", (event) => { decisionTypeFilter = event.target.value; renderDecisions(); });
+    $("#decision-phase-filter").addEventListener("change", (event) => { decisionPhaseFilter = event.target.value; renderDecisions(); });
   }
 
   function renderPrototype() {
@@ -748,5 +819,6 @@
   renderRepository();
   bindTopTabs();
   bindSliceList();
+  bindDecisionControls();
   bindModal();
 })();

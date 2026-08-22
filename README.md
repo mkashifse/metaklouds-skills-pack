@@ -12,6 +12,14 @@ local branch visibility and verified GitHub pull-request status when available.
 It never substitutes bundled sample delivery data for the selected project;
 missing canonical artifacts remain visible as setup diagnostics.
 
+The flagship supports five explicit working modes—Explore, Decision Review,
+Prototype, Slice Shaping, and Delivery—so important choices are captured without
+breaking a brainstorming flow. Canonical decisions use stable semantic keys,
+upstream-to-downstream types, phase assignments, dependencies, and explicit
+contradiction links. The Decisions dashboard exposes that truth map and its
+review queue; bundled example decisions remain regression fixtures and are
+never installed into a user's project.
+
 The complete profile turns an idea into a validated initiative, plans it as fat
 end-to-end vertical slices, and implements each slice as one releasable unit:
 

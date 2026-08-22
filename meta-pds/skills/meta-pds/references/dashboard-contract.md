@@ -137,7 +137,13 @@ horizontally rather than creating a second header row.
 
 1. visible canonical data-health diagnostics, with projection source details
    kept in the footer rather than the header;
-2. decisions grouped by status and affected slices;
+2. decisions ordered from upstream product intent to downstream operations,
+   grouped by layer and filterable by status, primary type, and phase; show the
+   unique canonical key, record ID, revision, primary and secondary labels,
+   dependency keys, affected artifacts, canonical status, and explicit
+   contradiction links; keep interaction mode, canonical count, review count,
+   and contradiction count visible without turning the dashboard into an
+   approval surface;
 3. a primary slice list with separate collapsible cards containing outcome,
    revision, priority, dependency, gate, progress, story, task, test, and
    contract summaries; keep one persistent header summary for status, progress,

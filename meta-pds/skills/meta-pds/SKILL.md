@@ -24,6 +24,9 @@ launching the Human-facing delivery dashboard. Read
 before any prototype, development-test, QA, or release-verification launch.
 Read [references/implementation-skill-routing.md](references/implementation-skill-routing.md)
 before assigning prototype, implementation, database, or test work.
+Read [references/interaction-modes-and-decision-capture.md](references/interaction-modes-and-decision-capture.md)
+when brainstorming, capturing or reviewing decisions, prototyping, or shaping
+slices from an unstructured feature request.
 
 Read [references/change-priority-resume.md](references/change-priority-resume.md)
 when resuming, pausing, reprioritizing, correcting a released slice, or handling
@@ -104,6 +107,8 @@ transition is required.
 
 - Ask focused questions in small, high-value batches.
 - Record uncertain decisions as `PROPOSED` or `TESTING`.
+- In `EXPLORE`, persist meaningful candidate-decision clusters without
+  interrupting the Human's flow; review them at a natural pause or resume.
 - Lock consequential decisions only after Human approval.
 - Recommend an answer and impact before asking for a decision.
 - Suppress worker chatter; surface decisions, blockers, drift, risk, evidence,
@@ -156,7 +161,16 @@ required action.
 
 Route by evidence:
 
-- unclear initiative or decisions under test: `rapid-prototyping`;
+- `EXPLORE`: capture candidate decisions quietly and keep the conversation flowing;
+- `DECISION_REVIEW`: present a compact upstream-to-downstream review packet and
+  lock, revise, or retain each candidate only with Human approval;
+- `PROTOTYPE`: route bounded experience or behavior questions to
+  `rapid-prototyping`; require a schema decision checkpoint whenever realistic
+  seeded entities, fields, relationships, privacy rules, or invariants emerge;
+- `SLICE_SHAPING`: recommend fat slices from the locked decision graph and wait
+  for the Human to approve them one by one;
+- `DELIVERY`: follow the gate routes below and flag drift against canonical keys;
+- unclear initiative or experience decisions under test: `rapid-prototyping`;
 - locked initiative with an unplanned capability: `slice-planning`;
 - `READY_FOR_DEVELOPMENT`: `slice-development` intake and mobilization;
 - `EXECUTION_READY` or active work packages: `slice-development` execution;

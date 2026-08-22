@@ -91,6 +91,36 @@ for append-only history. The dashboard is a read-only in-memory view and never
 overrides a canonical artifact or verified runtime evidence. Never persist a
 separate dashboard data file.
 
+## Decision truth
+
+Every decision record has an immutable `id` and a unique semantic `key`. The
+key is the cross-session and cross-artifact reference; IDs identify revisions
+and records. A primary decision `type` places the choice in the upstream-to-
+downstream chain, `phases` scope when it applies, `depends_on` records upstream
+decision keys, and `contradicts` records incompatible decision keys.
+
+Only a non-superseded `LOCKED` decision without an unresolved locked
+contradiction is canonical product truth. Proposed and testing decisions are
+durable candidates, not authority. Contradiction links are interpreted in both
+directions even when declared by only one record. Two active locked decisions
+that contradict each other are a structural error and block affected gates.
+
+Use this primary-type chain so review and dependency direction stay explicit:
+
+1. product direction: `GOAL`, `USER_PROBLEM`, `OUTCOME_METRIC`,
+   `SCOPE_PRIORITY`;
+2. product behavior: `FEATURE_CAPABILITY`, `BUSINESS_RULE`;
+3. experience: `UI_UX`, `CONTENT_ACCESSIBILITY`;
+4. domain and data: `DOMAIN_MODEL`, `SCHEMA`;
+5. system design: `ARCHITECTURE`, `API_INTEGRATION`, `SECURITY_PRIVACY`;
+6. technology: `STACK`, `DATABASE_STORAGE`;
+7. quality: `TESTING_QUALITY`;
+8. delivery: `RELEASE_MIGRATION`;
+9. operations: `OBSERVABILITY_OPERATIONS`.
+
+Use `GLOBAL` for an initiative-wide decision or one or more `PHASE-N` values
+for phased applicability. Do not combine `GLOBAL` with numbered phases.
+
 ## Revisions and traceability
 
 - Every initiative and slice has an integer revision and source commit when

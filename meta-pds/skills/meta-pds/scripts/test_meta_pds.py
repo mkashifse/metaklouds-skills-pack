@@ -58,9 +58,46 @@ class MetaPDSContractTests(unittest.TestCase):
         self.assertEqual(9, len(projection["activity"]))
         self.assertEqual("Full-stack integration is blocked", projection["activity"][0]["title"])
         self.assertEqual("Prototype checkpoint 07 approved", projection["activity"][-1]["title"])
-        self.assertEqual(["DEC-003", "DEC-006", "DEC-009", "DEC-012"], [item["id"] for item in projection["decisions"]])
-        self.assertEqual("TESTING", projection["decisions"][-1]["status"])
+        self.assertEqual(20, len(projection["decisions"]))
+        self.assertEqual(18, len({item["type"] for item in projection["decisions"]}))
+        self.assertEqual(20, len({item["key"] for item in projection["decisions"]}))
+        self.assertEqual(["GLOBAL", "PHASE-1", "PHASE-2", "PHASE-3"], projection["decisionMeta"]["phases"])
+        self.assertEqual("DELIVERY", projection["decisionMeta"]["interactionMode"])
+        self.assertEqual((16, 6, 4), (
+            projection["decisionMeta"]["canonicalCount"],
+            projection["decisionMeta"]["reviewCount"],
+            projection["decisionMeta"]["contradictionCount"],
+        ))
+        by_key = {item["key"]: item for item in projection["decisions"]}
+        self.assertEqual(["ux.navigation.topbar"], [item["key"] for item in by_key["ux.navigation.sidebar"]["contradictions"]])
+        self.assertEqual(["ux.navigation.sidebar"], [item["key"] for item in by_key["ux.navigation.topbar"]["contradictions"]])
+        self.assertTrue(by_key["storage.postgres.primary"]["canonical"])
+        self.assertFalse(by_key["storage.document.primary"]["canonical"])
         self.assertIn("repository", projection)
+
+    def test_decision_contract_rejects_duplicate_semantic_keys(self) -> None:
+        path = self.base / "decision-log.yaml"
+        path.write_text(path.read_text().replace("key: product.user.busy-learners", "key: product.goal.guided-learning", 1))
+        self.assertIn("id.duplicate-decision-key", {item["code"] for item in self.diagnostics()})
+
+    def test_decision_contract_rejects_unknown_contradiction_and_invalid_phase(self) -> None:
+        path = self.base / "decision-log.yaml"
+        content = path.read_text().replace("contradicts: [ux.navigation.sidebar]", "contradicts: [ux.navigation.unknown]", 1)
+        content = content.replace("phases: [PHASE-3]", "phases: [PHASE-ZERO]", 1)
+        path.write_text(content)
+        codes = {item["code"] for item in self.diagnostics()}
+        self.assertIn("reference.decision", codes)
+        self.assertIn("decision.phase", codes)
+
+    def test_two_locked_contradictory_decisions_are_invalid(self) -> None:
+        path = self.base / "decision-log.yaml"
+        content = path.read_text().replace(
+            "key: ux.navigation.topbar\n    revision: 1\n    status: TESTING",
+            "key: ux.navigation.topbar\n    revision: 1\n    status: LOCKED",
+            1,
+        )
+        path.write_text(content)
+        self.assertIn("decision.locked-contradiction", {item["code"] for item in self.diagnostics()})
 
     def test_repository_projection_reads_local_branch_state(self) -> None:
         with tempfile.TemporaryDirectory(prefix="meta-pds-git-projection-") as temporary_root:

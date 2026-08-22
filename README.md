@@ -9,6 +9,8 @@ dashboard per project. It preserves meaningful checkpoints with local commits
 and, when the Human changes delivery topic, nudges them to create and merge a PR
 once the branch satisfies its checks and approvals. The dashboard includes live
 local branch visibility and verified GitHub pull-request status when available.
+It never substitutes bundled sample delivery data for the selected project;
+missing canonical artifacts remain visible as setup diagnostics.
 
 The pack turns an idea into a validated initiative, plans it as fat end-to-end
 vertical slices, and implements each slice as one releasable unit under a

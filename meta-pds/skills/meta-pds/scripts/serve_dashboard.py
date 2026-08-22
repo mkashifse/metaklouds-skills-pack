@@ -35,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 2
+RUNTIME_VERSION = 3
 
 
 class ArtifactError(RuntimeError):
@@ -1340,15 +1340,88 @@ def build_repository_data(project_root: Path, gh_executable: str | None = None) 
     }
 
 
+def build_uninitialized_dashboard_data(
+    product_root: Path,
+    diagnostics: list[dict[str, str]],
+    projection_kind: str,
+    projection_source: str,
+    repository_root: Path,
+) -> dict[str, Any]:
+    """Return an honest empty delivery view backed only by this project."""
+    now = datetime.now(timezone.utc).isoformat()
+    error_count = sum(item["severity"] == "error" for item in diagnostics)
+    warning_count = sum(item["severity"] == "warning" for item in diagnostics)
+    return {
+        "schemaVersion": 2,
+        "projection": {"kind": projection_kind, "generatedAt": now, "source": projection_source, "staleAfterMinutes": 0},
+        "dataHealth": {
+            "status": "INVALID" if error_count else ("WARNING" if warning_count else "VALID"),
+            "errors": error_count,
+            "warnings": warning_count,
+            "diagnostics": diagnostics,
+        },
+        "initiative": {
+            "id": "UNKNOWN",
+            "name": product_root.name,
+            "shortName": product_root.name,
+            "phase": "NOT_INITIALIZED",
+            "health": "UNKNOWN",
+            "progress": 0,
+            "objective": "Canonical Meta PDS artifacts have not been initialized for this project.",
+            "humanOwner": "Unassigned",
+            "currentRevision": 0,
+            "nextAction": {
+                "title": "Initialize Meta PDS artifacts",
+                "detail": "Create the canonical initiative, decision log, and delivery state when their lifecycle begins.",
+                "owner": "Product Manager",
+                "impact": "Enables delivery planning views without substituting sample data.",
+            },
+        },
+        "attention": [],
+        "prototype": {
+            "id": "No active prototype",
+            "name": "Prototype not active",
+            "description": "No canonical prototype checkpoint is available for this project.",
+            "status": "NOT_ACTIVE",
+            "checkpoint": "—",
+            "checkpointAt": now,
+            "route": "—",
+            "persistence": "—",
+            "seedProfiles": 0,
+            "journeys": {"reviewed": 0, "total": 0},
+            "assumptionsTested": 0,
+            "openQuestions": 0,
+            "manualReview": "Not requested",
+        },
+        "decisions": [],
+        "slices": [],
+        "stories": [],
+        "workPackages": [],
+        "contracts": [],
+        "testCases": [],
+        "activity": [],
+        "repository": build_repository_data(repository_root),
+    }
+
+
 def build_dashboard_data(
     product_root: Path,
-    projection_kind: str = "live-canonical",
-    projection_source: str = "Canonical Meta PDS artifacts",
+    projection_kind: str = "live-project",
+    projection_source: str = "Live project evidence",
     repository_root: Path | None = None,
 ) -> dict[str, Any]:
     product_root = product_root.resolve()
     base = product_root / "docs" / "meta-pds"
     diagnostics = validate_product_artifacts(product_root)
+    resolved_repository_root = (repository_root or product_root).resolve()
+    if not (base / "initiative.md").is_file() or not (base / "delivery-state.yaml").is_file():
+        return build_uninitialized_dashboard_data(
+            product_root,
+            diagnostics,
+            projection_kind,
+            projection_source,
+            resolved_repository_root,
+        )
     initiative_meta, initiative_body = read_markdown(base / "initiative.md")
     delivery = read_yaml(base / "delivery-state.yaml", required=True)
     try:
@@ -1651,15 +1724,15 @@ def build_dashboard_data(
         "contracts": contracts,
         "testCases": test_cases,
         "activity": events,
-        "repository": build_repository_data(repository_root or product_root),
+        "repository": build_repository_data(resolved_repository_root),
     }
 
 
 def handler_for(
     product_root: Path,
     asset_root: Path,
-    projection_kind: str = "live-canonical",
-    projection_source: str = "Canonical Meta PDS artifacts",
+    projection_kind: str = "live-project",
+    projection_source: str = "Live project evidence",
     runtime_project_root: Path | None = None,
 ):
     runtime_project_root = (runtime_project_root or product_root).resolve()
@@ -1872,8 +1945,7 @@ def ensure_dashboard(
     if host not in {"127.0.0.1", "localhost", "::1"}:
         raise RuntimeError("managed dashboards must bind to a loopback host")
     registry_path, lock_path, log_path = dashboard_runtime_paths(project_root)
-    use_demo = not (project_root / "docs" / "meta-pds").is_dir()
-    expected_projection_kind = "bundled-example" if use_demo else "live-canonical"
+    expected_projection_kind = "live-project"
 
     with dashboard_launch_lock(lock_path):
         registry = read_runtime_registry(registry_path)
@@ -1904,11 +1976,7 @@ def ensure_dashboard(
             stop_dashboard_runtime(requested_url, requested_runtime)
 
         selected_port = port if port_is_available(host, port) else 0
-        command = [sys.executable, str(Path(__file__).resolve())]
-        if use_demo:
-            command.extend(["--demo", "--runtime-project-root", str(project_root)])
-        else:
-            command.append(str(project_root))
+        command = [sys.executable, str(Path(__file__).resolve()), str(project_root)]
         command.extend([
             "--host", host,
             "--port", str(selected_port),
@@ -1945,8 +2013,9 @@ def ensure_dashboard(
         raise RuntimeError(f"dashboard did not become ready within {startup_timeout:g} seconds; log: {log_path}")
 
 
-def prepare_demo_root(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
-    runtime = tempfile.TemporaryDirectory(prefix="meta-pds-dashboard-demo-")
+def prepare_projection_fixture(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
+    """Build complete canonical artifacts for parser regression tests only."""
+    runtime = tempfile.TemporaryDirectory(prefix="meta-pds-projection-fixture-")
     base = Path(runtime.name) / "docs" / "meta-pds"
     (base / "slices").mkdir(parents=True)
     (base / "execution").mkdir(parents=True)
@@ -2094,41 +2163,31 @@ def prepare_demo_root(skill_root: Path) -> tempfile.TemporaryDirectory[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("product_root", type=Path, nargs="?")
+    parser.add_argument("product_root", type=Path)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--ensure", action="store_true", help="Start or reuse one background dashboard for this project, then exit")
-    parser.add_argument("--demo", action="store_true", help="Preview the bundled Authentication slice without writing product files")
     parser.add_argument("--print-json", action="store_true", help="Print one in-memory projection and exit")
-    parser.add_argument("--runtime-project-root", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--registry-path", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
 
-    if args.demo and args.product_root:
-        parser.error("product_root and --demo are mutually exclusive")
-    if args.ensure and args.demo:
-        parser.error("--ensure selects demo mode automatically when the project has no Meta PDS artifacts")
     if args.ensure and args.print_json:
         parser.error("--ensure and --print-json are mutually exclusive")
-    if not args.demo and not args.product_root:
-        parser.error("product_root is required unless --demo is used")
 
     skill_root = Path(__file__).resolve().parent.parent
     if args.ensure:
         result = ensure_dashboard(args.product_root, skill_root, args.host, args.port)
         print(f"Meta PDS dashboard: {result['url']}")
         print(f"Dashboard runtime: {result['status']} for {result['projectRoot']}")
-        if result.get("projectionKind") == "bundled-example":
-            print("No canonical Meta PDS artifacts were found; the dashboard is visibly using bundled example data.")
+        base = args.product_root.resolve() / "docs" / "meta-pds"
+        if not (base / "initiative.md").is_file() or not (base / "delivery-state.yaml").is_file():
+            print("Canonical Meta PDS artifacts are not initialized; showing only live project evidence and missing-artifact diagnostics.")
         return 0
 
-    demo_runtime = prepare_demo_root(skill_root) if args.demo else None
-    product_root = Path(demo_runtime.name).resolve() if demo_runtime else args.product_root.resolve()
-    runtime_project_root = (args.runtime_project_root or product_root).resolve()
-    projection_kind = "bundled-example" if args.demo else "live-canonical"
-    projection_source = "Bundled Authentication slice and execution examples" if args.demo else "Canonical Meta PDS artifacts"
-    if not (product_root / "docs" / "meta-pds").is_dir():
-        parser.error(f"not a Meta PDS product root: {product_root}")
+    product_root = args.product_root.resolve()
+    runtime_project_root = product_root
+    projection_kind = "live-project"
+    projection_source = "Live project evidence"
     if args.print_json:
         print(json.dumps(build_dashboard_data(product_root, projection_kind, projection_source), indent=2, ensure_ascii=False))
         return 0
@@ -2156,7 +2215,7 @@ def main() -> int:
 
     previous_sigterm = signal.signal(signal.SIGTERM, stop_server)
     print(f"Meta PDS dashboard: {url}", flush=True)
-    print("Reading the bundled Authentication slice and execution examples in memory." if args.demo else f"Reading canonical artifacts from: {product_root}", flush=True)
+    print(f"Reading live project evidence from: {product_root}", flush=True)
     print("Refresh the page to reparse current files. Press Ctrl-C to stop.", flush=True)
     try:
         server.serve_forever()

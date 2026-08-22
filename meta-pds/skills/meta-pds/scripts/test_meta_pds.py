@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.request import urlopen
 
 from serve_dashboard import (
     ArtifactError,
@@ -17,7 +19,7 @@ from serve_dashboard import (
     ensure_dashboard,
     parse_table,
     parse_yaml,
-    prepare_demo_root,
+    prepare_projection_fixture,
     pull_request_records,
     validate_product_artifacts,
 )
@@ -28,7 +30,7 @@ SKILL_ROOT = Path(__file__).resolve().parent.parent
 
 class MetaPDSContractTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.runtime = prepare_demo_root(SKILL_ROOT)
+        self.runtime = prepare_projection_fixture(SKILL_ROOT)
         self.root = Path(self.runtime.name)
         self.base = self.root / "docs" / "meta-pds"
 
@@ -41,7 +43,7 @@ class MetaPDSContractTests(unittest.TestCase):
     def projection(self) -> dict:
         return build_dashboard_data(self.root)
 
-    def test_bundled_example_is_valid_and_complete(self) -> None:
+    def test_projection_fixture_is_valid_and_complete(self) -> None:
         projection = self.projection()
         self.assertEqual([], self.diagnostics())
         self.assertEqual("VALID", projection["dataHealth"]["status"])
@@ -137,26 +139,31 @@ class MetaPDSContractTests(unittest.TestCase):
             process.terminate()
             process.wait(timeout=5)
 
-    def test_ensure_dashboard_replaces_demo_when_project_is_initialized(self) -> None:
+    def test_ensure_dashboard_never_substitutes_sample_project_data(self) -> None:
         with tempfile.TemporaryDirectory(prefix="meta-pds-runtime-transition-") as temporary_root:
             project_root = Path(temporary_root)
-            demo = ensure_dashboard(project_root, SKILL_ROOT, port=0, startup_timeout=5)
-            live = None
+            live = ensure_dashboard(project_root, SKILL_ROOT, port=0, startup_timeout=5)
             try:
-                self.assertEqual("bundled-example", demo["projectionKind"])
-                (project_root / "docs" / "meta-pds").mkdir(parents=True)
-                live = ensure_dashboard(project_root, SKILL_ROOT, port=0, startup_timeout=5)
-                demo["process"].wait(timeout=5)
-                self.assertEqual("started", live["status"])
-                self.assertEqual("live-canonical", live["projectionKind"])
-                self.assertNotEqual(demo["pid"], live["pid"])
+                self.assertEqual("live-project", live["projectionKind"])
+                with urlopen(f"{live['url']}/api/dashboard", timeout=5) as response:
+                    empty_projection = json.loads(response.read())
+                self.assertEqual("live-project", empty_projection["projection"]["kind"])
+                self.assertEqual([], empty_projection["slices"])
+                self.assertEqual([], empty_projection["decisions"])
+                self.assertNotIn("Learning Platform V1", json.dumps(empty_projection))
+                self.assertGreater(empty_projection["dataHealth"]["errors"], 0)
+
+                shutil.copytree(self.base, project_root / "docs" / "meta-pds")
+                refreshed = ensure_dashboard(project_root, SKILL_ROOT, port=0, startup_timeout=5)
+                self.assertEqual("reused", refreshed["status"])
+                self.assertEqual(live["pid"], refreshed["pid"])
+                with urlopen(f"{live['url']}/api/dashboard", timeout=5) as response:
+                    canonical_projection = json.loads(response.read())
+                self.assertEqual(1, len(canonical_projection["slices"]))
+                self.assertEqual("INIT-0042", canonical_projection["initiative"]["id"])
             finally:
-                if live and live.get("process"):
-                    live["process"].terminate()
-                    live["process"].wait(timeout=5)
-                elif demo["process"].poll() is None:
-                    demo["process"].terminate()
-                    demo["process"].wait(timeout=5)
+                live["process"].terminate()
+                live["process"].wait(timeout=5)
 
     def test_cli_defaults_to_repository_wide_validation(self) -> None:
         validator = Path(__file__).with_name("validate_meta_pds.py")

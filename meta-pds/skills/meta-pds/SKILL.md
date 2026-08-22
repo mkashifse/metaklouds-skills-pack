@@ -67,8 +67,9 @@ On every invocation:
 2. Run `scripts/serve_dashboard.py <product-root> --ensure`. This starts one
    background dashboard for the resolved project or reuses its healthy existing
    runtime. Capture its reported URL and always give that clickable URL to the
-   Human. Do not launch another server manually. Before canonical artifacts
-   exist, the command uses the visibly labelled bundled example view.
+   Human. Do not launch another server manually. The dashboard always reads the
+   resolved project; before canonical artifacts exist, show its live repository
+   evidence and explicit missing-artifact diagnostics without sample data.
 3. Read actual Meta PDS artifacts, repository state, available runtime evidence,
    and Git branch/worktree state. Never rely on conversation memory as delivery
    state.
@@ -90,9 +91,9 @@ before launching rapid discovery. Create artifacts from the templates in
 `assets/` only when their lifecycle begins. Do not copy dashboard assets or
 create dashboard data in the product repository. The installed skill owns and
 serves the dashboard; render missing downstream evidence as unknown rather than
-simulated progress. After creating the canonical core artifacts for a new
-initiative, rerun the same `--ensure` command so it replaces the example runtime
-with the live canonical view and return the live URL.
+simulated progress. The existing project runtime reparses newly created
+canonical artifacts on refresh, so no runtime replacement or example-to-live
+transition is required.
 
 ## Human interaction
 

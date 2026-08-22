@@ -58,14 +58,12 @@ The activity file is append-only JSON Lines. Each event contains an ISO 8601
 renders the newest valid event first. Record durable delivery checkpoints only,
 not low-value agent or editor activity.
 
-Before a product has canonical artifacts, `--ensure` automatically uses demo
-mode for that project's runtime identity. Demo mode parses the bundled
-Authentication slice and execution-plan examples into a temporary in-memory
-runtime, writes nothing into a product repository, and must be visibly labelled
-as example data. Use `--demo` directly only for an unassociated manual preview.
-Never treat example data as delivery state. After canonical core artifacts are
-created, run `--ensure` again; it stops the example runtime and replaces it with
-the live canonical projection for the same project.
+Before a product has canonical artifacts, the dashboard remains attached to
+that real project. It shows live repository and pull-request evidence, empty
+delivery collections, and explicit diagnostics for each missing canonical
+artifact. Never substitute bundled examples, templates, fixtures, conversation
+memory, or another project's files. When canonical artifacts are created, the
+same runtime projects them on the next refresh.
 
 Never infer a successful gate, test, release, or Human approval merely to fill
 the display. Show unknown or missing evidence explicitly. The dashboard runs

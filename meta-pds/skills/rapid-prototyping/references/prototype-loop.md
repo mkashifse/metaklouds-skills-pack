@@ -67,7 +67,8 @@ reuse is unsafe or incompatible and the exception is recorded with evidence.
 
 ## Human review packet
 
-Give the Product Manager a compact packet to show the Human:
+Give the PM Assistant a compact packet to validate and reduce to the Product
+Manager's Human-facing brief:
 
 ```text
 Prototype update:
@@ -83,4 +84,5 @@ Promotion handoff, when applicable:
 ```
 
 Human observations become `LOCKED`, `TESTING`, or `SUPERSEDED` decisions only
-when the Product Manager records them. Prototype code never becomes authority.
+when the Product Manager authorizes them and the PM Assistant records them.
+Prototype code never becomes authority.

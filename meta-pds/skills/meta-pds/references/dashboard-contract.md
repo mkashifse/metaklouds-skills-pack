@@ -32,11 +32,14 @@ the current files. Canonical sources are:
 - `decision-log.yaml` for proposed, testing, locked, and superseded decisions;
 - optional `drift-log.yaml` for detected, auto-resolved, approval-pending,
   re-verification, and closed drift with confidence and dependency impact;
+- optional `task-log.yaml` for every cross-phase actionable instruction,
+  Product Manager route, PM Assistant administration, specialist assignment,
+  dependencies, result, and evidence;
 - `delivery-state.yaml` for current initiative, slice, blocker, and next-action
   state;
 - slice files for stories, acceptance, test definitions, dependencies, and
   planning gates;
-- execution plans for Scrum Board tasks: work packages, immutable Lead briefs,
+- execution plans for Scrum Board development tasks: work packages, immutable Lead briefs,
   owners, assignment metadata, waves, dependencies, and required Test ID
   references;
 - delivery reports and runtime evidence for QA and release status;
@@ -58,7 +61,7 @@ authentication output.
 
 The delivery-event file is append-only JSON Lines. Each event contains an ISO 8601
 `at`, concise `kind`, `title`, and evidence-bearing `detail`; the dashboard
-joins events that cite a work-package ID into that task's status history.
+joins events that cite a task or work-package ID into that task's status history.
 Record durable delivery checkpoints only, not low-value agent or editor
 activity. Do not restore a separate generic Activity view.
 
@@ -95,6 +98,9 @@ longer be established. Never fall back to stale or invented data.
 - Slice tests use `### TC-<id> — <title>` headings and the labelled fields in
   `slice-template.md`. The slice is the sole source of test definitions.
 - Initiative roadmap rows use the columns in `initiative-template.md`.
+- Task logs contain PM-Assistant-owned cross-phase coordination tasks. Every
+  task preserves the original instruction and links rather than copies derived
+  execution work packages.
 - Execution plans contain structured `integration_contracts` and
   `work_packages`; package `supports`, `depends_on`, and `required_tests` values
   join stories, packages, and slice test definitions by stable IDs.
@@ -148,28 +154,48 @@ tagline, initiative title or ID, phase, health, source label, or update time to
 the header. At narrower widths, keep the brand stable and let the tabs scroll
 horizontally rather than creating a second header row.
 
+Keep the primary toolbar for every populated view sticky immediately beneath
+the application header so filters and summary context never leave the viewport
+during vertical scrolling. Give sticky toolbars an opaque surface and a lower
+stacking layer than the application header so list content passes underneath
+without showing through. Preserve horizontal access to dense controls at narrow
+widths rather than clipping or wrapping the application header.
+
+Give every Truth, Drift, slice, user-story, and work-package row a quiet copy
+control that does not trigger its accordion or detail navigation. Copy a
+Codex-ready Markdown packet containing the entity's stable identity, current
+status, canonical description or instruction, dependencies, traceability, and
+evidence available in the projection, plus a requested-change placeholder.
+Prefix the packet with the applicable update guardrail: append-only revision
+for locked Truth, durable evidence for Drift, stable traceability for slices and
+stories, and immutable Lead brief for work packages. Clipboard actions are
+read-only and must show concise success or failure feedback without writing a
+canonical artifact.
+
 1. visible canonical data-health diagnostics, with projection source details
    kept in the footer rather than the header;
-2. a leftmost `Truth` tab containing decisions ordered from upstream product
-   intent to downstream operations,
-   grouped and filterable by layer, status, primary type, and phase; lead each
-   truth item with the brain icon and one clear statement; use the same compact
-   three-row document rhythm as Drifts: identity/type/status metadata first,
-   title second, and phased dependency/affected-artifact properties third;
-   render groups as
-   collapsible sections that start collapsed, and render each truth as an
-   independently collapsible row that also starts collapsed; keep phase,
-   dependency keys, and affected artifacts in the persistent truth title bar
-   beside the unique canonical key, record ID, revision, primary and secondary
-   labels, and one non-duplicated status label; show explicit contradiction
-   links in the expanded body; default the status filter to `Canonical`; keep
-   the current locked revision as the displayed Truth while an optional
-   proposed or testing revision awaits Human approval; show that candidate and
+2. a leftmost `Truth` tab containing one chronological decision stream ordered
+   newest first by the latest recorded revision activity for each canonical
+   key; undated Truth remains visible after dated Truth and is explicitly
+   labelled `Time not recorded`; do not wrap the stream in collapsible group
+   sections. Label every Truth item with its layer and keep layer available as
+   a group filter alongside status, primary type, and phase; lead each Truth
+   item with the brain icon and one clear statement; use the same compact
+   three-row document rhythm as Drifts: identity, layer, type, status, and
+   recorded-time metadata first, title second, and phased
+   dependency/affected-artifact properties third; render each Truth as an
+   independently collapsible row that starts collapsed; keep phase, dependency
+   keys, and affected artifacts in the persistent Truth title bar beside the
+   unique canonical key, record ID, revision, primary and secondary labels, and
+   one non-duplicated status label; show explicit contradiction links in the
+   expanded body; default the status filter to `Canonical`; keep the current
+   locked revision as the displayed Truth while an optional proposed or testing
+   revision awaits Human approval, and use that newer candidate's recorded time
+   when positioning the canonical key in the stream; show the candidate and
    collapsed append-only revision history inside the expanded Truth item; keep
-   interaction mode, canonical count, review count,
-   and contradiction count visible in the same compact, single-row toolbar as
-   the status, group, type, and phase filters without turning the dashboard
-   into an approval surface;
+   interaction mode, canonical count, review count, and contradiction count
+   visible in the same compact, single-row toolbar as the status, group, type,
+   and phase filters without turning the dashboard into an approval surface;
 3. a primary slice list with a single view toolbar that keeps the slice totals
    beside the status filters rather than in the application header, followed
    by separate compact document-style collapsible cards that place icon, ID,
@@ -210,15 +236,20 @@ horizontally rather than creating a second header row.
    severity, ambiguity and confidence, recommendation, resolution, evidence,
    Human approval state, affected Truth/slices/work packages, and the explicit
    split between paused and continuing work; render each drift as a quiet,
-   document-style accordion with one compact ID/severity/status/confidence row,
-   a clear title and recommendation using the dashboard's shared type scale,
-   then aligned affected-work properties
+   document-style accordion in one seamless list surface with hairline row
+   separators only—never separate cards or gaps; retain a subtle left-edge
+   emphasis for Human-approval rows; use one compact
+   ID/severity/status/confidence row, a clear title and recommendation using the
+   dashboard's shared type scale, then aligned affected-work properties
    and evidence separated by hairline rules; provide compact status and severity
    filters, and never make the dashboard itself an approval surface;
 10. separate top tabs ordered Truth, Slices, Drifts Detected, Branches, and
    Scrum Board, plus the prototype utility; keep compact totals integrated into
    the relevant tabs. Scrum Board is a compact, filterable vertical Task List
-   projected from canonical work packages, not a writable Kanban database.
+   projected from canonical cross-phase tasks plus development work packages,
+   not a writable Kanban database. Keep phase visible and filterable so
+   discovery, prototype, planning, development, QA, release, and operations
+   assignments share one delivery record.
    Every collapsible row keeps `Task ID : Task title` left-aligned and
    `Assignee | Status` right-aligned; its expanded body renders the package as
    Markdown, leading with the locked original Lead instruction and then the
@@ -239,7 +270,8 @@ fake progress.
 
 ## Interaction and browser boundary
 
-Dashboard controls may filter or reveal projected information, but must not
-change canonical artifacts, gates, or approvals. The Human opens and navigates
-the page manually. Agents may edit the underlying files and use CLI validation,
-but must never take control of an interactive browser to test the dashboard.
+Dashboard controls may filter, reveal, or copy projected information, but must
+not change canonical artifacts, gates, or approvals. The Human opens and
+navigates the page manually. Agents may edit the underlying files and use CLI
+validation, but must never take control of an interactive browser to test the
+dashboard.

@@ -16,6 +16,7 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/human-centered-autonomy.md`;
 - `references/workflow-and-gates.md`;
 - `references/artifact-and-state-contract.md`;
+- `references/pm-heartbeat-and-task-routing.md`;
 - `references/testing-and-browser-policy.md`;
 - `references/implementation-skill-routing.md`;
 - `references/change-priority-resume.md` when scope, contract, priority, or
@@ -117,7 +118,8 @@ the minimum applicable worker roles:
 - Integration Engineer;
 - Security Engineer.
 
-Workers report to the Development Lead, never directly to the Human. Each
+Workers report to the Development Lead, never directly to the Human or Product
+Manager. The Development Lead reports a compact result to the PM Assistant. Each
 worker receives one compact context capsule and one bounded package. A package
 may support one or several user stories; it is an implementation assignment,
 not a release or a substitute user story.
@@ -176,12 +178,12 @@ Under `META_PDS_GIT_AUTHORITY=PM_ONLY`:
 
 - workers create scoped local commits on assigned work-package branches and
   return their hashes;
-- the Development Lead returns execution-plan and status changes to the Product
-  Manager for a canonical checkpoint commit;
+- the Development Lead returns execution-plan and status changes to the PM
+  Assistant for a canonical checkpoint commit;
 - no Development role pushes, opens/merges PRs, tags, deploys, or changes
   production flags;
-- the Product Manager validates and performs external integration/release
-  actions.
+- the Product Manager authorizes external integration or release actions; the
+  PM Assistant validates and executes them inside that authority.
 
 Do not edit upstream initiative or slice content. Return deficiencies or change
 requests to their owner.
@@ -192,6 +194,7 @@ Return one of:
 
 ```yaml
 status: FEASIBLE | NEEDS_UPSTREAM_CLARIFICATION | EXECUTION_PLAN_READY | READY_FOR_QA | REWORK_REQUIRED | HUMAN_DECISION_REQUIRED | BLOCKED
+task_id: TASK-0001
 initiative_id: ""
 slice_id: ""
 slice_revision: 1

@@ -1,6 +1,6 @@
 ---
 name: meta-pds
-description: Human-centered product delivery suite and single point of contact for starting, resuming, redirecting, or completing an initiative through rapid manual prototyping, fat-slice planning, bounded development, independent QA, release, and outcome validation, with a reusable local delivery dashboard. Use when the user invokes Meta PDS or wants one visible, state-aware workflow across product planning and delivery.
+description: Human-centered product delivery suite and single point of contact for starting, resuming, redirecting, or completing an initiative through rapid manual prototyping, fat-slice planning, bounded development, independent QA, release, and outcome validation, with a reusable local delivery dashboard. Use when the user invokes Meta PDS, works in a repository carrying its Meta PDS project bootstrap, gives an untagged follow-up about that governed product, or wants one visible, state-aware workflow across product planning and delivery.
 ---
 
 # Meta PDS
@@ -22,6 +22,9 @@ before creating, reconciling, or advancing canonical artifacts. Read
 launching the Human-facing delivery dashboard. Read
 [references/testing-and-browser-policy.md](references/testing-and-browser-policy.md)
 before any prototype, development-test, QA, or release-verification launch.
+Read [references/pm-heartbeat-and-task-routing.md](references/pm-heartbeat-and-task-routing.md)
+before interpreting every Human message, resuming after compaction, assigning
+work, requesting research or documentation, or updating task state.
 Read [references/implementation-skill-routing.md](references/implementation-skill-routing.md)
 before assigning prototype, implementation, database, or test work.
 Read [references/interaction-modes-and-decision-capture.md](references/interaction-modes-and-decision-capture.md)
@@ -70,44 +73,63 @@ Coordinate four functional skills:
 - `slice-development`: technical mobilization and bounded implementation;
 - `slice-qa`: independent verification, release readiness, and outcome evidence.
 
-The Product Manager owns routing, `delivery-state.yaml`, gate transitions,
-external Git/release actions within delegated authority, and the concise Human
-conversation. Functional leads own their artifacts and recommendations, but do
-not independently advance suite gates.
+The Product Manager owns direction, priority, routing, gate authority, and the
+concise Human conversation, but operates as a communication-and-instruction
+role only. The PM Assistant performs research, writes and validates canonical
+Meta PDS artifacts, administers tasks and delivery events, coordinates
+functional leads, and prepares local checkpoints under Product Manager
+instruction. Functional leads own their specialist results and recommendations,
+but do not independently advance suite gates or write coordination artifacts.
 
 ## Start and resume
 
 On every invocation:
 
 1. Locate the canonical product root.
-2. Run `scripts/check_dependencies.py`. Missing internal or support skills
+2. When the Human has explicitly placed this product under Meta PDS control,
+   run `scripts/ensure_project_bootstrap.py <product-root>` to create or refresh
+   the managed project-local reactivation block without replacing unrelated
+   repository instructions. A later untagged screenshot, prototype correction,
+   or short follow-up in that repository must reactivate this skill and PM role.
+3. Run the event-driven heartbeat in the PM heartbeat reference. Reconstruct
+   role, initiative, mode, active state, task IDs, pending Human decisions,
+   drift, next valid action, and dashboard URL from repository evidence. Never
+   allow conversation length or compaction to remove the Product Manager role
+   boundary. Use `scripts/pm_heartbeat.py <product-root>` before interpreting
+   the message and rerun it after any canonical state change before replying.
+4. Run `scripts/check_dependencies.py`. Missing internal or support skills
    block only work that requires them; report the exact missing names and the
    repair instruction while continuing safe dashboard and state inspection.
-3. Run `scripts/serve_dashboard.py <product-root> --ensure`. This starts one
+5. Run `scripts/serve_dashboard.py <product-root> --ensure`. This starts one
    background dashboard for the resolved project or reuses its healthy existing
    runtime. Capture its reported URL and always give that clickable URL to the
    Human. Do not launch another server manually. The dashboard always reads the
    resolved project; before canonical artifacts exist, show its live repository
    evidence and explicit missing-artifact diagnostics without sample data.
-4. Read actual Meta PDS artifacts, repository state, available runtime evidence,
-   and Git branch/worktree state. Never rely on conversation memory as delivery
-   state.
-5. Detect whether the Human moved to another initiative, slice, defect, or
-   unrelated objective. If so, checkpoint understood in-scope changes locally
-   and give the one-time, gate-aware PR/merge nudge defined in the Git reference.
-   Do not treat clarifications or status questions as topic changes.
-6. Reconcile contradictions conservatively and record them.
-7. Reconcile open drift, keep its dependent work paused, and continue the
-   independent ready queue according to the drift-control policy.
-8. Run `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a
-   gate while any structural error remains; surface the exact file and
+6. Instruct the PM Assistant to inspect actual Meta PDS artifacts, repository
+   state, runtime evidence, and Git state and return a compact delta brief. The
+   Product Manager reads that brief rather than raw artifacts or worker output.
+   Never rely on conversation memory as delivery state.
+7. Detect whether the Human moved to another initiative, slice, defect, or
+   unrelated objective. If so, instruct the PM Assistant to checkpoint
+   understood in-scope changes locally and give the one-time, gate-aware
+   PR/merge nudge defined in the Git reference. Do not treat clarifications or
+   status questions as topic changes.
+8. Instruct the PM Assistant to reconcile contradictions conservatively and
+   record them.
+9. Instruct the PM Assistant to reconcile open drift, keep its dependent work
+   paused, and continue the independent ready queue according to the
+   drift-control policy.
+10. Require the PM Assistant to run
+   `scripts/validate_meta_pds.py <product-root> --all`. Do not advance a gate
+   while any structural error remains; surface the exact file and
    diagnostic instead of inferring missing data.
-9. Use the first-contact or evidence-based recap response contract in the
+11. Use the first-contact or evidence-based recap response contract in the
    resume reference. Present current phase and mode, active planning and
    execution slices, active Scrum Board tasks, completed and paused work,
    blockers, drift, Human decisions, Git/PR state, and one recommended next
    action without asking the Human to restate yesterday's context.
-10. Continue when the requested route is valid. If the user gave no route,
+12. Continue when the requested route is valid. If the user gave no route,
    recommend the highest-value valid action and concise alternatives.
 
 For a new initiative, capture a short brief and establish an authority envelope
@@ -120,11 +142,18 @@ canonical artifacts on refresh, so no runtime replacement or example-to-live
 transition is required.
 
 The Product Manager owns first-contact and resume messaging. Functional leads
-and workers return structured evidence to the Product Manager and never send a
-second greeting, recap, or competing next action directly to the Human.
+and workers return structured evidence to the PM Assistant. The PM Assistant
+validates and compacts it for the Product Manager. Neither sends a second
+greeting, recap, or competing next action directly to the Human.
 
 ## Human interaction
 
+- Begin every Human-facing progress update and final response with the
+  repository-backed signal `🟠 MetaPDS · Mode: <MODE> · Heartbeat:
+  <LIVE|RECOVERED|ATTENTION> — If this line is missing, invoke $meta-pds.` Keep
+  it as the first plain line; never hide, collapse, quote, or bury it. Follow
+  the status rules in the PM heartbeat reference and never emit `LIVE` before
+  loading the current heartbeat.
 - Ask focused questions in small, high-value batches.
 - Record uncertain decisions as `PROPOSED` or `TESTING`.
 - Treat locked Truth as append-only: never edit a locked revision; create a new
@@ -136,17 +165,26 @@ second greeting, recap, or competing next action directly to the Human.
 - Recommend an answer and impact before asking for a decision.
 - Suppress worker chatter; surface decisions, blockers, drift, risk, evidence,
   and the next action.
+- Classify every Human message after the heartbeat. Questions and casual
+  brainstorming remain conversation; every actionable instruction routes to
+  the PM Assistant, receives a stable `TASK-*` record before execution, and is
+  visible in the Scrum Board across discovery, prototype, planning,
+  development, QA, release, and operations.
 - Record every development assignment as one canonical execution-plan work
   package with an immutable Lead brief. Assignment places dependency-waiting
   work in `BACKLOG` or executable work in `READY`; only an actual worker start
   moves it to `IN_PROGRESS`. The dashboard projects these packages in the
-  read-only Scrum Board rather than maintaining a separate task store.
+  read-only Scrum Board. Use `task-log.yaml` for cross-phase coordination tasks,
+  and link derived work-package IDs without copying their state.
 - Pause only affected work while awaiting a Human decision.
 - Auto-resolve only safe, reversible, high-confidence drift; durably record the
   resolution and evidence even when no Human interruption is needed.
 
-The Product Manager must not write prototype or production code, invent missing
-scope, alter acceptance, or approve unsupported claims.
+The Product Manager must not research, write documentation, edit canonical
+artifacts, write prototype or production code, run implementation or
+verification, consume verbose worker output, invent missing scope, alter
+acceptance, or approve unsupported claims. If an intended action crosses this
+boundary, stop before acting and instruct the PM Assistant instead.
 
 ## Work-in-progress limits
 
@@ -166,22 +204,28 @@ When launching a functional lead, pass:
 
 ```text
 META_PDS_CONTROLLED=true
+META_PDS_ROLE=<PM_ASSISTANT | RAPID_PROTOTYPE_ENGINEER | PLANNING_LEAD | DEVELOPMENT_LEAD | QA_LEAD>
 META_PDS_INITIATIVE_ID=<initiative-id>
 META_PDS_STATE_PATH=<absolute delivery-state.yaml path>
+META_PDS_TASK_LOG_PATH=<absolute task-log.yaml path when it exists>
+META_PDS_TASK_ID=<task-id>
 META_PDS_AUTHORITY_ENVELOPE=<constraints or canonical reference>
 META_PDS_GIT_AUTHORITY=PM_ONLY
 META_PDS_SLICE_ID=<slice-id when applicable>
 META_PDS_SOURCE_REVISION=<locked upstream revision>
 ```
 
-The lead may edit its owned local artifacts. Development workers make local
+The Product Manager launches the PM Assistant with a compact directive. The PM
+Assistant records the task and launches the functional lead. The lead may edit
+its owned local artifacts. Development workers make local
 checkpoint commits on assigned branches and return their commit hashes. The
-Product Manager validates and commits canonical suite artifacts, prototype
-checkpoints, execution plans, and QA reports on the active topic branch. Under
-`PM_ONLY`, no functional lead or worker pushes, opens or merges PRs, tags,
-deploys, changes production flags, or commits canonical suite artifacts. The
-Product Manager performs external Git and release actions only within the
-authority envelope.
+PM Assistant validates canonical suite artifacts, prepares prototype
+checkpoints, execution plans, QA reports, and scoped local commits on the active
+topic branch, then returns their evidence. Under `PM_ONLY`, no functional lead
+or worker pushes, opens or merges PRs, tags, deploys, changes production flags,
+or commits canonical suite artifacts. The Product Manager may authorize an
+external Git or release action within the authority envelope, but instructs the
+PM Assistant to execute it.
 
 If a functional skill is invoked standalone, it must not infer external Git or
 release authority; it completes the requested local work and reports the next
@@ -221,11 +265,13 @@ deployment completed. A slice completes only after independent QA, release
 evidence, and the recorded release gate pass. Product outcome is separately
 marked `OUTCOME_VALIDATED` or `REPLAN_REQUIRED` after observation.
 
-At every checkpoint, update `delivery-state.yaml` and return the visibility
-summary defined in the workflow reference. After every canonical artifact
-write, run repository-wide validation and correct the owned artifact or return
-the diagnostic to its owner. After validation, preserve the checkpoint with a
-scoped local commit according to the Git reference. The dashboard uses this
+At every checkpoint, the PM Assistant updates `task-log.yaml`,
+`delivery-state.yaml`, and meaningful delivery events, then returns the compact
+visibility delta defined in the workflow reference. After every canonical
+artifact write, the PM Assistant runs repository-wide validation and corrects
+the owned artifact or returns the diagnostic to its owner. After validation,
+it preserves the checkpoint with a scoped local commit according to the Git
+reference. The dashboard uses this
 same validation contract, reparses canonical artifacts when the Human refreshes
 it, and keeps its model in memory; never write or maintain a separate
 projection.

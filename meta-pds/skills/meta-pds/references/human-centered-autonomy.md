@@ -22,6 +22,9 @@ This charter is the root policy for every Meta PDS function and worker.
    memory or unsupported worker claims.
 10. Bound retries and context. Checkpoint work before sessions become
     unmanageably large.
+11. Keep the Product Manager as a thin communication and instruction role. The
+    PM Assistant performs research, canonical writing, coordination, and
+    evidence compaction so long-running Human context remains available.
 
 ## Authority envelope
 

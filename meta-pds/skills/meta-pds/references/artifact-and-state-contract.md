@@ -38,6 +38,7 @@ Use this compact artifact set in the product root:
 docs/meta-pds/initiative.md
 docs/meta-pds/decision-log.yaml
 docs/meta-pds/drift-log.yaml                       # created on first detected drift
+docs/meta-pds/task-log.yaml                        # created on first actionable instruction
 docs/meta-pds/delivery-state.yaml
 docs/meta-pds/delivery-events.jsonl              # optional append-only audit
 docs/meta-pds/slices/<slice-id>.md
@@ -58,6 +59,7 @@ Create artifacts from the suite assets:
 - `assets/initiative-template.md`
 - `assets/decision-log-template.yaml`
 - `assets/drift-log-template.yaml`
+- `assets/task-log-template.yaml`
 - `assets/delivery-state-template.yaml`
 
 Each functional skill provides its owned artifact template.
@@ -66,19 +68,21 @@ Each functional skill provides its owned artifact template.
 
 | Artifact | Canonical owner | Other functions |
 | --- | --- | --- |
-| `initiative.md` | Product Manager with Human approval | read; changes return to PM |
-| `decision-log.yaml` | Product Manager | submit evidence; do not edit |
-| `drift-log.yaml` | Product Manager | report evidence and affected dependency closure |
-| `delivery-state.yaml` | Product Manager | return structured status |
-| prototype and promotion handoff | Rapid Prototype Engineer; Product Manager checkpoints the reviewed revision | Planning and Development inspect as behavioral and file-promotion evidence |
+| `initiative.md` | Product Manager accountable; PM Assistant writes with Human approval | other functions submit evidence |
+| `decision-log.yaml` | Product Manager accountable; PM Assistant writes | submit evidence; do not edit |
+| `drift-log.yaml` | Product Manager accountable; PM Assistant writes | report evidence and affected dependency closure |
+| `task-log.yaml` | PM Assistant | PM instructs; specialists return result packets |
+| `delivery-state.yaml` | Product Manager accountable; PM Assistant writes | return structured status |
+| prototype and promotion handoff | Rapid Prototype Engineer creates; PM Assistant checkpoints the reviewed revision | Planning and Development inspect as behavioral and file-promotion evidence |
 | slice file, including test definitions | Planning Lead | Development/QA read; gaps return upstream |
 | execution plan, including Test ID assignments | Development Lead | QA reads; PM controls gate |
 | production code/tests | Assigned Development worker | other roles inspect only |
-| delivery report | Development Lead + independent QA evidence | PM records final gate |
+| delivery report | Development Lead + independent QA evidence | PM authorizes; PM Assistant records final gate |
 | dashboard runtime view | derived in memory from canonical artifacts | no function edits it |
 
-Under Meta PDS control, only the Product Manager changes canonical gate status.
-Functional leads provide evidence-backed recommendations.
+Under Meta PDS control, only the Product Manager authorizes canonical gate
+status. The PM Assistant writes the authorized transition and validates the
+repository. Functional leads provide evidence-backed recommendations.
 
 ## Truth and precedence
 
@@ -98,6 +102,13 @@ is a current-state ledger, not a narrative activity log. Use the optional JSONL
 file for append-only history. The dashboard is a read-only in-memory view and
 never overrides a canonical artifact or verified runtime evidence. Never
 persist a separate dashboard data file.
+
+`task-log.yaml` is the canonical cross-phase assignment ledger. It preserves
+each actionable Human instruction, PM routing, assignee, dependencies,
+acceptance, traceability, result, and evidence. Execution-plan work packages
+remain canonical for development implementation; a task-log entry may link
+them but must not duplicate them. The Product Manager reads only the heartbeat
+and compact task deltas; the PM Assistant owns detailed task writing.
 
 ## Decision truth
 
@@ -164,8 +175,8 @@ The templates, validator, and dashboard share one parsing and validation
 contract. The dashboard does not maintain a second schema or product-side data
 file.
 
-After any owned slice, execution plan, report, decision log, drift log, delivery state, or
-initiative change, validate the affected slice. Before every gate or resume,
+After any owned slice, execution plan, report, decision log, drift log, task
+log, delivery state, or initiative change, validate the affected slice. Before every gate or resume,
 validate the entire product:
 
 ```text
@@ -174,7 +185,8 @@ python3 <installed-meta-pds>/scripts/validate_meta_pds.py <product-root> --all
 ```
 
 Repository-wide validation discovers every slice, execution plan, report,
-optional drift log, and optional delivery event. It rejects duplicate YAML keys,
+optional drift log, optional task log, and optional delivery event. It rejects
+duplicate YAML keys,
 stable IDs, or revisions within one Truth key, invalid
 types and statuses, filename/identity or revision drift, unknown references,
 dependency cycles, malformed Markdown grammar, and invalid event records.

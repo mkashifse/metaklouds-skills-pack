@@ -5,16 +5,25 @@ A human-centered product delivery system for Codex and Claude Code.
 `meta-pds` is the flagship and the Human's single point of contact. It turns an
 idea into locked product Truth, manually reviewed prototypes, approved fat
 slices, bounded implementation tasks, independent QA, release evidence, and
-outcome validation. The Product Manager coordinates the internal skills and
-specialist workers; the Human receives one concise status, the decisions that
-need judgment, and one recommended next action.
+outcome validation. The Product Manager is a token-efficient communication and
+instruction role. A PM Assistant performs research, canonical writing, task
+administration, and specialist coordination; the Human receives one concise
+status, the decisions that need judgment, and one recommended next action.
 
-Every invocation reconstructs delivery state from repository artifacts and
+An event-driven heartbeat reconstructs the Product Manager's role and delivery
+state before every Human message and after context compaction. It uses repository artifacts and
 runtime evidence instead of relying on chat memory. Meta PDS starts or reuses
 one local dashboard per project, checkpoints meaningful work with local commits,
 and keeps unfinished or approval-dependent work visible without inventing
 progress. Bundled examples are available only through an explicitly labelled
 demo view and are never copied into a user's project.
+
+Once a Human places a product under Meta PDS control, a small managed block in
+the project `AGENTS.md` reactivates the PM for untagged screenshots, prototype
+corrections, short follow-ups, fresh tasks, and post-compaction continuation.
+Every PM message begins with one visible repository-backed liveness line:
+`🟠 MetaPDS · Mode: <MODE> · Heartbeat: <STATUS> — If this line is missing,
+invoke $meta-pds.`
 
 The flagship supports five working modes—Explore, Decision Review, Prototype,
 Slice Shaping, and Delivery—so consequential choices can be captured without
@@ -79,7 +88,7 @@ artifacts and live repository evidence:
 | **Slices** | Fat-slice status, outcomes, progress, dependencies, work packages, contracts, and tests |
 | **Drifts Detected** | Auto-resolved and approval-pending drift, confidence, recommendations, evidence, and paused versus continuing work |
 | **Branches** | Current and local branches, working-tree state, commit evidence, and GitHub pull-request status when available |
-| **Scrum Board** | Canonical execution tasks grouped by Backlog, Ready, In Progress, Review, Done, and blocked states |
+| **Scrum Board** | Every actionable cross-phase instruction plus development work packages, filterable by phase, assignee, slice, priority, and delivery state |
 
 The dashboard server is owned by the installed `meta-pds` skill. It reuses a
 healthy runtime for the same project and returns both the live URL and, when
@@ -87,6 +96,24 @@ useful, a separate demo URL. No dashboard application or sample data is written
 into the product repository.
 
 ## Operating model
+
+- **Role-aware heartbeat:** before every response, Meta PDS restores the PM
+  identity, initiative, mode, tasks, decisions, drift, next action, and
+  communication-only boundary from durable evidence.
+- **Persistent PM reactivation:** an idempotent managed `AGENTS.md` block makes
+  governed product follow-ups route back through Meta PDS even when the Human
+  does not repeat the skill name.
+- **Visible liveness:** every PM response starts with the current mode and a
+  `LIVE`, `RECOVERED`, or `ATTENTION` heartbeat signal; a missing signal tells
+  the Human to invoke `$meta-pds` explicitly.
+- **Product Manager:** communicates with the Human, sets direction, prioritizes,
+  recommends, and instructs. It does not research, write, code, test, or edit
+  canonical artifacts.
+- **PM Assistant:** writes Meta PDS artifacts, performs research, logs every
+  actionable instruction, coordinates specialists, validates evidence, and
+  returns delta-only briefs to the Product Manager.
+- **Per-message routing:** Human instruction → Product Manager → PM Assistant →
+  assigned specialist → PM Assistant evidence update → compact PM response.
 
 - **New project:** Meta PDS explains that no canonical context exists, asks for
   a short brief, records the authority envelope, and recommends the first
@@ -104,8 +131,8 @@ into the product repository.
   logged automatically. Ambiguous or consequential drift carries a recommendation
   and waits for Human approval.
 - **Git control:** workers make bounded local checkpoints. Pushes, PR creation,
-  merges, releases, migrations, and other external actions remain with the
-  Product Manager and require the recorded authority.
+  merges, releases, migrations, and other external actions require Product
+  Manager authorization; the PM Assistant executes them within recorded authority.
 - **Completion:** a component, task, or PR is not a completed slice. A slice
   completes only after whole-slice QA, release evidence, and the release gate.
 

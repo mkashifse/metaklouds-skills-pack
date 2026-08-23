@@ -17,6 +17,7 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/human-centered-autonomy.md`;
 - `references/testing-and-browser-policy.md`;
 - `references/artifact-and-state-contract.md`;
+- `references/pm-heartbeat-and-task-routing.md`;
 - `references/implementation-skill-routing.md`;
 - `references/interaction-modes-and-decision-capture.md`.
 
@@ -40,9 +41,9 @@ Edit only the assigned isolated prototype path, normally:
 prototypes/<initiative-id>/
 ```
 
-Do not edit `initiative.md`, `decision-log.yaml`, slice files, delivery state,
+Do not edit `initiative.md`, `decision-log.yaml`, `task-log.yaml`, slice files, delivery state,
 production repositories, or production contracts. Return findings to the
-Product Manager, who records and locks decisions.
+PM Assistant, who records evidence and prepares a compact Product Manager brief.
 
 ## Prototype modes
 
@@ -83,8 +84,9 @@ When realistic seed data introduces or changes entities, fields, relationships,
 constraints, invariants, ownership, retention, or privacy behavior, stop at a
 schema checkpoint. Return a candidate decision packet containing those facts,
 the affected journeys, and open alternatives. Do not lock it or edit the
-canonical decision log; the Product Manager records the semantic decision key,
-phase, dependencies, and contradictions and asks the Human to approve it.
+canonical decision log; the PM Assistant records the semantic decision key,
+phase, dependencies, and contradictions and prepares the approval packet for
+the Product Manager to present to the Human.
 
 ## Rapid loop
 
@@ -113,6 +115,7 @@ Return a concise structured result:
 
 ```yaml
 status: PROTOTYPE_UPDATED | NEEDS_DECISION | BLOCKED
+task_id: TASK-0001
 initiative_id: ""
 prototype_path: ""
 prototype_mode: DISPOSABLE | PRODUCTION_INTENT
@@ -142,7 +145,8 @@ risks: []
 changed_paths: []
 ```
 
-Under `META_PDS_CONTROLLED=true`, report only to the Product Manager. Do not
+Under `META_PDS_CONTROLLED=true`, report only to the PM Assistant. Do not
 commit, push, open PRs, deploy, or change delivery gates. Return exact changed
-paths; the Product Manager validates and creates the local prototype checkpoint
-commit.
+paths; the PM Assistant validates, updates the task record, and creates the
+local prototype checkpoint commit. Never contact the Human or send verbose
+implementation output to the Product Manager.

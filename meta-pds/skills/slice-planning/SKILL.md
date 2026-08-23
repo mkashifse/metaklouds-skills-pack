@@ -15,6 +15,7 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/human-centered-autonomy.md`;
 - `references/workflow-and-gates.md`;
 - `references/artifact-and-state-contract.md`;
+- `references/pm-heartbeat-and-task-routing.md`;
 - `references/testing-and-browser-policy.md`.
 
 Read [references/planning-readiness.md](references/planning-readiness.md) before
@@ -136,8 +137,8 @@ affected readiness check.
 - Do not mark `READY_FOR_DEVELOPMENT` yourself.
 - Do not reopen released history; a new behavior becomes a linked new slice.
 - Under `META_PDS_CONTROLLED=true`, do not commit, push, open PRs, or change
-  `delivery-state.yaml`; return changed paths for the Product Manager's
-  checkpoint commit.
+  `delivery-state.yaml` or `task-log.yaml`; return changed paths and evidence to
+  the PM Assistant for the checkpoint commit.
 
 ## Result
 
@@ -145,6 +146,7 @@ Return:
 
 ```yaml
 status: PLANNING_REVIEW_READY | NEEDS_UPSTREAM_CLARIFICATION | HUMAN_DECISION_REQUIRED | BLOCKED
+task_id: TASK-0001
 initiative_id: ""
 slice_id: ""
 slice_revision: 1
@@ -158,6 +160,6 @@ changed_paths: []
 recommended_next_action: "Run independent Development Intake review"
 ```
 
-Under `META_PDS_CONTROLLED=true`, the Product Manager creates the validated
-local planning checkpoint commit; the Planning Lead does not push, open, or
-merge a PR.
+Under `META_PDS_CONTROLLED=true`, the PM Assistant validates the result, updates
+the task record, and creates the local planning checkpoint commit; the Planning
+Lead does not push, open, or merge a PR or contact the Human.

@@ -64,6 +64,204 @@
     return `<span class="state-badge ${tone(status)}">${esc(label)}</span>`;
   }
 
+  function copyButton(kind, id, label) {
+    return `<button class="entity-copy-button" type="button" data-copy-entity="${esc(kind)}" data-copy-id="${esc(id)}" aria-label="Copy ${esc(label)} context for Codex" title="Copy for Codex">${icon("copy")}</button>`;
+  }
+
+  function markdownItems(values, fallback = "None") {
+    return values?.length ? values.map((value) => `- ${value}`).join("\n") : `- ${fallback}`;
+  }
+
+  function truthCopyMarkdown(decision) {
+    return [
+      "Update this Meta PDS Truth through the canonical decision workflow.",
+      "Preserve its stable key. If it is locked, create a proposed revision instead of overwriting the canonical record.",
+      `# ${decision.id} — ${decision.title}`,
+      `- **Truth key:** \`${decision.key}\``,
+      `- **Revision:** r${decision.revision}${decision.latestRevision > decision.revision ? ` of ${decision.latestRevision}` : ""}`,
+      `- **Status:** ${decision.canonical ? "CANONICAL" : decision.status}`,
+      `- **Group:** ${decision.layer}`,
+      `- **Type:** ${[decision.typeLabel, ...decision.secondaryTypes.map((type) => type.label)].join(" · ")}`,
+      `- **Logged:** ${decision.updatedAt || "Time not recorded"}`,
+      "## Current Truth",
+      decision.summary || "Not recorded.",
+      decision.rationale ? `## Rationale\n${decision.rationale}` : "",
+      `## Phases\n${markdownItems(decision.phases)}`,
+      `## Depends on\n${markdownItems(decision.dependsOn)}`,
+      `## Affects\n${markdownItems(decision.affects)}`,
+      decision.contradictions.length ? `## Contradictions\n${markdownItems(decision.contradictions.map((item) => `${item.key} — ${item.title} (${item.status})`))}` : "",
+      "## Requested change",
+      "Describe the change after pasting this context into Codex."
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function driftCopyMarkdown(drift) {
+    return [
+      "Review and update this Meta PDS drift while preserving its durable evidence and resolution history.",
+      `# ${drift.id} — ${drift.summary}`,
+      `- **Status:** ${drift.status}`,
+      `- **Severity:** ${drift.severity}`,
+      `- **Stage:** ${drift.stage}`,
+      `- **Type:** ${drift.type}`,
+      `- **Detection confidence:** ${drift.detectionConfidence}%`,
+      `- **Resolution confidence:** ${drift.resolutionConfidence}%`,
+      `- **Owner:** ${drift.owner}`,
+      `## Recommendation\n${drift.recommendation || "Not recorded."}`,
+      drift.resolution ? `## Resolution\n${drift.resolution}` : "",
+      drift.impact ? `## Impact\n${drift.impact}` : "",
+      `## Affected Truth\n${markdownItems(drift.affectedTruthKeys)}`,
+      `## Affected slices\n${markdownItems(drift.affectedSlices)}`,
+      `## Paused work\n${markdownItems(drift.blockedWorkPackages)}`,
+      `## Continuing work\n${markdownItems(drift.continuingWorkPackages)}`,
+      `## Evidence\n${markdownItems(drift.evidence)}`,
+      "## Requested change",
+      "Describe the change after pasting this context into Codex."
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function sliceCopyMarkdown(slice) {
+    const stories = sliceStories(slice.id);
+    const tasks = sliceTasks(slice.id);
+    return [
+      "Update this Meta PDS fat slice while preserving its stable IDs, locked contracts, and traceability.",
+      `# ${slice.id} — ${slice.title}`,
+      `- **Status:** ${slice.status}`,
+      `- **Priority:** ${slice.priority}`,
+      `- **Revision:** r${slice.revision}`,
+      `- **Progress:** ${slice.progress}%`,
+      `- **Source:** ${slice.artifactPath || `docs/meta-pds/slices/${slice.id}.md`}`,
+      `## Outcome\n${slice.outcome || "Not recorded."}`,
+      `## Dependencies\n${markdownItems(slice.dependencies)}`,
+      `## User stories\n${markdownItems(stories.map((story) => `${story.id} — ${story.title}`))}`,
+      `## Work packages\n${markdownItems(tasks.map((task) => `${task.id} — ${task.title} (${task.status}, ${task.owner})`))}`,
+      "## Requested change",
+      "Describe the change after pasting this context into Codex."
+    ].join("\n\n");
+  }
+
+  function storyCopyMarkdown(story) {
+    return [
+      "Update this Meta PDS user story inside its parent slice. Preserve the Story ID and linked Test IDs.",
+      `# ${story.id} — ${story.title}`,
+      `- **Parent slice:** ${story.sliceId}`,
+      `- **Status:** ${story.status}`,
+      `## Story\n${story.description || "See the canonical slice artifact."}`,
+      `## Acceptance criteria\n${markdownItems(story.acceptanceCriteria)}`,
+      `## Linked Test IDs\n${markdownItems(story.testIds)}`,
+      "## Requested change",
+      "Describe the change after pasting this context into Codex."
+    ].join("\n\n");
+  }
+
+  function workPackageCopyMarkdown(task) {
+    return [
+      "Update this Meta PDS work package through Slice Development. Preserve its immutable Lead brief and parent-slice traceability.",
+      `- **Task ID:** ${task.id}`,
+      `- **Parent slice:** ${task.sliceId}`,
+      `- **Status:** ${task.status}`,
+      `- **Assignee:** ${task.owner}`,
+      taskMarkdown(task),
+      "## Requested change",
+      "Describe the change after pasting this context into Codex."
+    ].join("\n\n");
+  }
+
+  function coordinationTaskCopyMarkdown(task) {
+    return [
+      "Update this Meta PDS coordination task through the Product Manager → PM Assistant route. Preserve the original Human instruction and append clarifications instead of rewriting it.",
+      `- **Task ID:** ${task.id}`,
+      `- **Phase:** ${pretty(task.phase)}`,
+      `- **Status:** ${task.status}`,
+      `- **Assignee:** ${task.owner}`,
+      taskMarkdown(task),
+      "## Requested change",
+      "Describe the change after pasting this context into Codex."
+    ].join("\n\n");
+  }
+
+  function copyEntityMarkdown(kind, id) {
+    if (kind === "truth") {
+      const decision = data.decisions.find((item) => item.key === id);
+      return decision ? { text: truthCopyMarkdown(decision), label: `Truth ${decision.key}` } : null;
+    }
+    if (kind === "drift") {
+      const drift = data.drifts.find((item) => item.id === id);
+      return drift ? { text: driftCopyMarkdown(drift), label: `Drift ${drift.id}` } : null;
+    }
+    if (kind === "slice") {
+      const slice = data.slices.find((item) => item.id === id);
+      return slice ? { text: sliceCopyMarkdown(slice), label: `Slice ${slice.id}` } : null;
+    }
+    if (kind === "story") {
+      const story = data.stories.find((item) => item.id === id);
+      return story ? { text: storyCopyMarkdown(story), label: `Story ${story.id}` } : null;
+    }
+    if (kind === "work-package") {
+      const task = data.workPackages.find((item) => item.id === id);
+      return task ? { text: workPackageCopyMarkdown(task), label: `Work package ${task.id}` } : null;
+    }
+    if (kind === "task") {
+      const task = (data.tasks || []).find((item) => item.id === id && item.kind === "COORDINATION_TASK");
+      return task ? { text: coordinationTaskCopyMarkdown(task), label: `Task ${task.id}` } : null;
+    }
+    return null;
+  }
+
+  async function writeClipboard(text) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.append(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    if (!copied) throw new Error("Clipboard access is unavailable.");
+  }
+
+  let copyFeedbackTimer;
+  function showCopyFeedback(message, failed = false) {
+    const toast = $("#copy-toast");
+    clearTimeout(copyFeedbackTimer);
+    toast.textContent = message;
+    toast.classList.toggle("is-failed", failed);
+    toast.hidden = false;
+    copyFeedbackTimer = setTimeout(() => { toast.hidden = true; }, 1800);
+  }
+
+  function bindCopyControls() {
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-copy-entity]");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const packet = copyEntityMarkdown(button.dataset.copyEntity, button.dataset.copyId);
+      if (!packet) {
+        showCopyFeedback("Copy context is unavailable.", true);
+        return;
+      }
+      const original = button.innerHTML;
+      try {
+        await writeClipboard(packet.text);
+        button.innerHTML = icon("check");
+        button.classList.add("is-copied");
+        showCopyFeedback(`${packet.label} copied for Codex.`);
+      } catch (_error) {
+        button.classList.add("is-failed");
+        showCopyFeedback("Could not copy this context.", true);
+      }
+      setTimeout(() => {
+        button.innerHTML = original;
+        button.classList.remove("is-copied", "is-failed");
+      }, 1500);
+    }, true);
+  }
+
   function normalizeProgress(value) {
     const numeric = Number(value);
     return Number.isFinite(numeric) ? Math.min(100, Math.max(0, numeric)) : 0;
@@ -110,7 +308,7 @@
     setText("#decision-count", data.decisions.length);
     setText("#drift-count", data.drifts?.length || 0);
     setText("#branch-count", data.repository?.branches?.length || 0);
-    setText("#task-count", data.workPackages?.length || 0);
+    setText("#task-count", data.tasks?.length || data.workPackages?.length || 0);
     setText("#projection-source", `${data.projection.source} · schema v${data.schemaVersion}`);
     const isDemo = data.projection.kind === "demo-fixture";
     $("#demo-indicator").hidden = !isDemo;
@@ -189,7 +387,10 @@
             <span class="task-id">${esc(task.id)}</span>
             <span class="task-name">${esc(task.title)}</span>
             <span class="assignee"><i>${esc(task.ownerInitials)}</i>${esc(task.owner)}</span>
-            ${badge(task.status)}
+            <span class="task-line-actions">
+              ${badge(task.status)}
+              ${copyButton("work-package", task.id, `work package ${task.id}`)}
+            </span>
           </div>
         `).join("")}
       </div>`;
@@ -230,7 +431,10 @@
               <span>Depends on <strong>${esc(dependencies)}</strong></span>
             </div>
           </div>
-          <button class="slice-collapse-toggle" type="button" data-toggle-slice-card="${esc(slice.id)}" aria-expanded="${collapsed ? "false" : "true"}" aria-label="${collapsed ? "Expand" : "Collapse"} ${esc(slice.title)} slice">${icon("chevron-down")}</button>
+          <span class="slice-row-actions">
+            ${copyButton("slice", slice.id, `slice ${slice.id}`)}
+            <button class="slice-collapse-toggle" type="button" data-toggle-slice-card="${esc(slice.id)}" aria-expanded="${collapsed ? "false" : "true"}" aria-label="${collapsed ? "Expand" : "Collapse"} ${esc(slice.title)} slice">${icon("chevron-down")}</button>
+          </span>
         </header>
         <div class="slice-content">
           ${activeTaskRows(tasks)}
@@ -304,6 +508,11 @@
       const typeMatch = decisionTypeFilter === "ALL" || decision.type === decisionTypeFilter || decision.secondaryTypes?.some((type) => type.id === decisionTypeFilter);
       const phaseMatch = decisionPhaseFilter === "ALL" || decision.phases?.includes(decisionPhaseFilter);
       return statusMatch && groupMatch && typeMatch && phaseMatch;
+    }).sort((left, right) => {
+      const leftTime = Date.parse(left.updatedAt || "");
+      const rightTime = Date.parse(right.updatedAt || "");
+      const byTime = (Number.isFinite(rightTime) ? rightTime : -Infinity) - (Number.isFinite(leftTime) ? leftTime : -Infinity);
+      return byTime || left.key.localeCompare(right.key);
     });
     if (!filtered.length) {
       const demoLink = data.projection.kind === "live-project"
@@ -312,29 +521,21 @@
       $("#decision-list").innerHTML = `<div class="empty-state"><p>No decisions match these filters.</p>${demoLink}</div>`;
       return;
     }
-    const visibleGroups = [];
-    filtered.forEach((decision) => {
-      let group = visibleGroups.find((candidate) => candidate.layer === decision.layer);
-      if (!group) {
-        group = { layer: decision.layer, layerKey: decision.layerKey, decisions: [] };
-        visibleGroups.push(group);
-      }
-      group.decisions.push(decision);
-    });
-    $("#decision-list").innerHTML = visibleGroups.map((group) => `
-      <details class="decision-group layer-${esc(group.layerKey)}">
-        <summary class="decision-group-summary"><span>${esc(group.layer)}</span><span class="decision-group-summary-end"><strong>${group.decisions.length}</strong>${icon("chevron-down")}</span></summary>
-        <div class="decision-group-list">${group.decisions.map((decision) => `
-          <details class="decision-item ${decision.hasContradiction ? "is-contradictory" : ""}">
+    $("#decision-list").innerHTML = `<div class="decision-stream">${filtered.map((decision) => `
+          <details class="decision-item layer-${esc(decision.layerKey)} ${decision.hasContradiction ? "is-contradictory" : ""}">
             <summary class="decision-title-bar">
               <i class="decision-rail" aria-hidden="true"></i>
               <span class="decision-meta-row">
                 <span class="decision-brain" aria-hidden="true">${icon("brain")}</span>
                 <span class="decision-identity"><span>${esc(decision.id)} · r${esc(decision.revision)}${decision.latestRevision > decision.revision ? ` of ${esc(decision.latestRevision)}` : ""}</span><code>${esc(decision.key)}</code></span>
                 <i class="decision-meta-divider" aria-hidden="true"></i>
+                <span class="decision-layer-label">${esc(decision.layer)}</span>
+                <i class="decision-meta-divider" aria-hidden="true"></i>
                 <span class="decision-type-cluster"><span class="decision-type-label">${esc(decision.typeLabel)}</span>${decision.secondaryTypes.map((type) => `<span class="decision-type-secondary">${esc(type.label)}</span>`).join("")}</span>
                 <i class="decision-meta-divider" aria-hidden="true"></i>
                 <span class="decision-state">${badge(decision.status, decision.canonical ? "Canonical" : statusLabel(decision.status))}</span>
+                <i class="decision-meta-divider" aria-hidden="true"></i>
+                <span class="decision-recorded-at"><small>Logged</small>${decision.updatedAt ? esc(dateTime(decision.updatedAt)) : "Time not recorded"}</span>
               </span>
               <strong class="decision-title-question">${esc(decision.title)}</strong>
               <span class="decision-property-row">
@@ -342,7 +543,10 @@
                 <span><small>Depends on</small><span>${decision.dependsOn.length ? decision.dependsOn.map(esc).join(", ") : "None"}</span></span>
                 <span><small>Affects</small><span>${decision.affects.length ? decision.affects.map(esc).join(", ") : "Not recorded"}</span></span>
               </span>
-              <span class="decision-collapse-icon" aria-hidden="true">${icon("chevron-down")}</span>
+              <span class="decision-row-actions">
+                ${copyButton("truth", decision.key, `Truth ${decision.key}`)}
+                <span class="decision-collapse-icon" aria-hidden="true">${icon("chevron-down")}</span>
+              </span>
             </summary>
             <div class="decision-details">
                 <div class="decision-copy"><p>${esc(decision.summary)}</p>${decision.rationale ? `<small><strong>Why:</strong> ${esc(decision.rationale)}</small>` : ""}</div>
@@ -363,8 +567,7 @@
                   </article>`).join("")}</div>
                 </details>` : ""}
             </div>
-          </details>`).join("")}</div>
-      </details>`).join("");
+          </details>`).join("")}</div>`;
   }
 
   let decisionStatusFilter = "CANONICAL";
@@ -437,7 +640,10 @@
           </span>
           <strong class="drift-title">${esc(drift.summary)}</strong>
           <small class="drift-category">${esc(pretty(drift.type))} · ${esc(pretty(drift.stage))}</small>
-          <span class="drift-chevron" aria-hidden="true">${icon("chevron-down")}</span>
+          <span class="drift-row-actions">
+            ${copyButton("drift", drift.id, `drift ${drift.id}`)}
+            <span class="drift-chevron" aria-hidden="true">${icon("chevron-down")}</span>
+          </span>
         </summary>
         <div class="drift-body">
           <div class="drift-callout ${drift.status === "HUMAN_APPROVAL_NEEDED" ? "human" : "resolution"}">
@@ -495,6 +701,7 @@
   let scrumOwnerFilter = "ALL";
   let scrumSliceFilter = "ALL";
   let scrumPriorityFilter = "ALL";
+  let scrumPhaseFilter = "ALL";
 
   function scrumBucket(task) {
     const normalized = normalizeStatus(task.status);
@@ -505,7 +712,8 @@
     return (scrumStatusFilter === "ALL" || scrumBucket(task) === scrumStatusFilter)
       && (scrumOwnerFilter === "ALL" || task.owner === scrumOwnerFilter)
       && (scrumSliceFilter === "ALL" || task.sliceId === scrumSliceFilter)
-      && (scrumPriorityFilter === "ALL" || task.priority === scrumPriorityFilter);
+      && (scrumPriorityFilter === "ALL" || task.priority === scrumPriorityFilter)
+      && (scrumPhaseFilter === "ALL" || task.phase === scrumPhaseFilter);
   }
 
   function scrumOptions(values, selected, allLabel) {
@@ -514,25 +722,30 @@
   }
 
   function renderScrumControls() {
+    const tasks = data.tasks || data.workPackages || [];
     const filters = [["ALL", "All"], ["BACKLOG", "Backlog"], ["READY", "Ready"], ["IN_PROGRESS", "In Progress"], ["REVIEW", "Review"], ["DONE", "Done"]];
     $("#scrum-status-filters").innerHTML = filters.map(([value, label]) => {
-      const count = value === "ALL" ? data.workPackages.length : data.workPackages.filter((task) => scrumBucket(task) === value).length;
+      const count = value === "ALL" ? tasks.length : tasks.filter((task) => scrumBucket(task) === value).length;
       return `<button class="filter-button ${value === scrumStatusFilter ? "is-active" : ""}" type="button" data-scrum-status="${value}">${label}<strong>${count}</strong></button>`;
     }).join("");
-    const owners = [...new Set(data.workPackages.map((task) => task.owner).filter(Boolean))].sort();
-    const slices = [...new Set(data.workPackages.map((task) => task.sliceId).filter(Boolean))].sort();
-    const priorities = [...new Set(data.workPackages.map((task) => task.priority).filter(Boolean))].sort();
+    const owners = [...new Set(tasks.map((task) => task.owner).filter(Boolean))].sort();
+    const slices = [...new Set(tasks.map((task) => task.sliceId).filter(Boolean))].sort();
+    const priorities = [...new Set(tasks.map((task) => task.priority).filter(Boolean))].sort();
+    const phases = [...new Set(tasks.map((task) => task.phase).filter(Boolean))].sort();
     $("#scrum-owner-filter").innerHTML = scrumOptions(owners, scrumOwnerFilter, "All assignees");
     $("#scrum-slice-filter").innerHTML = scrumOptions(slices, scrumSliceFilter, "All slices");
     $("#scrum-priority-filter").innerHTML = scrumOptions(priorities, scrumPriorityFilter, "All priorities");
+    $("#scrum-phase-filter").innerHTML = scrumOptions(phases, scrumPhaseFilter, "All phases");
   }
 
   function scrumTaskRow(task, openTaskId) {
+    const copyKind = task.kind === "COORDINATION_TASK" ? "task" : "work-package";
+    const copyLabel = task.kind === "COORDINATION_TASK" ? `task ${task.id}` : `work package ${task.id}`;
     return `
       <details class="scrum-task ${normalizeStatus(task.status) === "IN_PROGRESS" ? "is-active" : ""}" ${task.id === openTaskId ? "open" : ""}>
         <summary>
           <span class="scrum-task-identity"><code>${esc(task.id)}</code><b>:</b><strong>${esc(task.title)}</strong></span>
-          <span class="scrum-task-state"><span>${esc(task.owner || "Unassigned")}</span><b>|</b>${badge(task.status)}</span>
+          <span class="scrum-task-state"><span class="scrum-task-phase">${esc(pretty(task.phase || "Development"))}</span><b>|</b><span>${esc(task.owner || "Unassigned")}</span><b>|</b>${badge(task.status)}${copyButton(copyKind, task.id, copyLabel)}</span>
           <span class="scrum-task-chevron">${icon("chevron-down")}</span>
         </summary>
         <div class="scrum-task-detail">
@@ -543,7 +756,7 @@
 
   function renderScrum() {
     renderScrumControls();
-    const tasks = data.workPackages.filter(scrumMatches);
+    const tasks = (data.tasks || data.workPackages || []).filter(scrumMatches);
     const openTask = tasks.find((task) => normalizeStatus(task.status) === "IN_PROGRESS") || null;
     $("#scrum-task-list").innerHTML = tasks.length
       ? tasks.map((task) => scrumTaskRow(task, openTask?.id)).join("")
@@ -560,6 +773,7 @@
     $("#scrum-owner-filter").addEventListener("change", (event) => { scrumOwnerFilter = event.target.value; renderScrum(); });
     $("#scrum-slice-filter").addEventListener("change", (event) => { scrumSliceFilter = event.target.value; renderScrum(); });
     $("#scrum-priority-filter").addEventListener("change", (event) => { scrumPriorityFilter = event.target.value; renderScrum(); });
+    $("#scrum-phase-filter").addEventListener("change", (event) => { scrumPhaseFilter = event.target.value; renderScrum(); });
   }
 
   function repositoryTracking(branch) {
@@ -708,6 +922,7 @@
           <span class="story-accordion-dot"><i class="state-dot ${tone(story.status)}"></i></span>
           <span class="story-accordion-copy"><small>${esc(story.id)} · ${esc(statusLabel(story.status))}</small><strong>${esc(story.title)}</strong></span>
           <span class="story-accordion-count">${esc(acceptanceLabel(story))}</span>
+          ${copyButton("story", story.id, `story ${story.id}`)}
           <span class="story-accordion-chevron">${icon("chevron-down")}</span>
         </summary>
         <div class="story-accordion-body">
@@ -749,7 +964,37 @@
       </details>`;
   }
 
+  function coordinationTaskMarkdown(task) {
+    const markdownList = (heading, values, fallback = "None") => [
+      `## ${heading}`,
+      ...(values?.length ? values.map((value) => `- ${value}`) : [`- ${fallback}`]),
+    ].join("\n");
+    const leadBrief = task.leadBrief || {};
+    const history = task.history || [];
+    return [
+      `# ${task.title}`,
+      `**Phase:** ${pretty(task.phase)} · **Source:** ${pretty(task.source)} · **Priority:** ${task.priority}`,
+      "## Original instruction",
+      "> **Immutable Human or Product Manager instruction**",
+      `> ${leadBrief.instruction || "Instruction not recorded."}`,
+      `**Routed by:** ${task.assignedBy || "Product Manager"}${task.assignedAt ? ` at ${dateTime(task.assignedAt)}` : ""} · **Assignee:** ${task.owner}`,
+      "## Expected outcome",
+      leadBrief.expectedOutcome || task.description || "Outcome not recorded.",
+      ["## Acceptance criteria", ...(leadBrief.acceptanceCriteria?.length ? leadBrief.acceptanceCriteria : ["Acceptance not recorded."]).map((value) => `- [ ] ${value}`)].join("\n"),
+      leadBrief.clarifications?.length ? ["## Clarifications", ...leadBrief.clarifications.map((item) => `- ${item.at ? `${dateTime(item.at)} · ` : ""}${item.by ? `**${item.by}:** ` : ""}${item.note}`)].join("\n") : "",
+      markdownList("Task dependencies", task.dependsOn),
+      markdownList("Linked Truth", task.linkedTruthKeys),
+      markdownList("Linked drift", task.linkedDrifts),
+      markdownList("Linked slices", task.linkedSlices),
+      markdownList("Derived work packages", task.linkedWorkPackages),
+      task.result ? `## Result\n${task.result}` : "",
+      markdownList("Evidence", task.evidence, "No durable evidence recorded yet."),
+      history.length ? ["## Status history", ...history.map((event) => `- ${dateTime(event.at)} — **${pretty(event.kind)}:** ${event.title}`)].join("\n") : ""
+    ].filter(Boolean).join("\n\n");
+  }
+
   function taskMarkdown(task) {
+    if (task.kind === "COORDINATION_TASK") return coordinationTaskMarkdown(task);
     const linkedStories = task.storyIds
       .map((id) => data.stories.find((story) => story.id === id))
       .filter(Boolean);
@@ -837,6 +1082,7 @@
           <span class="story-accordion-copy"><small>${esc(task.id)} · ${esc(pretty(task.area))}</small><button class="work-package-title-link" type="button" data-open-task="${esc(task.id)}" aria-label="Open full detail for ${esc(task.title)}">${esc(task.title)}</button></span>
           <span class="story-accordion-count">${esc(task.owner)}</span>
           ${badge(task.status)}
+          ${copyButton("work-package", task.id, `work package ${task.id}`)}
           <span class="story-accordion-chevron">${icon("chevron-down")}</span>
         </summary>
         <div class="story-accordion-body work-package-accordion-body">
@@ -962,7 +1208,12 @@
     if (!slice) return;
     const task = modalEntity === "task" ? data.workPackages.find((item) => item.id === modalTaskId) : null;
     const contract = modalEntity === "contract" ? data.contracts.find((item) => item.id === modalContractId && item.sliceId === slice.id) : null;
+    const modalCopy = $("#modal-copy");
     if (task) {
+      modalCopy.hidden = false;
+      modalCopy.dataset.copyEntity = "work-package";
+      modalCopy.dataset.copyId = task.id;
+      modalCopy.setAttribute("aria-label", `Copy work package ${task.id} context for Codex`);
       renderModalTabs(slice, false);
       $("#modal-entity-icon").innerHTML = icon("package");
       setText("#modal-id", `${pretty(task.area)} · ${task.owner || "Unassigned"}`);
@@ -970,6 +1221,9 @@
       $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.id)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(task.id)}</strong>`;
       $("#modal-content").innerHTML = taskIssueDetail(task, slice);
     } else if (contract) {
+      modalCopy.hidden = true;
+      delete modalCopy.dataset.copyEntity;
+      delete modalCopy.dataset.copyId;
       renderModalTabs(slice, false);
       $("#modal-entity-icon").innerHTML = icon("git-branch");
       setText("#modal-id", `${contract.version} · ${pretty(contract.type)}`);
@@ -977,6 +1231,10 @@
       $("#modal-breadcrumbs").innerHTML = `<button type="button" data-modal-root>Slices</button>${icon("chevron-right", "breadcrumb-icon")}<button type="button" data-modal-slice>${esc(slice.id)}</button>${icon("chevron-right", "breadcrumb-icon")}<strong>${esc(contract.id)}</strong>`;
       $("#modal-content").innerHTML = contractIssueDetail(contract, slice);
     } else {
+      modalCopy.hidden = false;
+      modalCopy.dataset.copyEntity = "slice";
+      modalCopy.dataset.copyId = slice.id;
+      modalCopy.setAttribute("aria-label", `Copy slice ${slice.id} context for Codex`);
       modalEntity = "slice";
       modalTaskId = null;
       modalContractId = null;
@@ -1041,4 +1299,5 @@
   bindDriftControls();
   bindScrumControls();
   bindModal();
+  bindCopyControls();
 })();

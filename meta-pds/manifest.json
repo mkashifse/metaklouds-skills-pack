@@ -1,7 +1,7 @@
 {
   "name": "meta-pds",
   "displayName": "Meta Product Delivery System",
-  "version": "0.19.0",
+  "version": "0.22.0",
   "entrySkill": "meta-pds",
   "skills": [
     "meta-pds",
@@ -31,5 +31,12 @@
       "skills/meta-pds/assets/dashboard/app.js"
     ],
     "lifecycle": "ensure-one-runtime-per-project"
+  },
+  "operatingModel": {
+    "humanContact": "Product Manager",
+    "canonicalWriter": "PM Assistant",
+    "heartbeat": "skills/meta-pds/scripts/pm_heartbeat.py",
+    "projectBootstrap": "skills/meta-pds/scripts/ensure_project_bootstrap.py",
+    "taskLedgerTemplate": "skills/meta-pds/assets/task-log-template.yaml"
   }
 }

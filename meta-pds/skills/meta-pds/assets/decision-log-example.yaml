@@ -396,7 +396,7 @@ decisions:
     affected_artifacts: [operations-plan, SLICE-AUTH-001]
     authority: PM
     approved_by: ""
-    decided_at: ""
+    decided_at: "2026-08-20T11:50:00+05:00"
     supersedes: ""
   - id: DEC-019
     key: ux.navigation.topbar
@@ -414,7 +414,7 @@ decisions:
     affected_artifacts: [future-prototype]
     authority: PM
     approved_by: ""
-    decided_at: ""
+    decided_at: "2026-08-20T12:00:00+05:00"
     supersedes: ""
   - id: DEC-020
     key: storage.document.primary
@@ -432,5 +432,5 @@ decisions:
     affected_artifacts: [future-architecture-review]
     authority: PM
     approved_by: ""
-    decided_at: ""
+    decided_at: "2026-08-20T12:10:00+05:00"
     supersedes: ""

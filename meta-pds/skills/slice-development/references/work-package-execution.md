@@ -116,5 +116,6 @@ Frontend packages own paths under `frontend/`; backend and database packages
 own paths under `backend/`. A cross-area slice uses separate bounded packages
 joined by a versioned integration contract and an integration package or check.
 Workers must not solve integration by importing application source code from
-the other area. Any exception returns to the Product Manager as an architecture
-decision instead of being introduced silently.
+the other area. Any exception returns through the PM Assistant for a Product
+Manager architecture-decision recommendation instead of being introduced
+silently.

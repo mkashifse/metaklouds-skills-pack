@@ -110,6 +110,21 @@ success measures. Mark `REPLAN_REQUIRED` when the outcome is not supported.
 
 ## Scheduling
 
+Every actionable Human instruction first becomes a PM-Assistant-owned
+coordination task. The Product Manager issues direction only; the PM Assistant
+records, researches, writes, assigns, validates, and briefs. Questions and
+casual brainstorming do not enter the task ledger. Coordination tasks use the
+same flow across discovery, prototype, planning, development, QA, release, and
+operations:
+
+```text
+BACKLOG → READY → IN_PROGRESS → VERIFYING → DONE
+```
+
+Development implementation remains decomposed into canonical execution-plan
+work packages. Link those package IDs from the parent coordination task rather
+than duplicating their state.
+
 Maintain one active planning slice and one active development slice. A newly
 assigned package remains `BACKLOG` while prerequisites are incomplete, becomes
 `READY` when every dependency is `DONE` and entry checks pass, and becomes
@@ -143,7 +158,8 @@ Stop and escalate when any occurs unless the Human extends the boundary:
 
 ## Visibility summary
 
-At meaningful checkpoints and every resume, report:
+At meaningful checkpoints and every resume, the PM Assistant prepares this
+delta-only brief for the Product Manager, who communicates the relevant parts:
 
 ```text
 Current phase and interaction mode:

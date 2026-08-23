@@ -35,7 +35,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
 RUNTIME_SERVICE = "meta-pds-dashboard"
-RUNTIME_VERSION = 13
+RUNTIME_VERSION = 19
 SUPPORTED_IMPLEMENTATION_SKILLS = {
     "prototype",
     "vercel-react-best-practices",
@@ -88,6 +88,14 @@ DRIFT_TYPES = {
 }
 DRIFT_APPROVAL_STATUSES = {"NOT_REQUIRED", "PENDING", "APPROVED", "REJECTED"}
 AUTO_RESOLUTION_MIN_CONFIDENCE = 85
+TASK_ID_PATTERN = re.compile(r"^TASK-[A-Za-z0-9-]+$")
+TASK_STATUSES = {
+    "BACKLOG", "READY", "IN_PROGRESS", "VERIFYING", "DONE", "BLOCKED",
+    "BLOCKED_BY_DRIFT", "PAUSED", "REWORK_REQUIRED", "REVERIFY_REQUIRED",
+    "HUMAN_DECISION_REQUIRED",
+}
+TASK_PHASES = {"DISCOVERY", "PROTOTYPE", "PLANNING", "DEVELOPMENT", "QA", "RELEASE", "OPERATIONS"}
+TASK_SOURCES = {"HUMAN_INSTRUCTION", "PM_ASSIGNMENT", "DRIFT_REMEDIATION", "GATE_ACTION"}
 
 
 class ArtifactError(RuntimeError):
@@ -1311,6 +1319,7 @@ def validate_product_artifacts(
                     elif package_id not in package_by_id:
                         error(path, "reference.package", f"{label}.work_packages references unknown '{package_id}'", slice_id)
 
+    seen_drift_ids: set[str] = set()
     drift_path = base / "drift-log.yaml"
     drift_document = load_yaml(drift_path, required=False)
     if drift_document is not None:
@@ -1325,7 +1334,6 @@ def validate_product_artifacts(
         if not isinstance(drift_entries, list):
             error(drift_path, "drift-log.type", "drifts must be a list")
             drift_entries = []
-        seen_drift_ids: set[str] = set()
         for index, entry in enumerate(drift_entries):
             label = f"drifts[{index}]"
             if not isinstance(entry, dict):
@@ -1430,6 +1438,136 @@ def validate_product_artifacts(
             if drift_status == "CLOSED" and (not isinstance(entry.get("resolution"), str) or not entry.get("resolution")):
                 error(drift_path, "drift.resolution", f"{label}.resolution is required for CLOSED")
 
+    task_path = base / "task-log.yaml"
+    task_document = load_yaml(task_path, required=False)
+    if task_document is not None and selected_slice_ids is None:
+        for field in ["schema_version", "initiative_id", "owner", "tasks"]:
+            if field not in task_document:
+                error(task_path, "task-log.field", f"Top-level field '{field}' is required")
+        if task_document.get("schema_version") != 1:
+            error(task_path, "schema.version", "task-log schema_version must be 1")
+        if initiative_id and task_document.get("initiative_id") != initiative_id:
+            error(task_path, "initiative.mismatch", "initiative_id does not match initiative.md")
+        if task_document.get("owner") != "PM Assistant":
+            error(task_path, "task-log.owner", "task-log owner must be 'PM Assistant'")
+        task_entries = task_document.get("tasks")
+        if not isinstance(task_entries, list):
+            error(task_path, "task-log.type", "tasks must be a list")
+            task_entries = []
+        task_by_id: dict[str, dict[str, Any]] = {}
+        required_task_fields = [
+            "id", "parent_task_id", "source", "phase", "title", "original_instruction",
+            "normalized_outcome", "priority", "status", "routed_by", "assignee",
+            "created_at", "assigned_at", "started_at", "completed_at", "depends_on",
+            "acceptance_criteria", "linked_truth_keys", "linked_drifts", "linked_slices",
+            "linked_work_packages", "clarifications", "result", "evidence",
+        ]
+        list_task_fields = [
+            "depends_on", "acceptance_criteria", "linked_truth_keys", "linked_drifts",
+            "linked_slices", "linked_work_packages", "clarifications", "evidence",
+        ]
+        for index, entry in enumerate(task_entries):
+            label = f"tasks[{index}]"
+            if not isinstance(entry, dict):
+                error(task_path, "task.type", f"{label} must be a mapping")
+                continue
+            for field in required_task_fields:
+                if field not in entry:
+                    error(task_path, "task.field", f"{label}.{field} is required")
+            task_id = entry.get("id")
+            if not isinstance(task_id, str) or not TASK_ID_PATTERN.fullmatch(task_id):
+                error(task_path, "task.id", f"{label}.id must start with 'TASK-' and contain only letters, numbers, or hyphens")
+                continue
+            if task_id in task_by_id:
+                error(task_path, "id.duplicate-task", f"Duplicate task ID '{task_id}'")
+            else:
+                task_by_id[task_id] = entry
+            if status(entry.get("source")) not in TASK_SOURCES:
+                error(task_path, "task.source", f"{label}.source is invalid")
+            if status(entry.get("phase")) not in TASK_PHASES:
+                error(task_path, "task.phase", f"{label}.phase is invalid")
+            task_status = status(entry.get("status"))
+            if task_status not in TASK_STATUSES:
+                error(task_path, "task.status", f"{label}.status is invalid")
+            if not re.fullmatch(r"P[0-3]", str(entry.get("priority") or "")):
+                error(task_path, "task.priority", f"{label}.priority must be P0, P1, P2, or P3")
+            for field in ["title", "original_instruction", "normalized_outcome", "routed_by", "assignee", "created_at", "assigned_at"]:
+                if not isinstance(entry.get(field), str) or not entry.get(field):
+                    error(task_path, "task.field", f"{label}.{field} must be non-empty text")
+            if entry.get("routed_by") != "Product Manager":
+                error(task_path, "task.route", f"{label}.routed_by must be 'Product Manager'")
+            for field in ["parent_task_id", "started_at", "completed_at", "result"]:
+                if not isinstance(entry.get(field), str):
+                    error(task_path, "task.type", f"{label}.{field} must be text")
+            for field in list_task_fields:
+                if not isinstance(entry.get(field), list):
+                    error(task_path, "task.type", f"{label}.{field} must be a list")
+            if task_status == "IN_PROGRESS" and not entry.get("started_at"):
+                error(task_path, "task.lifecycle", f"{label}.started_at is required for IN_PROGRESS")
+            if task_status == "DONE":
+                if not entry.get("completed_at"):
+                    error(task_path, "task.lifecycle", f"{label}.completed_at is required for DONE")
+                if not entry.get("result"):
+                    error(task_path, "task.evidence", f"{label}.result is required for DONE")
+                if not entry.get("evidence"):
+                    error(task_path, "task.evidence", f"{label}.evidence is required for DONE")
+            clarifications = entry.get("clarifications", []) if isinstance(entry.get("clarifications"), list) else []
+            for clarification_index, clarification in enumerate(clarifications):
+                clarification_label = f"{label}.clarifications[{clarification_index}]"
+                if not isinstance(clarification, dict):
+                    error(task_path, "task.clarification", f"{clarification_label} must be a mapping")
+                    continue
+                for field in ["at", "by", "note"]:
+                    if not isinstance(clarification.get(field), str) or not clarification.get(field):
+                        error(task_path, "task.clarification", f"{clarification_label}.{field} must be non-empty text")
+
+        task_graph: dict[str, list[str]] = {task_id: [] for task_id in task_by_id}
+        for task_id, entry in task_by_id.items():
+            label = f"task '{task_id}'"
+            parent_task_id = entry.get("parent_task_id")
+            if parent_task_id:
+                if parent_task_id == task_id:
+                    error(task_path, "reference.task", f"{label} cannot be its own parent")
+                elif parent_task_id not in task_by_id:
+                    error(task_path, "reference.task", f"{label} references unknown parent task '{parent_task_id}'")
+            for dependency in entry.get("depends_on", []) if isinstance(entry.get("depends_on"), list) else []:
+                if not isinstance(dependency, str):
+                    error(task_path, "reference.type", f"{label} dependencies must be Task ID strings")
+                elif dependency == task_id:
+                    error(task_path, "reference.task", f"{label} cannot depend on itself")
+                elif dependency not in task_by_id:
+                    error(task_path, "reference.task", f"{label} depends on unknown task '{dependency}'")
+                else:
+                    task_graph[task_id].append(dependency)
+            reference_sets = [
+                ("linked_truth_keys", known_decision_keys, "decision"),
+                ("linked_drifts", seen_drift_ids, "drift"),
+                ("linked_slices", known_slice_ids, "slice"),
+                ("linked_work_packages", set(global_package_ids), "package"),
+            ]
+            for field, known_ids, reference_kind in reference_sets:
+                for reference in entry.get(field, []) if isinstance(entry.get(field), list) else []:
+                    if not isinstance(reference, str) or reference not in known_ids:
+                        error(task_path, f"reference.{reference_kind}", f"{label}.{field} references unknown '{reference}'")
+
+        visiting_tasks: set[str] = set()
+        visited_tasks: set[str] = set()
+
+        def visit_task(task_id: str) -> None:
+            if task_id in visiting_tasks:
+                error(task_path, "dependency.task-cycle", f"Task dependency cycle includes '{task_id}'")
+                return
+            if task_id in visited_tasks:
+                return
+            visiting_tasks.add(task_id)
+            for dependency in task_graph.get(task_id, []):
+                visit_task(dependency)
+            visiting_tasks.remove(task_id)
+            visited_tasks.add(task_id)
+
+        for task_id in task_graph:
+            visit_task(task_id)
+
     reports_dir = base / "reports"
     all_report_paths = sorted(reports_dir.glob("*.md")) if reports_dir.exists() else []
     report_paths = all_report_paths if selected_slice_ids is None else [path for path in all_report_paths if path.stem in selected_slice_ids]
@@ -1531,6 +1669,18 @@ def safe_int(value: Any, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def iso_time_sort_value(value: Any) -> float:
+    if not isinstance(value, str) or not value.strip():
+        return float("-inf")
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return float("-inf")
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
 
 
 def owner_initials(owner: str) -> str:
@@ -1829,7 +1979,7 @@ def build_uninitialized_dashboard_data(
     error_count = sum(item["severity"] == "error" for item in diagnostics)
     warning_count = sum(item["severity"] == "warning" for item in diagnostics)
     return {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "projection": {"kind": projection_kind, "generatedAt": now, "source": projection_source, "staleAfterMinutes": 0},
         "dataHealth": {
             "status": "INVALID" if error_count else ("WARNING" if warning_count else "VALID"),
@@ -1889,6 +2039,7 @@ def build_uninitialized_dashboard_data(
         "drifts": [],
         "slices": [],
         "stories": [],
+        "tasks": [],
         "workPackages": [],
         "contracts": [],
         "testCases": [],
@@ -1925,6 +2076,10 @@ def build_dashboard_data(
         drift_doc = read_yaml(base / "drift-log.yaml") if (base / "drift-log.yaml").exists() else {}
     except (ArtifactError, OSError):
         drift_doc = {}
+    try:
+        task_doc = read_yaml(base / "task-log.yaml") if (base / "task-log.yaml").exists() else {}
+    except (ArtifactError, OSError):
+        task_doc = {}
     if initiative_meta.get("schema_version") != 2:
         raise ArtifactError("initiative.md uses an unsupported schema_version")
     if delivery.get("schema_version") not in {2, 3}:
@@ -1934,6 +2089,8 @@ def build_dashboard_data(
         decisions_doc = {}
     if drift_doc.get("schema_version") not in {None, 1}:
         drift_doc = {}
+    if task_doc.get("schema_version") not in {None, 1}:
+        task_doc = {}
     executions = execution_records(base)
     reports = report_records(base)
 
@@ -2016,6 +2173,10 @@ def build_dashboard_data(
                     clarifications.append({"at": "", "by": "", "note": str(clarification)})
             parsed_packages.append({
                 "id": str(item["id"]),
+                "kind": "WORK_PACKAGE",
+                "source": "PM_ASSIGNMENT",
+                "phase": "DEVELOPMENT",
+                "parentTaskId": "",
                 "sliceId": slice_id,
                 "title": str(item.get("title") or item["id"]),
                 "description": str(item.get("description") or ""),
@@ -2215,6 +2376,12 @@ def build_dashboard_data(
         for secondary_type in list_value(item.get("secondary_types")):
             if isinstance(secondary_type, str) and secondary_type in DECISION_TYPES:
                 secondary_types.append({"id": secondary_type, "label": DECISION_TYPES[secondary_type]["label"]})
+        recorded_times = [
+            str(record.get("decided_at"))
+            for record in records_by_key.get(decision_key, [])
+            if isinstance(record.get("decided_at"), str) and record.get("decided_at")
+        ]
+        latest_recorded_at = max(recorded_times, key=iso_time_sort_value, default="")
         decisions.append({
             "id": decision_id,
             "key": decision_key,
@@ -2223,7 +2390,7 @@ def build_dashboard_data(
             "rationale": str(item.get("rationale") or ""),
             "status": current_status,
             "revision": safe_int(item.get("revision"), 1),
-            "updatedAt": str(item.get("decided_at") or delivery.get("last_verified_at") or datetime.now(timezone.utc).isoformat()),
+            "updatedAt": latest_recorded_at,
             "type": primary_type,
             "typeLabel": type_meta["label"],
             "layer": type_meta["layer"],
@@ -2246,7 +2413,8 @@ def build_dashboard_data(
             "history": [project_revision(record) for record in history_by_key.get(decision_key, [])],
             "candidateRevision": project_revision(candidate) if candidate else None,
         })
-    decisions.sort(key=lambda item: (item["typeOrder"], item["key"]))
+    decisions.sort(key=lambda item: item["key"])
+    decisions.sort(key=lambda item: iso_time_sort_value(item["updatedAt"]), reverse=True)
 
     phase_values = {phase for decision in decisions for phase in decision["phases"]}
     phases = sorted(
@@ -2323,6 +2491,65 @@ def build_dashboard_data(
         "criticalCount": sum(item["severity"] == "CRITICAL" for item in drifts),
     }
 
+    coordination_tasks: list[dict[str, Any]] = []
+    for item in list_value(task_doc.get("tasks")):
+        if not isinstance(item, dict) or not item.get("id"):
+            continue
+        clarifications = []
+        for clarification in list_value(item.get("clarifications")):
+            if isinstance(clarification, dict):
+                clarifications.append({
+                    "at": str(clarification.get("at") or ""),
+                    "by": str(clarification.get("by") or ""),
+                    "note": str(clarification.get("note") or ""),
+                })
+        owner = str(item.get("assignee") or "Unassigned")
+        linked_slices = [str(value) for value in list_value(item.get("linked_slices"))]
+        coordination_tasks.append({
+            "id": str(item["id"]),
+            "kind": "COORDINATION_TASK",
+            "source": status(item.get("source"), "HUMAN_INSTRUCTION"),
+            "phase": status(item.get("phase"), "DISCOVERY"),
+            "parentTaskId": str(item.get("parent_task_id") or ""),
+            "sliceId": linked_slices[0] if linked_slices else "",
+            "title": str(item.get("title") or item["id"]),
+            "description": str(item.get("normalized_outcome") or ""),
+            "status": status(item.get("status"), "BACKLOG"),
+            "priority": str(item.get("priority") or "P2"),
+            "area": status(item.get("phase"), "DISCOVERY").lower(),
+            "owner": owner,
+            "ownerInitials": owner_initials(owner),
+            "assignedBy": str(item.get("routed_by") or "Product Manager"),
+            "assignedAt": str(item.get("assigned_at") or ""),
+            "createdAt": str(item.get("created_at") or ""),
+            "startedAt": str(item.get("started_at") or ""),
+            "completedAt": str(item.get("completed_at") or ""),
+            "updatedAt": str(item.get("completed_at") or item.get("started_at") or item.get("assigned_at") or item.get("created_at") or ""),
+            "leadBrief": {
+                "issuedBy": str(item.get("routed_by") or "Product Manager"),
+                "issuedAt": str(item.get("assigned_at") or item.get("created_at") or ""),
+                "instruction": str(item.get("original_instruction") or ""),
+                "expectedOutcome": str(item.get("normalized_outcome") or ""),
+                "scope": [],
+                "outOfScope": [],
+                "acceptanceCriteria": [str(value) for value in list_value(item.get("acceptance_criteria"))],
+                "clarifications": clarifications,
+            },
+            "dependsOn": [str(value) for value in list_value(item.get("depends_on"))],
+            "linkedTruthKeys": [str(value) for value in list_value(item.get("linked_truth_keys"))],
+            "linkedDrifts": [str(value) for value in list_value(item.get("linked_drifts"))],
+            "linkedSlices": linked_slices,
+            "linkedWorkPackages": [str(value) for value in list_value(item.get("linked_work_packages"))],
+            "result": str(item.get("result") or ""),
+            "evidence": [str(value) for value in list_value(item.get("evidence"))],
+            "storyIds": [],
+            "requiredTestIds": [],
+            "tests": {"passed": 0, "total": 0},
+            "blocker": "",
+        })
+    tasks = coordination_tasks + work_packages
+    tasks.sort(key=lambda item: (iso_time_sort_value(item.get("updatedAt")), str(item.get("id"))), reverse=True)
+
     attention = []
     human_decision = delivery.get("human_decision_required")
     if human_decision:
@@ -2372,11 +2599,11 @@ def build_dashboard_data(
                 "kind": item.get("kind") or "updated",
             })
     events.sort(key=lambda item: str(item["at"]), reverse=True)
-    for package in work_packages:
-        package_id = package["id"]
-        package["history"] = [
+    for task in tasks:
+        task_id = task["id"]
+        task["history"] = [
             event for event in events
-            if package_id in f"{event.get('title', '')} {event.get('detail', '')}"
+            if task_id in f"{event.get('title', '')} {event.get('detail', '')}"
         ][:12]
 
     initiative_title = str(initiative_meta.get("title") or first_heading(initiative_body))
@@ -2397,7 +2624,7 @@ def build_dashboard_data(
     error_count = sum(item["severity"] == "error" for item in diagnostics)
     warning_count = sum(item["severity"] == "warning" for item in diagnostics)
     return {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "projection": {"kind": projection_kind, "generatedAt": now, "source": projection_source, "staleAfterMinutes": 0},
         "dataHealth": {
             "status": "INVALID" if error_count else ("WARNING" if warning_count else "VALID"),
@@ -2439,6 +2666,7 @@ def build_dashboard_data(
         "drifts": drifts,
         "slices": slices,
         "stories": stories,
+        "tasks": tasks,
         "workPackages": work_packages,
         "contracts": contracts,
         "testCases": test_cases,
@@ -2772,8 +3000,28 @@ def prepare_projection_fixture(skill_root: Path) -> tempfile.TemporaryDirectory[
     (base / "decision-log.yaml").write_text(decisions, encoding="utf-8")
     drifts = (skill_root / "assets" / "drift-log-example.yaml").read_text(encoding="utf-8")
     (base / "drift-log.yaml").write_text(drifts, encoding="utf-8")
+    tasks = (skill_root / "assets" / "task-log-example.yaml").read_text(encoding="utf-8")
+    (base / "task-log.yaml").write_text(tasks, encoding="utf-8")
 
     demo_events = [
+        {
+            "at": "2026-08-22T19:15:00+05:00",
+            "kind": "assigned",
+            "title": "Planning task entered backlog",
+            "detail": "TASK-0003 was assigned to Planning Lead after prototype reconciliation completes.",
+        },
+        {
+            "at": "2026-08-22T19:06:00+05:00",
+            "kind": "started",
+            "title": "Prototype findings entered reconciliation",
+            "detail": "PM Assistant started TASK-0002 and is preparing canonical Truth updates.",
+        },
+        {
+            "at": "2026-08-21T23:15:00+05:00",
+            "kind": "completed",
+            "title": "Authentication prototype task completed",
+            "detail": "TASK-0001 completed after Human acceptance of prototype checkpoint 07.",
+        },
         {
             "at": "2026-08-22T00:41:00+05:00",
             "kind": "human-approval-needed",

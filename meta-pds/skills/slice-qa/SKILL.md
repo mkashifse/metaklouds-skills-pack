@@ -6,7 +6,7 @@ description: Independently verify one implemented Meta PDS fat slice for release
 # Slice QA
 
 Act as the independent Integration, Quality, and slice-level Observability
-Verifier. Report directly to the Product Manager, not the Development Lead.
+Verifier. Report to the PM Assistant, independently of the Development Lead.
 
 ## Required policy
 
@@ -15,6 +15,7 @@ Resolve the installed sibling `meta-pds` skill and read:
 - `references/human-centered-autonomy.md`;
 - `references/workflow-and-gates.md`;
 - `references/artifact-and-state-contract.md`;
+- `references/pm-heartbeat-and-task-routing.md`;
 - `references/testing-and-browser-policy.md`;
 - `references/implementation-skill-routing.md`.
 
@@ -108,15 +109,18 @@ Recommend `OUTCOME_VALIDATED` only when evidence supports it. Otherwise return
 
 ## Authority
 
-QA recommends gates; only the Product Manager updates canonical gate state.
+QA recommends gates; only the Product Manager authorizes a gate transition,
+which the PM Assistant records.
 Under `META_PDS_GIT_AUTHORITY=PM_ONLY`, QA does not commit, push, open/merge PRs,
 tag, deploy, or change feature flags. QA returns its report path to the Product
-Manager, who validates and creates the local QA checkpoint commit.
+Manager through the PM Assistant, who validates, updates the task, and creates
+the local QA checkpoint commit.
 
 ## Result
 
 ```yaml
 status: RELEASE_READY | REWORK_REQUIRED | OUTCOME_VALIDATED | REPLAN_REQUIRED | HUMAN_DECISION_REQUIRED | BLOCKED
+task_id: TASK-0001
 initiative_id: ""
 slice_id: ""
 slice_revision: 1

@@ -13,6 +13,8 @@ from pathlib import Path
 from urllib.request import urlopen
 
 from check_dependencies import INTERNAL_SKILLS, SUPPORT_SKILLS, dependency_status
+from ensure_project_bootstrap import reconcile_agents_file
+from pm_heartbeat import build_heartbeat, human_signal, role_action_guard, text_heartbeat
 from serve_dashboard import (
     ArtifactError,
     build_dashboard_data,
@@ -55,9 +57,15 @@ class MetaPDSContractTests(unittest.TestCase):
             len(projection["testCases"]),
             len(projection["contracts"]),
         ))
-        self.assertEqual(12, len(projection["activity"]))
-        self.assertEqual("Full-stack integration is blocked", projection["activity"][0]["title"])
+        self.assertEqual(15, len(projection["activity"]))
+        self.assertEqual("Planning task entered backlog", projection["activity"][0]["title"])
         self.assertEqual("Prototype checkpoint 07 approved", projection["activity"][-1]["title"])
+        self.assertEqual(10, len(projection["tasks"]))
+        coordination_tasks = {item["id"]: item for item in projection["tasks"] if item["kind"] == "COORDINATION_TASK"}
+        self.assertEqual({"TASK-0001", "TASK-0002", "TASK-0003"}, set(coordination_tasks))
+        self.assertEqual("Rapid Prototype Engineer", coordination_tasks["TASK-0001"]["owner"])
+        self.assertEqual("PROTOTYPE", coordination_tasks["TASK-0001"]["phase"])
+        self.assertTrue(coordination_tasks["TASK-0001"]["history"])
         packages = {item["id"]: item for item in projection["workPackages"]}
         self.assertEqual("BACKLOG", packages["WP-AUTH-07"]["status"])
         self.assertEqual("Product Manager", packages["WP-AUTH-03"]["assignedBy"])
@@ -79,6 +87,10 @@ class MetaPDSContractTests(unittest.TestCase):
             projection["decisionMeta"]["historyCount"],
             projection["decisionMeta"]["candidateCount"],
         ))
+        self.assertEqual("feature.authentication.email-password", projection["decisions"][0]["key"])
+        self.assertEqual("2026-08-22T18:30:00+05:00", projection["decisions"][0]["updatedAt"])
+        recorded_times = [item["updatedAt"] for item in projection["decisions"] if item["updatedAt"]]
+        self.assertEqual(sorted(recorded_times, reverse=True), recorded_times)
         by_key = {item["key"]: item for item in projection["decisions"]}
         authentication = by_key["feature.authentication.email-password"]
         self.assertEqual(("DEC-005", 2, True), (authentication["id"], authentication["revision"], authentication["canonical"]))
@@ -105,6 +117,39 @@ class MetaPDSContractTests(unittest.TestCase):
         self.assertEqual(["WP-AUTH-03", "WP-AUTH-06", "WP-AUTH-07"], pending["blockedWorkPackages"])
         self.assertEqual(["WP-AUTH-04", "WP-AUTH-05"], pending["continuingWorkPackages"])
         self.assertIn("repository", projection)
+
+    def test_pm_heartbeat_restores_role_and_compact_project_state(self) -> None:
+        heartbeat = build_heartbeat(self.root, "http://127.0.0.1:8765")
+        self.assertEqual("Meta PDS Product Manager", heartbeat["role"])
+        self.assertIn("instruct only", heartbeat["role_boundary"].lower())
+        self.assertEqual("INIT-0042", heartbeat["initiative"]["id"])
+        self.assertIn("TASK-0002", {item["id"] for item in heartbeat["active_tasks"]})
+        self.assertEqual("http://127.0.0.1:8765", heartbeat["dashboard"])
+        rendered = text_heartbeat(heartbeat)
+        self.assertIn("HUMAN SIGNAL: 🟠 MetaPDS · Mode: DELIVERY · Heartbeat: LIVE", rendered)
+        self.assertEqual(
+            "🟠 MetaPDS · Mode: DELIVERY · Heartbeat: RECOVERED — If this line is missing, invoke $meta-pds.",
+            human_signal(heartbeat, "RECOVERED"),
+        )
+        self.assertIn("FORBIDDEN FOR PM: research, canonical writing, coding, testing", rendered)
+        self.assertTrue(role_action_guard("instruct")["allowed"])
+        self.assertFalse(role_action_guard("code")["allowed"])
+        self.assertEqual("PM Assistant", role_action_guard("write")["route"])
+
+    def test_project_bootstrap_is_idempotent_and_preserves_repository_instructions(self) -> None:
+        agents = self.root / "AGENTS.md"
+        agents.write_text("# Existing instructions\n\nKeep this rule.\n", encoding="utf-8")
+
+        status, path = reconcile_agents_file(self.root)
+        self.assertEqual("UPDATED", status)
+        self.assertEqual(agents.resolve(), path)
+        content = agents.read_text(encoding="utf-8")
+        self.assertIn("Keep this rule.", content)
+        self.assertIn("META_PDS_PM_BOOTSTRAP:START", content)
+        self.assertIn("If this line is missing, invoke $meta-pds.", content)
+
+        status, _ = reconcile_agents_file(self.root)
+        self.assertEqual("UNCHANGED", status)
 
     def test_drift_auto_resolution_requires_safe_high_confidence_evidence(self) -> None:
         path = self.base / "drift-log.yaml"
@@ -167,6 +212,26 @@ class MetaPDSContractTests(unittest.TestCase):
         projection = self.projection()
         self.assertEqual([], projection["drifts"])
         self.assertEqual([], self.diagnostics())
+
+    def test_task_log_enforces_pm_assistant_ownership_and_pm_routing(self) -> None:
+        path = self.base / "task-log.yaml"
+        content = path.read_text().replace("owner: PM Assistant", "owner: Product Manager", 1)
+        content = content.replace("routed_by: Product Manager", "routed_by: Prototype Engineer", 1)
+        path.write_text(content)
+        codes = {item["code"] for item in self.diagnostics()}
+        self.assertIn("task-log.owner", codes)
+        self.assertIn("task.route", codes)
+
+    def test_done_task_requires_result_and_durable_evidence(self) -> None:
+        path = self.base / "task-log.yaml"
+        content = path.read_text().replace("result: Human review accepted prototype checkpoint 07.", 'result: ""', 1)
+        content = content.replace(
+            "    evidence:\n      - prototypes/INIT-0042/promotion-handoff.md\n      - Prototype checkpoint 07",
+            "    evidence: []",
+            1,
+        )
+        path.write_text(content)
+        self.assertIn("task.evidence", {item["code"] for item in self.diagnostics()})
 
     def test_decision_contract_rejects_duplicate_revision_for_semantic_key(self) -> None:
         path = self.base / "decision-log.yaml"
@@ -254,6 +319,12 @@ class MetaPDSContractTests(unittest.TestCase):
         self.assertEqual(4, len(declared))
         for relative_path in declared:
             self.assertTrue((suite_root / relative_path).is_file(), relative_path)
+        operating_model = manifest["operatingModel"]
+        self.assertEqual("Product Manager", operating_model["humanContact"])
+        self.assertEqual("PM Assistant", operating_model["canonicalWriter"])
+        self.assertTrue((suite_root / operating_model["heartbeat"]).is_file())
+        self.assertTrue((suite_root / operating_model["projectBootstrap"]).is_file())
+        self.assertTrue((suite_root / operating_model["taskLedgerTemplate"]).is_file())
 
         pack_manifest = json.loads((suite_root.parent / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(2, pack_manifest["schema_version"])
@@ -268,6 +339,41 @@ class MetaPDSContractTests(unittest.TestCase):
             set(pack_manifest["default_profile"]["skills"]),
             {item["name"] for item in pack_manifest["skills"]},
         )
+
+    def test_truth_view_is_a_group_filterable_chronological_stream(self) -> None:
+        app = (SKILL_ROOT / "assets" / "dashboard" / "app.js").read_text(encoding="utf-8")
+        styles = (SKILL_ROOT / "assets" / "dashboard" / "styles.css").read_text(encoding="utf-8")
+        self.assertIn('class="decision-stream"', app)
+        self.assertIn("decision-layer-label", app)
+        self.assertIn("decision-recorded-at", app)
+        self.assertNotIn('class="decision-group ', app)
+        self.assertIn(".decision-stream", styles)
+
+    def test_drift_view_uses_one_separator_based_stream(self) -> None:
+        styles = (SKILL_ROOT / "assets" / "dashboard" / "styles.css").read_text(encoding="utf-8")
+        self.assertIn(".drift-list { overflow: hidden; border: 1px solid var(--border);", styles)
+        self.assertIn(".drift-item:last-child { border-bottom: 0; }", styles)
+        self.assertNotIn(".drift-list { display: grid; gap:", styles)
+
+    def test_primary_view_toolbars_stick_below_the_application_header(self) -> None:
+        styles = (SKILL_ROOT / "assets" / "dashboard" / "styles.css").read_text(encoding="utf-8")
+        for selector in [".list-tools", ".truth-toolbar", ".drift-toolbar", ".repository-summary", ".scrum-toolbar"]:
+            self.assertIn(selector, styles)
+        self.assertIn("position: sticky;", styles)
+        self.assertIn("top: var(--header-height);", styles)
+        self.assertIn(":root { --header-height: 53px; }", styles)
+
+    def test_delivery_entities_offer_codex_ready_copy_packets(self) -> None:
+        app = (SKILL_ROOT / "assets" / "dashboard" / "app.js").read_text(encoding="utf-8")
+        index = (SKILL_ROOT / "assets" / "dashboard" / "index.html").read_text(encoding="utf-8")
+        for kind in ["truth", "drift", "slice", "story", "work-package"]:
+            self.assertIn(f'copyButton("{kind}"', app)
+        self.assertIn('copyKind = task.kind === "COORDINATION_TASK" ? "task"', app)
+        self.assertIn('id="scrum-phase-filter"', index)
+        self.assertIn("function copyEntityMarkdown", app)
+        self.assertIn("function bindCopyControls", app)
+        self.assertIn('id="icon-copy"', index)
+        self.assertIn('id="copy-toast"', index)
 
     def test_dependency_check_reports_complete_and_missing_profiles(self) -> None:
         with tempfile.TemporaryDirectory(prefix="meta-pds-skills-") as temporary_root:

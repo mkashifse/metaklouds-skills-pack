@@ -1,0 +1,88 @@
+schema_version: 1
+initiative_id: INIT-0042
+owner: PM Assistant
+tasks:
+  - id: TASK-0003
+    parent_task_id: TASK-0001
+    source: PM_ASSIGNMENT
+    phase: PLANNING
+    title: Shape the approved authentication experience into a fat slice
+    original_instruction: Prepare the approved authentication behavior for slice planning.
+    normalized_outcome: Produce one review-ready fat slice linked to the locked prototype findings.
+    priority: P1
+    status: BACKLOG
+    routed_by: Product Manager
+    assignee: Planning Lead
+    created_at: "2026-08-22T19:15:00+05:00"
+    assigned_at: "2026-08-22T19:15:00+05:00"
+    started_at: ""
+    completed_at: ""
+    depends_on: [TASK-0002]
+    acceptance_criteria:
+      - Complete lifecycle stories and test definitions are review ready.
+      - Prototype findings and locked Truth are traceable.
+    linked_truth_keys: [feature.authentication.email-password]
+    linked_drifts: []
+    linked_slices: [SLICE-AUTH-001]
+    linked_work_packages: []
+    clarifications: []
+    result: ""
+    evidence: []
+  - id: TASK-0002
+    parent_task_id: TASK-0001
+    source: PM_ASSIGNMENT
+    phase: PROTOTYPE
+    title: Record approved prototype findings and schema candidates
+    original_instruction: Reconcile the reviewed prototype findings into canonical Meta PDS artifacts.
+    normalized_outcome: Preserve approved findings as Truth revisions and leave unresolved schema choices for Human review.
+    priority: P1
+    status: VERIFYING
+    routed_by: Product Manager
+    assignee: PM Assistant
+    created_at: "2026-08-22T19:05:00+05:00"
+    assigned_at: "2026-08-22T19:05:00+05:00"
+    started_at: "2026-08-22T19:06:00+05:00"
+    completed_at: ""
+    depends_on: [TASK-0001]
+    acceptance_criteria:
+      - Approved findings are recorded without silently locking unresolved choices.
+      - Canonical validation passes.
+    linked_truth_keys: [feature.authentication.email-password, data.profile.schema-v1]
+    linked_drifts: []
+    linked_slices: []
+    linked_work_packages: []
+    clarifications: []
+    result: Prototype findings were normalized; the profile schema remains a Human decision candidate.
+    evidence:
+      - docs/meta-pds/decision-log.yaml
+  - id: TASK-0001
+    parent_task_id: ""
+    source: HUMAN_INSTRUCTION
+    phase: PROTOTYPE
+    title: Create and review the authentication prototype
+    original_instruction: Build the authentication prototype so I can review registration, sign-in, recovery, and session restoration.
+    normalized_outcome: Deliver a locally seeded authentication prototype with all requested journeys available for manual Human review.
+    priority: P0
+    status: DONE
+    routed_by: Product Manager
+    assignee: Rapid Prototype Engineer
+    created_at: "2026-08-21T22:45:00+05:00"
+    assigned_at: "2026-08-21T22:47:00+05:00"
+    started_at: "2026-08-21T22:50:00+05:00"
+    completed_at: "2026-08-21T23:15:00+05:00"
+    depends_on: []
+    acceptance_criteria:
+      - Registration, sign-in, recovery, restoration, and sign-out are manually reviewable.
+      - Representative success, error, expiry, and recovery states are seeded.
+    linked_truth_keys: [feature.authentication.email-password]
+    linked_drifts: []
+    linked_slices: []
+    linked_work_packages: []
+    clarifications:
+      - at: "2026-08-21T23:00:00+05:00"
+        by: Product Manager
+        note: Keep the prototype isolated and use local fixtures only.
+    result: Human review accepted prototype checkpoint 07.
+    evidence:
+      - prototypes/INIT-0042/promotion-handoff.md
+      - Prototype checkpoint 07

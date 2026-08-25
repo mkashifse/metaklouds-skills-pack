@@ -58,10 +58,11 @@ them as `PROPOSED` Truth. Prototype behavior is evidence, never authority.
 
 ## Promotion boundary
 
-Frontend implementation promotes or moves exact approved files. It replaces
-the seed adapter, connects backend APIs and authentication, adds production
-configuration and telemetry, and performs hardening and tests. It does not
-rebuild navigation, pages, components, or approved UI/UX.
+One Full-Stack Engineer promotes or moves the exact approved files end-to-end.
+The engineer replaces the seed adapter, connects backend APIs and
+authentication, makes any required database/backend/contract change, adds
+production configuration and telemetry, and performs hardening and tests. The
+engineer does not rebuild navigation, pages, components, or approved UI/UX.
 
 Record the source-to-target map and remaining adapter work in
 `docs/solo-founder/handoffs/` before promotion is marked complete.

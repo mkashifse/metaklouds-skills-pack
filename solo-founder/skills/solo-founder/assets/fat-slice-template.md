@@ -61,7 +61,7 @@ approved_by: null
 ## Development Intake
 
 - Structural completeness:
-- Specialist feasibility evidence:
+- Prototype or Full-Stack Engineer feasibility evidence:
 - Open blockers:
 
 ## Human approval

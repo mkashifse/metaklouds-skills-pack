@@ -16,6 +16,7 @@ from solo_founder_core import (
     parse_yaml,
     read_yaml,
     sha256_file,
+    upgrade_ledger,
     validate_ledger,
     validate_truth,
 )
@@ -114,7 +115,7 @@ class SoloFounderTests(unittest.TestCase):
         self.assertEqual("APPROVED", approved["status"])
         validate_truth(read_yaml(path))
 
-    def test_specialist_cannot_mark_done(self) -> None:
+    def test_engineer_cannot_mark_done(self) -> None:
         updater = self.skill / "scripts" / "update_ledger.py"
         subprocess.run(
             [
@@ -129,8 +130,14 @@ class SoloFounderTests(unittest.TestCase):
                 "Build UI",
                 "--classification",
                 "NON_TRIVIAL",
+                "--workstream",
+                "FULL_STACK",
+                "--activity",
+                "IMPLEMENTATION",
+                "--role",
+                "FULL_STACK_ENGINEER",
                 "--owner",
-                "FRONTEND",
+                "full-stack-1",
                 "--acceptance",
                 "Page renders",
                 "--status",
@@ -146,9 +153,9 @@ class SoloFounderTests(unittest.TestCase):
                 str(updater),
                 str(self.root),
                 "--actor",
-                "SPECIALIST",
+                "ENGINEER",
                 "--identity",
-                "FRONTEND",
+                "full-stack-1",
                 "--work-id",
                 "WORK-0001",
                 "--status",
@@ -160,7 +167,40 @@ class SoloFounderTests(unittest.TestCase):
         )
         self.assertNotEqual(0, failed.returncode)
 
-    def test_specialist_handoff_and_pm_completion(self) -> None:
+    def test_only_approved_engineer_roles_can_own_code(self) -> None:
+        updater = self.skill / "scripts" / "update_ledger.py"
+        base = [sys.executable, str(updater), str(self.root)]
+        for work_id, role, owner in (
+            ("WORK-BAD-ROLE", "FRONTEND_ENGINEER", "frontend-1"),
+            ("WORK-PM-CODE", "PM", "PM"),
+        ):
+            failed = subprocess.run(
+                base
+                + [
+                    "--actor",
+                    "PM",
+                    "--create-work",
+                    work_id,
+                    "--title",
+                    "Invalid engineering assignment",
+                    "--classification",
+                    "TRIVIAL",
+                    "--workstream",
+                    "FULL_STACK",
+                    "--activity",
+                    "IMPLEMENTATION",
+                    "--role",
+                    role,
+                    "--owner",
+                    owner,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(0, failed.returncode, role)
+
+    def test_trivial_cross_stack_change_has_one_full_stack_owner(self) -> None:
         updater = self.skill / "scripts" / "update_ledger.py"
         base = [sys.executable, str(updater), str(self.root)]
         subprocess.run(
@@ -171,15 +211,23 @@ class SoloFounderTests(unittest.TestCase):
                 "--create-work",
                 "WORK-0002",
                 "--title",
-                "Connect frontend",
+                "Add one profile field end-to-end",
                 "--classification",
-                "NON_TRIVIAL",
+                "TRIVIAL",
                 "--workstream",
-                "FRONTEND",
+                "FULL_STACK",
                 "--activity",
                 "IMPLEMENTATION",
+                "--role",
+                "FULL_STACK_ENGINEER",
                 "--owner",
-                "FRONTEND",
+                "full-stack-1",
+                "--owned-path",
+                "apps/frontend",
+                "--owned-path",
+                "apps/backend",
+                "--owned-path",
+                "packages/contracts",
                 "--acceptance",
                 "Backend data renders",
                 "--status",
@@ -193,9 +241,9 @@ class SoloFounderTests(unittest.TestCase):
             base
             + [
                 "--actor",
-                "SPECIALIST",
+                "ENGINEER",
                 "--identity",
-                "FRONTEND",
+                "full-stack-1",
                 "--work-id",
                 "WORK-0002",
                 "--status",
@@ -209,9 +257,9 @@ class SoloFounderTests(unittest.TestCase):
             base
             + [
                 "--actor",
-                "SPECIALIST",
+                "ENGINEER",
                 "--identity",
-                "FRONTEND",
+                "full-stack-1",
                 "--work-id",
                 "WORK-0002",
                 "--status",
@@ -243,7 +291,86 @@ class SoloFounderTests(unittest.TestCase):
         validate_ledger(ledger)
         item = next(work for work in ledger["work"] if work["id"] == "WORK-0002")
         self.assertEqual("DONE", item["status"])
+        self.assertEqual("TRIVIAL", item["classification"])
+        self.assertEqual("DELEGATED", item["execution"])
+        self.assertEqual("FULL_STACK_ENGINEER", item["role"])
+        self.assertEqual("full-stack-1", item["owner"])
         self.assertNotIn("WORK-0002", ledger["current"]["active_work_ids"])
+
+    def test_parallel_engineers_cannot_cross_assignment_boundaries(self) -> None:
+        updater = self.skill / "scripts" / "update_ledger.py"
+        base = [sys.executable, str(updater), str(self.root)]
+        for work_id, focus, owner in (
+            ("WORK-0101", "BACKEND", "full-stack-1"),
+            ("WORK-0102", "FRONTEND", "full-stack-2"),
+        ):
+            subprocess.run(
+                base
+                + [
+                    "--actor",
+                    "PM",
+                    "--create-work",
+                    work_id,
+                    "--title",
+                    f"Parallel {focus.lower()} package",
+                    "--classification",
+                    "NON_TRIVIAL",
+                    "--workstream",
+                    focus,
+                    "--activity",
+                    "IMPLEMENTATION",
+                    "--role",
+                    "FULL_STACK_ENGINEER",
+                    "--owner",
+                    owner,
+                    "--acceptance",
+                    "Bounded result",
+                    "--status",
+                    "READY",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        failed = subprocess.run(
+            base
+            + [
+                "--actor",
+                "ENGINEER",
+                "--identity",
+                "full-stack-1",
+                "--work-id",
+                "WORK-0102",
+                "--status",
+                "ACTIVE",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, failed.returncode)
+
+    def test_legacy_roles_upgrade_to_two_role_model(self) -> None:
+        ledger = read_yaml(self.base / "product-ledger.yaml")
+        ledger["schema_version"] = 1
+        ledger["work"] = [
+            {
+                "id": "WORK-LEGACY",
+                "classification": "NON_TRIVIAL",
+                "workstream": "FRONTEND",
+                "activity": "IMPLEMENTATION",
+                "execution": "DELEGATED",
+                "owner": "FRONTEND",
+                "status": "READY",
+                "acceptance_criteria": [],
+                "evidence": [],
+                "owned_paths": [],
+            }
+        ]
+        self.assertTrue(upgrade_ledger(ledger))
+        validate_ledger(ledger)
+        self.assertEqual(2, ledger["schema_version"])
+        self.assertEqual("FULL_STACK_ENGINEER", ledger["work"][0]["role"])
 
     def test_layer_order_is_stable(self) -> None:
         truth = read_yaml(self.base / "canonical-truth.yaml")

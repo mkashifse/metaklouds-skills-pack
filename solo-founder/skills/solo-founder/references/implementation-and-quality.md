@@ -2,15 +2,20 @@
 
 Implementation begins only for a Human-approved, development-ready Fat Slice.
 The PM creates bounded Work Packages and classifies each as `TRIVIAL` or
-`NON_TRIVIAL`. Production implementation is normally non-trivial and directly
-assigned to the relevant specialist.
+`NON_TRIVIAL`. Classification does not select the actor: every production code
+change is assigned end-to-end to one `FULL_STACK_ENGINEER` by default, even
+when the change is trivial.
+
+Do not split database, backend, and frontend portions merely because all are
+present. Use multiple Full-Stack Engineers only when the parallelism criteria
+in [work-classification.md](work-classification.md) are satisfied.
 
 ## Work Package contract
 
 Each package records:
 
 - immutable instruction and expected outcome;
-- owner, workstream, activity, owned paths, and exclusions;
+- role, owner identity, focus/workstream, activity, owned paths, and exclusions;
 - linked approved Truth and Slice IDs;
 - dependencies and acceptance criteria;
 - required tests and evidence;
@@ -24,8 +29,8 @@ PENDING → READY → ACTIVE → VERIFYING → DONE
 VERIFYING → REWORK → ACTIVE
 ```
 
-The specialist submits result and durable evidence at `VERIFYING`. Only the PM
-may mark `DONE` or `REWORK` after acceptance review.
+The engineer submits the integrated result and durable evidence at `VERIFYING`.
+Only the PM may mark `DONE` or `REWORK` after acceptance review.
 
 ## Quality and release
 

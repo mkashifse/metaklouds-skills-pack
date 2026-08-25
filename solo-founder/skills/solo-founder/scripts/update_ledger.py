@@ -10,17 +10,20 @@ from pathlib import Path
 
 from solo_founder_core import (
     CLASSIFICATIONS,
+    ENGINEER_ROLES,
     LAYERS,
     MODES,
+    ROLES,
     WORK_STATUSES,
     ArtifactError,
     atomic_write_yaml,
     file_lock,
     read_yaml,
+    upgrade_ledger,
     validate_ledger,
 )
 
-SPECIALIST_TRANSITIONS = {
+ENGINEER_TRANSITIONS = {
     "READY": {"ACTIVE", "BLOCKED"},
     "ACTIVE": {"VERIFYING", "BLOCKED"},
     "BLOCKED": {"ACTIVE"},
@@ -46,8 +49,30 @@ def create_work(ledger: dict, args: argparse.Namespace) -> dict:
         raise ArtifactError(f"Duplicate Work ID: {args.create_work}")
     if args.classification not in CLASSIFICATIONS:
         raise ArtifactError("--classification is required and must be valid")
-    if not args.title or not args.owner:
-        raise ArtifactError("--title and --owner are required when creating work")
+    if not args.title or not args.owner or not args.role:
+        raise ArtifactError(
+            "--title, --role, and --owner are required when creating work"
+        )
+    if args.role not in ROLES:
+        raise ArtifactError(
+            "--role must be PM, PROTOTYPE_ENGINEER, or FULL_STACK_ENGINEER"
+        )
+    activity = args.activity or "PLANNING"
+    workstream = args.workstream or "PRODUCT"
+    if args.role == "PM" and args.owner != "PM":
+        raise ArtifactError("PM work requires --owner PM")
+    if args.role == "PM" and activity == "IMPLEMENTATION":
+        raise ArtifactError("Code implementation must be assigned to an engineer")
+    if args.role == "PROTOTYPE_ENGINEER" and workstream != "PROTOTYPE":
+        raise ArtifactError("Prototype Engineer work requires --workstream PROTOTYPE")
+    if args.role == "FULL_STACK_ENGINEER" and workstream not in {
+        "FRONTEND",
+        "BACKEND",
+        "FULL_STACK",
+    }:
+        raise ArtifactError(
+            "Full-Stack Engineer work requires FRONTEND, BACKEND, or FULL_STACK focus"
+        )
     item = {
         "id": args.create_work,
         "initiative_id": args.initiative_id,
@@ -55,16 +80,17 @@ def create_work(ledger: dict, args: argparse.Namespace) -> dict:
         "instruction": args.instruction or "",
         "expected_outcome": args.expected_outcome or "",
         "classification": args.classification,
-        "workstream": args.workstream or "PRODUCT",
-        "activity": args.activity or "PLANNING",
-        "execution": "DIRECT" if args.classification == "TRIVIAL" else "DELEGATED",
+        "workstream": workstream,
+        "activity": activity,
+        "execution": "DIRECT" if args.role == "PM" else "DELEGATED",
+        "role": args.role,
         "owner": args.owner,
         "status": args.status or "PENDING",
         "priority": args.priority or "P2",
         "depends_on": [],
         "linked_truth_ids": [],
         "linked_slice_ids": [],
-        "owned_paths": [],
+        "owned_paths": args.owned_path or [],
         "acceptance_criteria": args.acceptance or [],
         "created_at": now(),
         "started_at": None,
@@ -79,18 +105,18 @@ def create_work(ledger: dict, args: argparse.Namespace) -> dict:
 
 
 def update_work(item: dict, args: argparse.Namespace) -> None:
-    if args.actor == "SPECIALIST":
+    if args.actor == "ENGINEER":
+        if item.get("role") not in ENGINEER_ROLES:
+            raise ArtifactError("Engineers cannot update PM-owned work")
         if not args.identity or item.get("owner") != args.identity:
-            raise ArtifactError(
-                "Specialists may update only work assigned to their identity"
-            )
+            raise ArtifactError("Engineers may update only their assigned work")
         if item.get("status") in {"DONE", "CANCELLED"}:
-            raise ArtifactError("Specialists cannot update terminal work")
+            raise ArtifactError("Engineers cannot update terminal work")
         if args.status:
-            allowed = SPECIALIST_TRANSITIONS.get(item["status"], set())
+            allowed = ENGINEER_TRANSITIONS.get(item["status"], set())
             if args.status not in allowed:
                 raise ArtifactError(
-                    f"Specialist transition {item['status']} → {args.status} is not allowed"
+                    f"Engineer transition {item['status']} → {args.status} is not allowed"
                 )
             if args.status == "VERIFYING" and not (
                 args.result and (args.evidence or item.get("evidence"))
@@ -127,7 +153,9 @@ def update_work(item: dict, args: argparse.Namespace) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("product_root", type=Path)
-    parser.add_argument("--actor", choices=["PM", "SPECIALIST"], required=True)
+    parser.add_argument(
+        "--actor", choices=["PM", "ENGINEER", "SPECIALIST"], required=True
+    )
     parser.add_argument("--identity")
     parser.add_argument("--create-work")
     parser.add_argument("--work-id")
@@ -138,7 +166,9 @@ def main() -> int:
     parser.add_argument("--classification")
     parser.add_argument("--workstream")
     parser.add_argument("--activity")
+    parser.add_argument("--role")
     parser.add_argument("--owner")
+    parser.add_argument("--owned-path", action="append")
     parser.add_argument("--priority")
     parser.add_argument("--acceptance", action="append")
     parser.add_argument("--status")
@@ -148,6 +178,8 @@ def main() -> int:
     parser.add_argument("--mode")
     parser.add_argument("--layer")
     args = parser.parse_args()
+    if args.actor == "SPECIALIST":
+        args.actor = "ENGINEER"
 
     root = args.product_root.resolve()
     base = root / "docs" / "solo-founder"
@@ -156,10 +188,9 @@ def main() -> int:
         with file_lock(base / ".product-ledger.lock"):
             ledger = read_yaml(path)
             validate_ledger(ledger)
+            upgrade_ledger(ledger)
             if args.actor != "PM" and (args.mode or args.layer or args.create_work):
-                raise ArtifactError(
-                    "Specialists cannot change PM context or create work"
-                )
+                raise ArtifactError("Engineers cannot change PM context or create work")
             if args.mode:
                 if args.mode not in MODES:
                     raise ArtifactError(f"Invalid Mode: {args.mode}")

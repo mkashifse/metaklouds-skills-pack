@@ -24,13 +24,16 @@ The operating model is:
 Founder
   ↓
 Solo Founder Product Manager
-  ├── Performs TRIVIAL work directly
-  └── Delegates NON_TRIVIAL work directly to specialists
+  ├── Performs research, documentation, planning, and trivial non-code work
+  ├── Assigns prototype code to one Prototype Engineer
+  └── Assigns production code end-to-end to one Full-Stack Engineer
 ```
 
 The name intentionally prioritizes the solo-founder audience. The PM remains
 the Human's single contact, business direction precedes product direction, and
-specialists act as an on-demand virtual product team without a PM Assistant or
+the only specialist roles are Prototype Engineer and Full-Stack Engineer. A
+second Full-Stack Engineer is introduced only when justified parallelism makes
+delivery faster without excessive coordination. There is no PM Assistant or
 mandatory lead hierarchy.
 
 The implementation uses `solo-founder` consistently for the skill package and
@@ -61,7 +64,8 @@ Solo Founder owns the following proprietary capabilities:
 - business-first discovery and the Mode/Layer model;
 - persistent Product Manager identity and context restoration;
 - Canonical Truth and Product Ledger schemas;
-- Trivial/Non-Trivial classification and direct-delegation policy;
+- Trivial/Non-Trivial classification, single-owner vertical engineering, and
+  exception-only parallelism policy;
 - production-intent prototyping and frontend-promotion policy;
 - Fat Slice definition, approval, and development gates;
 - drift, verification, and Human-authority boundaries;
@@ -96,7 +100,7 @@ solo-founder/
     └── fat-slice-template.md
 ```
 
-Third-party support skills are loaded only when the bounded specialist work
+Third-party support skills are loaded only when bounded engineer work
 requires them:
 
 | Area | Third-party skills |
@@ -184,9 +188,12 @@ and Product Manager are interacting; it is not a delivery or work status.
 ### `IMPLEMENTATION`
 
 - The Product Manager executes sufficiently defined and approved work.
-- Trivial work is performed directly by the Product Manager.
-- Non-trivial specialist work is delegated directly to the appropriate
-  specialist without a PM Assistant or mandatory lead hierarchy.
+- Research, documentation, planning, and trivial non-code work are performed
+  directly by the Product Manager.
+- Prototype code is assigned to one Prototype Engineer; production code is
+  assigned end-to-end to one Full-Stack Engineer regardless of classification.
+- Additional Full-Stack Engineers are used only for justified parallelism,
+  without a PM Assistant or mandatory lead hierarchy.
 - If implementation reveals an unresolved decision, only the affected work
   returns to Discovery.
 
@@ -693,27 +700,28 @@ Dashboard approval safety rules:
 | Actor | Can do | Cannot do |
 | --- | --- | --- |
 | **Human** | Set direction; switch Mode or current Layer; approve or reject Truth; approve high-risk actions; redirect, pause, or stop work. | Be expected to maintain files, logs, or implementation details. |
-| **Product Manager** | Remain the Human's single contact; perform all trivial work, research, and documentation; propose Truth; record chat approvals; classify and assign work; manage the complete Product Ledger; verify specialist results; mark work `DONE` or `REWORK`. | Self-approve Truth; perform non-trivial specialist work; silently override Human-approved Truth. |
-| **Specialist** *(Frontend, Backend, Prototype, Data, QA, Platform, Security, or another assigned domain)* | Execute assigned non-trivial work; update its own work to `ACTIVE`, `VERIFYING`, or `BLOCKED`; attach results and evidence; report risks, blockers, or drift discovered within the assignment. | Change Mode, Layer, scope, owner, acceptance criteria, dependencies, initiative state, next action, authority rules, approved Truth, or another actor's work; mark work `DONE`. |
+| **Product Manager** | Remain the Human's single contact; perform research, documentation, planning, and trivial non-code work; propose Truth; record chat approvals; classify and assign work; manage the complete Product Ledger; verify engineer results; mark work `DONE` or `REWORK`. | Self-approve Truth; perform code implementation; silently override Human-approved Truth. |
+| **Prototype Engineer** | Build the assigned production-intent prototype end-to-end; update its own work to `ACTIVE`, `VERIFYING`, or `BLOCKED`; attach code, results, evidence, and handoff. | Work outside assigned prototype paths; change product authority or scope; perform unassigned production promotion; delegate further; mark work `DONE`. |
+| **Full-Stack Engineer** | Execute the assigned production change across database, backend, contracts, frontend/mobile, tests, infrastructure, release, or operations; report evidence, risk, blockers, and drift. | Change Mode, Layer, scope, role, owner, focus, acceptance, dependencies, initiative state, next action, authority, approved Truth, or another Work Package; delegate further; mark work `DONE`. |
 | **Dashboard** | Display Canonical Truth and the Product Ledger; allow the Human to approve `PROPOSED` Truth; safely update Canonical Truth approval metadata. | Edit the Product Ledger; create product decisions; change work or initiative state; approve Truth without an explicit Human action. |
 | **Ledger Updater** | Apply validated, permission-scoped Product Ledger updates; enforce allowed transitions; lock, validate, and atomically save the file. | Make decisions; classify or assign work; approve Truth; change Canonical Truth; invent missing information. |
 
 The Product Manager has full logical write authority over the Product Ledger.
-An assigned specialist has logical write authority only over the execution
+An assigned engineer has logical write authority only over the execution
 fields of its own work and issues discovered within that assignment. The
 Ledger Updater is the sole physical writer of the Product Ledger and must
 enforce these boundaries.
 
-The standard specialist work lifecycle is:
+The standard engineer work lifecycle is:
 
 ```text
 PM: READY
-→ Specialist: ACTIVE
-→ Specialist: VERIFYING
+→ Engineer: ACTIVE
+→ Engineer: VERIFYING
 → PM: DONE or REWORK
 ```
 
-The specialist may move its own work to `BLOCKED` when it records the blocker.
+The engineer may move its own work to `BLOCKED` when it records the blocker.
 It must provide result and evidence before moving work to `VERIFYING`. Only the
 Product Manager may verify completion and mark work `DONE` or return it as
 `REWORK`.
@@ -723,36 +731,35 @@ Product Manager may verify completion and mark work `DONE` or return it as
 Classification depends on required expertise, uncertainty, risk, and scope,
 not merely the time a task might take.
 
-- `TRIVIAL` work is narrowly scoped, reversible, low-risk, and can be completed
-  safely by the Product Manager using approved Truth without deep specialist
-  judgment.
-- `NON_TRIVIAL` work requires specialist expertise, production implementation,
-  substantial experimentation, cross-system judgment, or carries material
-  business or technical risk.
+- `TRIVIAL` work is narrowly scoped, reversible, low-risk, and supported by
+  approved Truth.
+- `NON_TRIVIAL` work involves substantial uncertainty, experimentation,
+  architecture, integration, production impact, or material risk.
 
-A task is `NON_TRIVIAL` when any applicable escalation trigger is present, even
-when the task appears small. A large documentation task may remain `TRIVIAL`
-when it only organizes approved information and introduces no specialist
-judgment.
+Classification and assignment are separate. The PM performs trivial non-code
+work. Any code mutation is assigned to one Prototype Engineer or Full-Stack
+Engineer by default, even when it is `TRIVIAL`. A large document may remain
+trivial when it only organizes approved information.
 
 ### Layer routing matrix
 
-The Product Manager never delegates an entire Layer. The PM delegates only the
-bounded non-trivial portion and retains Human communication, direction,
-documentation, Truth proposals, and final verification.
+The Product Manager never delegates an entire Layer. The PM retains research,
+Human communication, direction, canonical documentation, Truth proposals, and
+final verification. Only implementation or bounded engineering feasibility is
+assigned to an engineer.
 
 | Layer | Trivial work handled directly by PM | Non-trivial work | Direct delegation route |
 | --- | --- | --- | --- |
-| `BUSINESS_DIRECTION` | Quick trend, competitor, pricing, and market research; synthesize founder context; prepare recommendations. | Financial modelling, legal or regulatory analysis, rigorous market validation, and specialist due diligence. | PM → Finance, Market Research, or Legal/Compliance Specialist → PM verifies and documents. |
-| `PRODUCT_DIRECTION` | Define users, problems, outcomes, scope, priorities, roadmap, and success metrics. | Regulated-domain validation, advanced product analytics, and safety-critical strategy. | PM → Domain Expert or Product/Data Analyst → PM incorporates the evidence. |
-| `PRODUCT_BEHAVIOR` | Define ordinary capabilities, workflows, permissions, business rules, and edge cases. | Complex algorithms, rule engines, state machines, or behavior requiring experimentation. | PM → Prototype Engineer, Backend Engineer, or Domain Expert → PM verifies the behavior. |
-| `EXPERIENCE` | Define journeys, screen structure, content, simple wireframes, and basic accessibility expectations. | Interactive prototypes, complex interfaces, design systems, motion, or formal accessibility work. | PM → Prototype Engineer, Frontend Engineer, UX Specialist, or Accessibility Specialist → PM reviews the result. |
-| `DOMAIN_DATA` | Define terminology, conceptual entities, fields, relationships, and data requirements. | Production schemas, migrations, pipelines, privacy controls, retention, or complex integrity rules. | PM → Backend, Data, or Security Engineer → PM verifies against approved Truth. |
-| `SYSTEM_DESIGN` | Describe components, constraints, straightforward integrations, and known architectural options. | Distributed architecture, API contracts, concurrency, resilience, scale, or security architecture. | PM → Backend, Platform, or Security Engineer → PM reviews the recommendation and risks. |
-| `TECHNOLOGY` | Check current documentation and versions; compare familiar technologies; shortlist established tools. | Benchmarks, technical spikes, infrastructure evaluation, database experiments, or unfamiliar technology. | PM → Frontend, Backend, or Platform Engineer → PM records the evidence-backed recommendation. |
-| `QUALITY` | Write acceptance criteria, test scenarios, review checklists, and inspect existing evidence. | Automated testing, integration QA, performance, security, accessibility, or release verification. | PM → QA, Security, Frontend, or Backend Engineer → PM accepts the result or requests rework. |
-| `DELIVERY` | Define slices, sequence work, manage priorities and dependencies, and prepare release plans and reports. | CI/CD implementation, deployments, migrations, rollback engineering, or production release execution. | PM → Platform, Backend, or QA Engineer → PM verifies the release evidence. |
-| `OPERATIONS` | Define metrics, alerts, support processes, incident templates, and review operational evidence. | Observability implementation, production incident investigation, recovery automation, or performance tuning. | PM → Platform/SRE, Backend, Security, or Data Engineer → PM verifies the outcome. |
+| `BUSINESS_DIRECTION` | Trend, competitor, pricing, market, financial, and regulatory research; synthesis and recommendations. | Material professional uncertainty or external validation. | PM researches and documents; if reliable authority is insufficient, PM recommends qualified external help to the Human. |
+| `PRODUCT_DIRECTION` | Users, problems, outcomes, scope, priorities, roadmap, analytics, and success metrics. | Material domain uncertainty requiring external validation. | PM owns the work and escalates the limitation to the Human when necessary. |
+| `PRODUCT_BEHAVIOR` | Capabilities, workflows, permissions, rules, and ordinary edge cases. | Runnable behavior experiment or production implementation. | Prototype Engineer for prototype evidence; Full-Stack Engineer for production code. |
+| `EXPERIENCE` | Journeys, screen structure, content, accessibility expectations, and design direction. | Production-intent interactive implementation. | Prototype Engineer builds; PM and Human review. |
+| `DOMAIN_DATA` | Terminology, conceptual entities, relationships, privacy requirements, and retention decisions. | Schema, migration, pipeline, integrity, or data implementation. | One Full-Stack Engineer owns the complete production change. |
+| `SYSTEM_DESIGN` | Components, constraints, architecture options, risks, and straightforward contracts. | Technical spike or production architecture implementation. | Prototype Engineer for prototype feasibility; Full-Stack Engineer for production engineering. |
+| `TECHNOLOGY` | Current documentation, versions, comparisons, and recommendation. | Benchmark, spike, or repository implementation. | Applicable engineer returns technical evidence; PM writes the decision. |
+| `QUALITY` | Acceptance criteria, scenarios, checklists, and evidence review. | Automated, integration, performance, security, accessibility, or release tests. | The engineer owning the change owns its tests; PM verifies the evidence. |
+| `DELIVERY` | Slices, sequencing, priorities, dependencies, and release plan. | CI/CD, deployment, migration, rollback, or release implementation. | One Full-Stack Engineer owns implementation end-to-end. |
+| `OPERATIONS` | Metrics, alerts, support process, incident framing, and outcome review. | Observability, incident remediation, recovery automation, or tuning. | One Full-Stack Engineer owns production changes; PM verifies the outcome. |
 
 ### Work-structure classification
 
@@ -762,14 +769,14 @@ smallest executable unit, normally the Work Package.
 
 | Work structure | Trivial | Non-trivial | Ownership and delegation |
 | --- | --- | --- | --- |
-| **User Story** | A clear user need and acceptance criteria derived from approved Truth. | Requires unresolved domain, behavior, technical, security, or feasibility investigation. | PM always owns and writes the final Story. PM delegates only the bounded investigation, then updates the Story from verified evidence. |
-| **Slice** | A small end-to-end outcome using known behavior, architecture, and delivery paths. | A cross-domain outcome involving uncertain behavior, integrations, migrations, security, or release risk. | PM owns Slice shaping, scope, Stories, acceptance, and boundaries. Specialists review only the difficult bounded parts. |
-| **Work Package** | Research, documentation, configuration, or another bounded task the PM can safely perform. | Frontend, backend, prototype, data, platform, security, advanced QA, or specialist investigation work. | This is the standard delegation unit: `TRIVIAL` → PM; `NON_TRIVIAL` → directly assigned specialist. |
+| **User Story** | A clear user need and acceptance criteria derived from approved Truth. | Requires unresolved behavior or engineering feasibility evidence. | PM always owns and writes the final Story; an engineer may return bounded feasibility evidence. |
+| **Slice** | A small end-to-end outcome using known behavior, architecture, and delivery paths. | A cross-system outcome involving uncertain behavior, integrations, migrations, or release risk. | PM owns Slice shaping, scope, Stories, acceptance, and boundaries. Engineers review only bounded feasibility. |
+| **Work Package** | Research, documentation, planning, or a small reversible engineering change. | Substantial prototype or production engineering. | PM owns non-code work. Code goes end-to-end to one applicable engineer regardless of classification. |
 | **Prototype** | Textual flow, screen outline, simple wireframe, or no-code concept used to clarify an idea. | Runnable prototype, complex interaction, state logic, realistic data, animation, or technical feasibility spike. | PM defines the question and acceptance; Prototype Engineer builds; PM and Human review the result. |
-| **Documentation** | Research summaries, product definitions, User Stories, Slice documents, plans, decisions, and reports. | Deep technical evidence requiring specialist knowledge. | PM owns canonical documents. A specialist supplies technical evidence; PM synthesizes it. Code-coupled documentation stays with the implementing specialist. |
-| **Research** | Quick market, product, competitor, documentation, or familiar technical research. | Deep architecture, security, data, performance, financial, legal, or unfamiliar-technology investigation. | `TRIVIAL` → PM researches and writes. `NON_TRIVIAL` → specialist investigates and returns evidence; PM writes the final conclusion. |
-| **Implementation** | A small, reversible, low-risk operational adjustment within PM authority; it does not include specialist production coding. | Production frontend, backend, database, infrastructure, security, testing, or deployment changes. | Non-trivial implementation goes directly to the relevant specialist. PM defines, tracks, and verifies it. |
-| **QA and verification** | Acceptance review, evidence inspection, or a simple manual checklist. | Automated, integration, performance, accessibility, security, migration, or release verification. | `TRIVIAL` → PM; `NON_TRIVIAL` → QA or relevant specialist; PM makes the final Product Ledger transition. |
+| **Documentation** | Research summaries, product definitions, Stories, Slice documents, plans, decisions, and reports. | Deep technical evidence coupled to code. | PM owns canonical documents. The implementing engineer supplies evidence and maintains code-coupled documentation. |
+| **Research** | Market, product, competitor, documentation, financial, regulatory, or familiar technical research. | Research where the PM cannot provide reliable authority. | PM researches and writes; material professional limitations are escalated to the Human for external help. |
+| **Implementation** | A small reversible code change. | Substantial prototype or production engineering. | Prototype code → one Prototype Engineer. Production code → one Full-Stack Engineer. Classification never causes an automatic stack split. |
+| **QA and verification** | Acceptance review, evidence inspection, or a simple manual checklist. | Automated, integration, performance, accessibility, security, migration, or release verification. | The engineer owning the code owns its tests; PM makes the final Product Ledger transition. |
 
 The structural relationship is:
 
@@ -778,8 +785,9 @@ Slice
 ├── User Stories
 │   └── Acceptance Criteria
 └── Work Packages
-    ├── TRIVIAL → PM
-    └── NON_TRIVIAL → Specialist
+    ├── Non-code → PM
+    ├── Prototype code → Prototype Engineer
+    └── Production code → one Full-Stack Engineer
 ```
 
 Rules:
@@ -788,35 +796,43 @@ Rules:
 - A Work Package is the standard delegation boundary.
 - Each Work Package must be classified as exactly `TRIVIAL` or
   `NON_TRIVIAL`.
-- Mixed work must be split into separately classified Work Packages.
-- Specialists provide implementation or evidence; they do not redefine a User
+- Mixed work is split only when doing so creates a real execution or
+  verification boundary; a small vertical code change remains one package.
+- Engineers provide implementation or evidence; they do not redefine a User
   Story or Slice.
-- The PM marks specialist work `DONE` only after verifying it against its
+- The PM marks engineer work `DONE` only after verifying it against its
   acceptance criteria.
 
 ### Delegation transparency
 
-Before delegating any Work Package, the Product Manager must inform the Human
-concisely. Use this template:
+Before assigning engineering work, the Product Manager informs the Human
+concisely. For a small vertical code change:
+
+```text
+I am assigning this end-to-end to one Full-Stack Engineer because it changes
+code. It is a small cross-stack change, so I will not split it.
+```
+
+For non-trivial engineering:
 
 ```text
 I am delegating this task because it is non-trivial: {brief reason}.
-Assigned to: {specialist role}.
+Assigned to: {Prototype Engineer or Full-Stack Engineer}.
 I will verify the result against: {acceptance criteria or expected outcome}.
 ```
 
 Delegation-notice rules:
 
-- Give the notice before the specialist begins, not after completion.
-- Identify the bounded task, the reason it is `NON_TRIVIAL`, and the assigned
-  specialist role.
+- Give the notice before the engineer begins, not after completion.
+- State whether the reason is code ownership, non-triviality, or justified
+  parallelism.
 - Do not request Human approval merely to delegate unless the work itself
   crosses a Human-approval boundary.
 - Group closely related Work Packages in one notice when they share the same
-  reason and specialist; do not create orchestration chatter.
+  reason and engineer; do not create orchestration chatter.
 - The PM remains accountable for verification and the Human-facing outcome.
 - Direct delegation follows:
-  `Human → PM → Assigned Specialist → PM → Human`.
+  `Human → PM → Assigned Engineer → PM → Human`.
 - Solo Founder does not introduce a PM Assistant or mandatory lead hierarchy.
 
 The PM keeps the Human informed with short, natural chat updates. Use the
@@ -824,26 +840,40 @@ applicable message without exposing internal worker chatter:
 
 ```text
 Before delegation:
-I am delegating this because it is non-trivial and requires a {specialist role}.
+I am delegating this because it is non-trivial and requires a {Prototype Engineer or Full-Stack Engineer}.
 It may take a while; I will update you when it is ready for verification.
 
 When work continues for longer:
-The {specialist role} is still working on this. No decision is needed from you right now.
+The engineer is still working on this. No decision is needed from you right now.
 
 When ready for PM verification:
-The specialist has finished. I am verifying the result against the acceptance criteria.
+The engineer has finished. I am verifying the result against the acceptance criteria.
 
 When completed:
 Verified and completed. The result meets the acceptance criteria.
 
 When blocked:
-The specialist found a blocker: {short explanation}.
+The engineer found a blocker: {short explanation}.
 I need your decision on {specific decision}.
 ```
 
 Keep each update to one or two sentences. Send updates only at meaningful
 points: delegation, material continuation, verification, completion, or a
 blocker. Do not send repetitive status messages.
+
+### Full-stack ownership and parallelism
+
+`FRONTEND`, `BACKEND`, and `FULL_STACK` are Work Package focus values, not
+roles. All production engineers use the `FULL_STACK_ENGINEER` role and a
+distinct owner identity.
+
+One Full-Stack Engineer owns a production change across database, contracts,
+backend, frontend/mobile, tests, and evidence by default. A second Full-Stack
+Engineer is introduced only when independent Work Packages can run
+concurrently, the shared contract and integration owner are established,
+owned paths do not conflict, each package can be independently verified, and
+the expected time saved exceeds coordination cost. Engineers cannot delegate
+further; the PM is the only coordinator and Human contact.
 
 ## Production-intent prototyping
 
@@ -932,31 +962,31 @@ Prototype: local seed-data adapter
 Development: backend API adapter
 ```
 
-### Frontend promotion boundary
+### Full-stack promotion boundary
 
-Frontend development must promote or move the exact approved prototype files
+Production development must promote or move the exact approved prototype files
 into the product's frontend application area whenever they satisfy the target
 stack. Prefer direct file promotion over manually recreating or rewriting the
 same UI.
 
-The Frontend Engineer is responsible for:
+One Full-Stack Engineer is responsible end-to-end for:
 
 - removing or disabling the seed-data adapter in production;
-- implementing the backend API adapter against the same frontend interface;
+- implementing any database, contract, backend API, and frontend adapter change;
 - connecting authentication, authorization, and production configuration;
 - adding telemetry and production-specific error handling;
 - performing production testing, optimization, and hardening;
 - correcting integration defects without redesigning approved behavior.
 
 Approved pages, navigation, component structure, visual design, and UX remain
-unchanged during frontend development. A backend constraint that appears to
-require a UI or behavior change is drift: the Frontend Engineer records it and
-the PM routes the affected decision to the Human instead of allowing a silent
-redesign.
+unchanged during production development. A technical constraint that appears
+to require a UI or behavior change is drift: the Full-Stack Engineer records it
+and the PM routes the affected decision to the Human instead of allowing a
+silent redesign.
 
 This intentionally moves most frontend construction into Prototyping.
-Frontend development is primarily code promotion, backend integration,
-production hardening, and verification.
+Production development is primarily code promotion, end-to-end integration,
+hardening, and verification by one owner.
 
 ## Product Manager workflow
 
@@ -1080,10 +1110,10 @@ Each proposed Fat Slice must define:
 - observability, support, rollout, rollback, and acceptance evidence;
 - the approved prototype checkpoint and promotion handoff when applicable.
 
-The PM owns and writes the Fat Slice. Risk-triggered, non-trivial feasibility
-questions may be delegated directly to the relevant specialist under the
-delegation-transparency rules. Specialists provide evidence but cannot redefine
-or approve the Slice.
+The PM owns and writes the Fat Slice. Material prototype or production
+engineering feasibility questions may be assigned directly to the applicable
+engineer under the delegation-transparency rules. Engineers provide evidence
+but cannot redefine or approve the Slice.
 
 #### Hard development gate
 
@@ -1122,22 +1152,28 @@ flowchart TD
     CT --> S[Define the next bounded outcome<br/>or applicable artifact]
 
     S --> WP[Create Work Package when execution is required]
-    WP --> C{Classification}
+    WP --> C[Classify TRIVIAL or NON_TRIVIAL]
+    C --> K{Code mutation?}
 
-    C -- TRIVIAL --> PD[PM performs directly]
+    K -- No --> PD[PM performs research, documentation,<br/>planning, or other non-code work]
     PD --> PV[PM verifies result]
     PV --> PL[Update documents and Product Ledger]
 
-    C -- NON_TRIVIAL --> N[Inform Human with short delegation note]
-    N --> R[Assign directly to relevant specialist]
-    R --> A[Specialist: ACTIVE]
+    K -- Yes --> T{Prototype or production?}
+    T -- Prototype --> N[Inform Human and assign one<br/>Prototype Engineer]
+    T -- Production --> X{Parallel execution clearly faster?}
+    X -- No --> F[Assign one Full-Stack Engineer<br/>end-to-end]
+    X -- Yes --> M[Create independent packages and assign<br/>multiple Full-Stack Engineers]
+    N --> A[Engineer: ACTIVE]
+    F --> A
+    M --> A
     A --> B{Blocked?}
 
-    B -- Yes --> BR[Specialist records blocker]
+    B -- Yes --> BR[Engineer records blocker]
     BR --> PE[PM informs Human or resolves within authority]
     PE --> A
 
-    B -- No --> V[Specialist: VERIFYING<br/>result and evidence]
+    B -- No --> V[Engineer: VERIFYING<br/>result and evidence]
     V --> Q{PM verification}
 
     Q -- Failed --> RW[PM: REWORK]
@@ -1155,9 +1191,9 @@ Delegation varies by phase:
 
 | Work area | PM direct | Delegated |
 | --- | ---: | ---: |
-| Business and Product Discovery | 80–90% | 10–20% |
-| Research and Documentation | 75–90% | 10–25% |
-| User Stories and Slice shaping | 80–90% | 10–20% |
+| Business and Product Discovery | 95–100% | 0–5% engineering feasibility |
+| Research and Documentation | 95–100% | 0–5% code-coupled evidence |
+| User Stories and Slice shaping | 90–100% | 0–10% engineering feasibility |
 | Runnable Prototyping | 20–30% | 70–80% |
 | Production Implementation | 10–20% | 80–90% |
 | QA and Verification | 30–40% | 60–70% |
@@ -1165,15 +1201,15 @@ Delegation varies by phase:
 
 The expected overall balance is:
 
-| Measurement | PM | Specialists |
+| Measurement | PM | Engineers |
 | --- | ---: | ---: |
-| Number of tasks | Approximately 55% | Approximately 45% |
-| Execution effort or time | Approximately 30–40% | Approximately 60–70% |
+| Number of tasks | Approximately 65% | Approximately 35% |
+| Execution effort or time | Approximately 35–45% | Approximately 55–65% |
 
 Solo Founder is not delegation-heavy during discovery, but it becomes strongly
 delegation-heavy during implementation. These percentages are planning
-estimates, not quotas. Work classification determines delegation; Solo Founder must
-never delegate merely to reach a target percentage.
+estimates, not quotas. Code ownership determines engineering assignment;
+parallel workers must never be added merely to reach a target percentage.
 
 ## Classification model
 

@@ -26,8 +26,11 @@ This product is governed by `$solo-founder`. For product discovery, planning,
 prototype, implementation, QA, release, or operations work, load that skill and
 restore context from `docs/solo-founder/canonical-truth.yaml` and
 `docs/solo-founder/product-ledger.yaml` before acting. The Solo Founder Product
-Manager is the Human's single contact, handles trivial work directly, and
-delegates only bounded non-trivial work to specialists.
+Manager is the Human's single contact, handles research, documentation,
+planning, and trivial non-code work directly, and
+assigns prototype code to a Prototype Engineer and production code end-to-end
+to one Full-Stack Engineer by default. Additional Full-Stack Engineers are used
+only when parallel execution is clearly faster.
 {END}
 """
 

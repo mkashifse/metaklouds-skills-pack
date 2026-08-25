@@ -44,16 +44,10 @@ WORK_STATUSES = {
 CLASSIFICATIONS = {"TRIVIAL", "NON_TRIVIAL"}
 ISSUE_KINDS = {"DRIFT", "BLOCKER", "RISK", "EXTERNAL_DEPENDENCY"}
 INITIATIVE_STATUSES = {"ACTIVE", "PAUSED", "DONE", "CANCELLED"}
-WORKSTREAMS = {
-    "PRODUCT",
-    "PROTOTYPE",
-    "FRONTEND",
-    "BACKEND",
-    "DATA",
-    "QA",
-    "PLATFORM",
-    "SECURITY",
-}
+ROLES = {"PM", "PROTOTYPE_ENGINEER", "FULL_STACK_ENGINEER"}
+ENGINEER_ROLES = {"PROTOTYPE_ENGINEER", "FULL_STACK_ENGINEER"}
+WORKSTREAMS = {"PRODUCT", "PROTOTYPE", "FRONTEND", "BACKEND", "FULL_STACK"}
+LEGACY_WORKSTREAMS = {"DATA", "QA", "PLATFORM", "SECURITY"}
 ACTIVITIES = {
     "RESEARCH",
     "DOCUMENTATION",
@@ -69,6 +63,39 @@ EXECUTIONS = {"DIRECT", "DELEGATED"}
 
 class ArtifactError(RuntimeError):
     pass
+
+
+def upgrade_ledger(document: dict[str, Any]) -> bool:
+    """Upgrade the earlier open-owner Ledger to the two-role engineer model."""
+    if document.get("schema_version") != 1:
+        return False
+    for raw in document.get("work") or []:
+        if not isinstance(raw, dict):
+            continue
+        owner = str(raw.get("owner") or "")
+        workstream = str(raw.get("workstream") or "")
+        if not raw.get("role"):
+            if owner == "PM":
+                raw["role"] = "PM"
+            elif workstream == "PROTOTYPE" or "PROTOTYPE" in owner.upper():
+                raw["role"] = "PROTOTYPE_ENGINEER"
+            else:
+                raw["role"] = "FULL_STACK_ENGINEER"
+        if raw.get("role") == "PROTOTYPE_ENGINEER":
+            raw["workstream"] = "PROTOTYPE"
+        elif raw.get("role") == "FULL_STACK_ENGINEER" and workstream not in {
+            "FRONTEND",
+            "BACKEND",
+            "FULL_STACK",
+        }:
+            raw["workstream"] = (
+                "BACKEND"
+                if workstream in {"DATA", "PLATFORM", "SECURITY"}
+                else "FULL_STACK"
+            )
+        raw["execution"] = "DIRECT" if raw.get("role") == "PM" else "DELEGATED"
+    document["schema_version"] = 2
+    return True
 
 
 def normalize_block_scalars(text: str) -> str:
@@ -415,8 +442,9 @@ def validate_truth(document: dict[str, Any]) -> None:
 
 
 def validate_ledger(document: dict[str, Any]) -> None:
-    if document.get("schema_version") != 1:
-        raise ArtifactError("product-ledger.yaml requires schema_version: 1")
+    schema_version = document.get("schema_version")
+    if schema_version not in {1, 2}:
+        raise ArtifactError("product-ledger.yaml requires schema_version: 1 or 2")
     require_mapping(document.get("product"), "product")
     current = require_mapping(document.get("current"), "current")
     if current.get("mode") not in MODES:
@@ -452,7 +480,10 @@ def validate_ledger(document: dict[str, Any]) -> None:
         work_ids.add(work_id)
         if item.get("classification") not in CLASSIFICATIONS:
             raise ArtifactError(f"{work_id} has invalid classification")
-        if item.get("workstream") not in WORKSTREAMS:
+        allowed_workstreams = (
+            WORKSTREAMS | LEGACY_WORKSTREAMS if schema_version == 1 else WORKSTREAMS
+        )
+        if item.get("workstream") not in allowed_workstreams:
             raise ArtifactError(f"{work_id} has invalid workstream")
         if item.get("activity") not in ACTIVITIES:
             raise ArtifactError(f"{work_id} has invalid activity")
@@ -462,8 +493,34 @@ def validate_ledger(document: dict[str, Any]) -> None:
             raise ArtifactError(f"{work_id} has invalid status")
         if not str(item.get("owner") or "").strip():
             raise ArtifactError(f"{work_id} requires owner")
+        role = item.get("role")
+        if schema_version == 2:
+            if role not in ROLES:
+                raise ArtifactError(f"{work_id} has invalid role")
+            expected_execution = "DIRECT" if role == "PM" else "DELEGATED"
+            if item.get("execution") != expected_execution:
+                raise ArtifactError(
+                    f"{work_id} execution must be {expected_execution} for {role}"
+                )
+            if role == "PM" and item.get("owner") != "PM":
+                raise ArtifactError(f"{work_id} PM work requires owner: PM")
+            if role == "PM" and item.get("activity") == "IMPLEMENTATION":
+                raise ArtifactError(f"{work_id} implementation requires an engineer")
+            if role == "PROTOTYPE_ENGINEER" and item.get("workstream") != "PROTOTYPE":
+                raise ArtifactError(
+                    f"{work_id} Prototype Engineer requires PROTOTYPE workstream"
+                )
+            if role == "FULL_STACK_ENGINEER" and item.get("workstream") not in {
+                "FRONTEND",
+                "BACKEND",
+                "FULL_STACK",
+            }:
+                raise ArtifactError(
+                    f"{work_id} Full-Stack Engineer requires an engineering focus"
+                )
         require_list(item.get("acceptance_criteria"), f"{work_id}.acceptance_criteria")
         require_list(item.get("evidence"), f"{work_id}.evidence")
+        require_list(item.get("owned_paths"), f"{work_id}.owned_paths")
     issue_ids: set[str] = set()
     for raw in issues:
         item = require_mapping(raw, "issue item")

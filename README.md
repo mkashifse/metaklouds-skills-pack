@@ -13,11 +13,14 @@ validation.
 Founder
   ↓
 Solo Founder Product Manager
-  ├── Performs TRIVIAL work directly
-  └── Delegates NON_TRIVIAL work directly to specialists
+  ├── Performs research, documentation, planning, and trivial non-code work
+  ├── Assigns prototypes to one Prototype Engineer
+  └── Assigns production code end-to-end to one Full-Stack Engineer
 ```
 
-There is no PM Assistant and no mandatory lead hierarchy.
+There is no PM Assistant, frontend/backend role split, or mandatory lead
+hierarchy. Additional Full-Stack Engineers are used only for justified
+parallelism.
 
 ## Why this architecture
 
@@ -27,7 +30,8 @@ skills and a PM Assistant. Solo Founder replaces that orchestration chain with:
 - one installed proprietary skill;
 - a fast, local context restore from two canonical YAML artifacts;
 - progressive references loaded only for the current stage;
-- direct specialist delegation only for bounded non-trivial work;
+- only two specialist roles, loaded only for engineering work;
+- one Full-Stack Engineer owns a vertical production change by default;
 - conditional upstream implementation skills;
 - an optional local dashboard rather than a per-message runtime dependency.
 
@@ -64,16 +68,28 @@ BUSINESS_DIRECTION, PRODUCT_DIRECTION, PRODUCT_BEHAVIOR, EXPERIENCE,
 DOMAIN_DATA, SYSTEM_DESIGN, TECHNOLOGY, QUALITY, DELIVERY, OPERATIONS
 ```
 
-The smallest executable unit is classified as:
+The smallest executable unit is classified independently from assignment:
 
-- `TRIVIAL`: PM performs it directly;
-- `NON_TRIVIAL`: PM gives the Human a short reason, delegates directly to the
-  appropriate specialist, then verifies the evidence.
+- `TRIVIAL`: bounded, reversible, and low-risk. The PM performs non-code work;
+  one engineer still owns any code mutation.
+- `NON_TRIVIAL`: substantial uncertainty, experimentation, architecture,
+  integration, risk, or production impact.
 
-Specialist work follows:
+Exactly two specialist roles exist:
+
+- `PROTOTYPE_ENGINEER` for production-intent prototype implementation;
+- `FULL_STACK_ENGINEER` for database, backend, contracts, frontend/mobile,
+  tests, infrastructure, release, and operations.
+
+`FRONTEND`, `BACKEND`, and `FULL_STACK` are temporary assignment focuses, not
+roles. A small field change crossing a table, API, and UI goes to one
+Full-Stack Engineer. Multiple Full-Stack Engineers are used only when bounded
+packages can run independently and the time saved exceeds coordination cost.
+
+Engineer work follows:
 
 ```text
-PM: READY → Specialist: ACTIVE → Specialist: VERIFYING → PM: DONE or REWORK
+PM: READY → Engineer: ACTIVE → Engineer: VERIFYING → PM: DONE or REWORK
 ```
 
 ## Production-intent prototypes
@@ -91,9 +107,9 @@ Pages and components
 → local seed adapter now / backend API adapter later
 ```
 
-Frontend implementation promotes the approved files, replaces the seed adapter,
-connects backend APIs and authentication, and performs production hardening. It
-does not silently redesign approved UI/UX.
+One Full-Stack Engineer promotes the approved files, replaces the seed adapter,
+connects database/backend/API/authentication changes, and performs production
+hardening end-to-end. The engineer does not silently redesign approved UI/UX.
 
 ## Canonical product artifacts
 
@@ -138,8 +154,9 @@ content. It preserves empty leaf directories with `.gitkeep`, but does not
 choose frameworks or generate stack-specific boilerplate until the relevant
 Technology and System Design Truth is approved.
 
-The PM and assigned specialists have scoped logical write authority. A
-deterministic updater is the Product Ledger's sole physical writer.
+The PM and assigned Prototype or Full-Stack Engineers have scoped logical write
+authority. A deterministic updater is the Product Ledger's sole physical
+writer.
 
 ## Context persistence
 

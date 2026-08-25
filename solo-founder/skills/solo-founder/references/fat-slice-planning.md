@@ -33,8 +33,9 @@ Write `docs/solo-founder/slices/<slice-id>.md` from the bundled template. Cover:
 - requirement-to-story-to-test-to-evidence traceability;
 - prototype source checkpoint and promotion handoff.
 
-The PM owns and writes the Slice. Delegate only material specialist feasibility
-questions, then incorporate verified evidence without transferring ownership.
+The PM owns and writes the Slice. Delegate only material prototype or
+production-engineering feasibility questions to the applicable engineer, then
+incorporate verified evidence without transferring ownership.
 
 ## Development gate
 

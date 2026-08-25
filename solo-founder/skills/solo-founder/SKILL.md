@@ -207,6 +207,22 @@ Load third-party support skills only for the bounded PM or delegated assignment
 that needs them. They provide technical guidance and never control Solo Founder
 workflow or authority.
 
+### Browser-control efficiency boundary
+
+During production-intent prototyping and frontend/mobile development, never use
+interactive agent or in-app browser-control tools by default. Do not spend
+context navigating pages, clicking through flows, repeatedly inspecting page
+state, or capturing screenshots. Use interactive browser control only when the
+Human explicitly requests it in the current instruction; words such as “test,”
+“review,” “verify,” “prototype,” or “frontend” do not imply permission.
+
+Prefer code inspection, type checking, linting, unit/component tests, and
+deterministic automated Playwright tests invoked from the CLI with compact text
+results. Do not capture or inspect screenshots, video, or traces unless the
+Human explicitly asks. Automated visual regression may compare stored
+baselines without sending images through the agent. When visual judgment is
+still required, provide the local URL or build and ask the Human to review it.
+
 | Assignment | Applicable support skills |
 | --- | --- |
 | Production-intent React/Next prototype or UI | `frontend-design`, `vercel-react-best-practices`, and `vercel-composition-patterns` for reusable component boundaries |
@@ -217,7 +233,7 @@ workflow or authority.
 | Postgres schema, migration, RLS, or performance | `supabase-postgres-best-practices`; add `supabase` when hosted there |
 | Python tests | `python-testing-patterns` |
 | TypeScript/frontend tests | `vitest` |
-| Browser/E2E/accessibility tests | `playwright-best-practices` |
+| Automated browser/E2E/accessibility tests | `playwright-best-practices` |
 
 The upstream `prototype` skill is intentionally not required because its
 disposable-prototype default conflicts with Solo Founder's production-intent

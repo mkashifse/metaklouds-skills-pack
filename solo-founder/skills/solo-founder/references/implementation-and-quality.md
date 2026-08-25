@@ -36,6 +36,22 @@ delegated work, the engineer submits the integrated result, durable evidence,
 and complete typed handoff at `VERIFYING`. Only the PM may mark `DONE` or
 `REWORK` after consuming the handoff and reviewing acceptance.
 
+## Browser-control restriction during frontend development
+
+For frontend or mobile implementation, do not use interactive agent or in-app
+browser control by default. Avoid manual navigation, repeated clicking, page
+inspection, and screenshots. Interactive browser control is allowed only when
+the Human explicitly requests it in the current instruction; a general request
+to build, test, review, or verify the frontend is not authorization.
+
+Prefer static inspection, type checking, linting, unit/component tests, and
+deterministic Playwright tests run from the CLI with compact text results. Do
+not capture or inspect screenshots, video, or traces unless explicitly
+requested. Automated visual-regression comparison may run without passing its
+images through the agent. When acceptance still requires subjective visual
+judgment, provide the runnable frontend to the Human for review and record that
+visual confirmation remains pending.
+
 ## Quality and release
 
 Do not declare a Slice complete because a component, package, commit, PR, or

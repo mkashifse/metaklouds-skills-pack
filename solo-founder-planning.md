@@ -123,11 +123,22 @@ requires them:
 | Postgres | `supabase-postgres-best-practices` |
 | Python testing | `python-testing-patterns` |
 | TypeScript and frontend testing | `vitest` |
-| Browser and end-to-end testing | `playwright-best-practices` |
+| Automated browser and end-to-end testing | `playwright-best-practices` |
 
 Third-party skills provide bounded technical guidance only. They cannot control
 Mode, Layer, Canonical Truth, the Product Ledger, Fat Slice approval,
 delegation policy, or the Human-facing workflow.
+
+During production-intent prototyping and frontend/mobile development, never use
+interactive agent or in-app browser control by default. Do not manually tour
+routes, repeatedly click through flows, inspect page state, or capture
+screenshots, video, or traces. Only an explicit Human instruction in the
+current request authorizes that interaction; generic requests to build, test,
+review, or verify do not. Prefer static inspection, type checks, linting,
+unit/component tests, and deterministic Playwright tests run from the CLI with
+compact text results. Automated visual-regression comparison may run without
+opening images in the agent. Give the Human a local URL or runnable build when
+subjective visual review remains necessary.
 
 The upstream `prototype` skill is not a required dependency because its
 disposable-prototype assumptions conflict with Solo Founder's production-intent

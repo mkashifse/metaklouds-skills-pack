@@ -225,12 +225,18 @@ The complete profile installs 11 skills:
 | `supabase-postgres-best-practices` | Upstream | Postgres schema, migration, RLS, and performance |
 | `python-testing-patterns` | Upstream | Python testing |
 | `vitest` | Upstream | TypeScript and frontend testing |
-| `playwright-best-practices` | Upstream | Browser, E2E, visual, and accessibility testing |
+| `playwright-best-practices` | Upstream | Automated browser, E2E, visual, and accessibility testing |
 
 Support skills are loaded only for relevant bounded assignments. They never
 control Solo Founder Mode, Layers, Truth, Ledger, Slice approval, or Human
 authority. The disposable-oriented upstream `prototype` skill is intentionally
 not installed.
+
+During prototyping and frontend/mobile development, Solo Founder prohibits
+interactive agent browser control, repeated clicking, page inspection, and
+screenshots unless the Human explicitly requests them. Compact CLI-driven
+automated tests remain available without feeding browser imagery through the
+agent.
 
 See [THIRD_PARTY.md](THIRD_PARTY.md) for pinned sources and license status.
 

@@ -61,6 +61,21 @@ them as `PROPOSED` Truth. Prototype behavior is evidence, never authority.
 Delegated prototype work must return a `PROTOTYPE` handoff before
 `VERIFYING`; the PM consumes it during prototype review.
 
+## Browser-control restriction during prototyping
+
+Do not use interactive agent or in-app browser control to review a prototype by
+default. Do not manually tour routes, click through screens, repeatedly inspect
+page state, or capture screenshots. The production-intent nature of the
+prototype does not justify this token cost. Only an explicit Human instruction
+in the current request authorizes interactive browser control.
+
+Verify through code inspection, type checking, linting, unit/component tests,
+and bounded automated Playwright tests with concise text output. Automated
+visual-regression comparison may run without opening its images in the agent.
+Do not capture or inspect screenshots, videos, or traces unless explicitly
+requested. Give the Human the local URL or runnable build when subjective visual
+review remains necessary.
+
 ## Promotion boundary
 
 The PM promotes or moves the exact approved files end-to-end by default. A

@@ -143,12 +143,14 @@ verify_solo_founder_bundle() {
   local required_files=(
     agents/openai.yaml
     scripts/restore_context.py
+    scripts/create_handoff.py
     scripts/update_ledger.py
     scripts/validate_artifacts.py
     scripts/serve_dashboard.py
     references/modes-and-layers.md
     references/truth-and-product-ledger.md
     references/work-classification.md
+    references/handoff-contract.md
     references/repository-structure.md
     references/production-prototyping.md
     references/fat-slice-planning.md
@@ -156,6 +158,7 @@ verify_solo_founder_bundle() {
     references/dashboard-contract.md
     assets/canonical-truth-template.yaml
     assets/product-ledger-template.yaml
+    assets/handoff-template.md
     assets/research-template.md
     assets/fat-slice-template.md
   )

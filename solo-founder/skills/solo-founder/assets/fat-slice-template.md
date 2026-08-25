@@ -9,7 +9,7 @@ priority: "P1"
 dependencies: []
 capability_family: ""
 prototype_checkpoint: null
-promotion_handoff: null
+promotion_map: null
 approved_at: null
 approved_by: null
 ---
@@ -61,7 +61,7 @@ approved_by: null
 ## Development Intake
 
 - Structural completeness:
-- Prototype or Full-Stack Engineer feasibility evidence:
+- PM feasibility evidence and any consumed delegated handoff:
 - Open blockers:
 
 ## Human approval

@@ -1,7 +1,7 @@
 {
   "name": "solo-founder",
   "displayName": "Solo Founder",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "entrySkill": "solo-founder",
   "skills": ["solo-founder"],
   "supportSkills": [
@@ -23,9 +23,20 @@
   },
   "operatingModel": {
     "humanContact": "Solo Founder Product Manager",
-    "specialistRoles": ["PROTOTYPE_ENGINEER", "FULL_STACK_ENGINEER"],
-    "defaultEngineeringOwnership": "one-full-stack-engineer-end-to-end",
-    "parallelism": "exception-only-when-net-faster",
+    "optionalExecutorRoles": ["PROTOTYPE_ENGINEER", "FULL_STACK_ENGINEER"],
+    "defaultExecutor": "PM",
+    "defaultExecutionScope": "all-bounded-work-including-code",
+    "parallelism": "optional-only-when-net-faster",
+    "delegationReason": "PARALLELISM",
+    "handoffTypes": [
+      "RESEARCH",
+      "DOCUMENTATION",
+      "PROTOTYPE",
+      "IMPLEMENTATION",
+      "VERIFICATION",
+      "EXCEPTION"
+    ],
+    "handoffContract": "skills/solo-founder/references/handoff-contract.md",
     "canonicalTruth": "docs/solo-founder/canonical-truth.yaml",
     "productLedger": "docs/solo-founder/product-ledger.yaml",
     "contextRestore": "skills/solo-founder/scripts/restore_context.py",

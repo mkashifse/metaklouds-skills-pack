@@ -11,7 +11,7 @@ Require:
 
 - sufficient production-intent prototype evidence;
 - current `APPROVED` Truth for the proposed scope;
-- an approved prototype checkpoint and promotion handoff when applicable;
+- an approved prototype checkpoint and promotion map when applicable;
 - one exact capability outcome and Slice ID.
 
 If product intent is unclear or a proposal contains multiple independently
@@ -31,10 +31,11 @@ Write `docs/solo-founder/slices/<slice-id>.md` from the bundled template. Cover:
 - contract expectations, state transitions, dependencies, assumptions, risks;
 - observability, support, rollout, and rollback;
 - requirement-to-story-to-test-to-evidence traceability;
-- prototype source checkpoint and promotion handoff.
+- prototype source checkpoint and promotion map.
 
-The PM owns and writes the Slice. Delegate only material prototype or
-production-engineering feasibility questions to the applicable engineer, then
+The PM owns and writes the Slice. It handles feasibility directly by default.
+Delegate only an independently bounded feasibility question whose parallel
+execution is expected to be net faster, then consume its typed handoff and
 incorporate verified evidence without transferring ownership.
 
 ## Development gate

@@ -3,21 +3,21 @@
 Classification describes complexity and risk; it does not determine who writes
 code. Assignment describes the actor. Keep them separate.
 
-## Three actors, two specialist roles
+## Three actors, two optional executor roles
 
 | Actor or role | Owns |
 | --- | --- |
-| PM | All business/product research, canonical documentation, planning, classification, assignment, and verification; performs trivial non-code work directly |
-| `PROTOTYPE_ENGINEER` | Production-intent prototype implementation, local seed adapter, approved UI/UX and design system, prototype tests, and promotion handoff |
-| `FULL_STACK_ENGINEER` | Production database, backend, contracts, frontend/mobile, tests, infrastructure, release, and operations work |
+| PM | Default executor for all research, documentation, planning, prototype, production, verification, release, and operations work; owns classification, assignment, canonical state, and final verification |
+| `PROTOTYPE_ENGINEER` | Optional parallel executor for bounded production-intent prototype work and related research/documentation |
+| `FULL_STACK_ENGINEER` | Optional parallel executor for bounded research, documentation, production, verification, release, or operations work |
 
-The Prototype Engineer and Full-Stack Engineer are full-stack capable. Their
-role names identify the delivery stage, not a technical permission wall.
+The Prototype Engineer and Full-Stack Engineer are optional execution capacity.
+Their role names identify focus, not exclusive PM capability.
 `FRONTEND`, `BACKEND`, and `FULL_STACK` are Work Package focus values, never
 specialist roles.
 
 No permanent research, finance, legal, data, QA, security, platform, frontend,
-or backend specialist role exists. The PM performs and documents research. If
+or backend executor role exists. The PM authors final research. If
 material legal, financial, regulatory, or other professional risk exceeds the
 PM's reliable authority, present the limitation and recommend qualified
 external help to the Human.
@@ -28,12 +28,10 @@ external help to the Human.
 - `NON_TRIVIAL`: substantial uncertainty, experimentation, architecture,
   integration, risk, or production impact.
 
-The PM handles trivial non-code work. Any code mutation is assigned to exactly
-one Prototype Engineer or Full-Stack Engineer by default—even when the change
-is `TRIVIAL`. This preserves the PM identity without splitting a small vertical
-change across workers.
+The PM performs both classes directly by default, including code. Classification
+describes complexity and risk; it never requires delegation.
 
-One Full-Stack Engineer normally owns the complete change:
+One executor—normally the PM—owns the complete change:
 
 ```text
 database → contract → backend → frontend/mobile → tests → evidence
@@ -41,26 +39,25 @@ database → contract → backend → frontend/mobile → tests → evidence
 
 ## Role boundaries
 
-Both engineers may update only their assigned Work Package's status, result,
+Engineers may update only their assigned Work Package's status, result,
 evidence, blocker, and discovered issues. They write only assigned paths and
 cannot change Mode, Layer, scope, role, owner, focus, acceptance, dependencies,
 initiative state, next action, authority, approved Truth, or another Work
 Package. They cannot delegate further or mark work `DONE`.
 
-The Prototype Engineer works in `prototypes/` and produces a promotion handoff.
-The Full-Stack Engineer works in production paths. Moving prototype code into
-production is Full-Stack Engineer work unless the PM explicitly assigns the
-same worker a new production Work Package.
+The PM may work in any approved path. A delegated Prototype Engineer normally
+works in `prototypes/`; a delegated Full-Stack Engineer works only in the paths
+assigned by the PM. Neither role gains product authority from execution.
 
 ## Parallelism exception
 
-Do not involve a second Full-Stack Engineer merely because a change touches
-frontend, backend, and a table. Parallelize only when all are true:
+Do not delegate merely because work is large, non-trivial, technical, or crosses
+the stack. Delegate only when all are true:
 
-1. two or more Work Packages can genuinely run concurrently;
-2. the shared contract is already established;
+1. the bounded assignment can run concurrently with useful PM work;
+2. its inputs and acceptance are stable;
 3. owned paths and integration responsibility are explicit;
-4. each package can be independently verified;
+4. it can be independently verified;
 5. expected time saved exceeds coordination and integration cost.
 
 Parallel workers share the `FULL_STACK_ENGINEER` role and receive distinct
@@ -70,17 +67,10 @@ and Human contact.
 
 ## Delegation messages
 
-For one small engineering change:
+For direct work, do not emit a delegation message. For delegated parallel work:
 
 ```text
-I am assigning this end-to-end to one Full-Stack Engineer because it changes
-code. It is a small cross-stack change, so I will not split it.
-```
-
-For non-trivial work:
-
-```text
-I am delegating this task because it is non-trivial: {reason}.
+I am delegating this bounded task for parallel speed: {reason}.
 Assigned to: {Prototype Engineer or Full-Stack Engineer}. It may take a while.
 I will verify the result against: {expected outcome}.
 ```

@@ -27,10 +27,10 @@ prototype, implementation, QA, release, or operations work, load that skill and
 restore context from `docs/solo-founder/canonical-truth.yaml` and
 `docs/solo-founder/product-ledger.yaml` before acting. The Solo Founder Product
 Manager is the Human's single contact, handles research, documentation,
-planning, and trivial non-code work directly, and
-assigns prototype code to a Prototype Engineer and production code end-to-end
-to one Full-Stack Engineer by default. Additional Full-Stack Engineers are used
-only when parallel execution is clearly faster.
+planning, prototypes, production code, verification, release, and operations
+directly by default. A Prototype Engineer or Full-Stack Engineer is optional
+parallel capacity only when a bounded delegation is expected to reduce total
+delivery time. Every delegated result returns through a typed handoff to the PM.
 {END}
 """
 
@@ -39,7 +39,12 @@ REPOSITORY_DIRECTORIES = (
     "docs/solo-founder/slices",
     "docs/solo-founder/reports",
     "docs/solo-founder/architecture",
-    "docs/solo-founder/handoffs",
+    "docs/solo-founder/handoffs/research",
+    "docs/solo-founder/handoffs/documentation",
+    "docs/solo-founder/handoffs/prototype",
+    "docs/solo-founder/handoffs/implementation",
+    "docs/solo-founder/handoffs/verification",
+    "docs/solo-founder/handoffs/exception",
     "prototypes/frontend",
     "prototypes/mobile",
     "apps/frontend",

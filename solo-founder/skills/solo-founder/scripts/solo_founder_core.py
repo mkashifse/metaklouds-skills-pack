@@ -59,22 +59,93 @@ ACTIVITIES = {
     "OPERATIONS",
 }
 EXECUTIONS = {"DIRECT", "DELEGATED"}
+DELEGATION_REASONS = {"PARALLELISM", "LEGACY_ASSIGNMENT"}
+HANDOFF_TYPES = {
+    "RESEARCH",
+    "DOCUMENTATION",
+    "PROTOTYPE",
+    "IMPLEMENTATION",
+    "VERIFICATION",
+    "EXCEPTION",
+}
+HANDOFF_UNIVERSAL_SECTIONS = (
+    "Outcome Summary",
+    "Deliverables and Artifacts",
+    "Evidence",
+    "Risks and Limitations",
+    "Open Decisions",
+    "PM Consumption Target",
+)
+HANDOFF_PAYLOAD_SECTIONS = {
+    "RESEARCH": (
+        "Sources and Findings",
+        "Conflicts and Confidence",
+        "Preliminary Implications",
+    ),
+    "DOCUMENTATION": (
+        "Target Documents",
+        "Draft Contribution",
+        "Traceability and Conflicts",
+    ),
+    "PROTOTYPE": (
+        "Prototype Checkpoint",
+        "Implemented Behavior and States",
+        "Promotion Inputs",
+        "Proposed Product Findings",
+    ),
+    "IMPLEMENTATION": (
+        "Changed Paths and Commits",
+        "Contracts and Migrations",
+        "Tests and Rollback",
+    ),
+    "VERIFICATION": (
+        "Acceptance Matrix",
+        "Test Results",
+        "Failures and Residual Risk",
+    ),
+    "EXCEPTION": (
+        "Exception and Impact",
+        "Blocked Work",
+        "Options and Recommendation",
+    ),
+}
 
 
 class ArtifactError(RuntimeError):
     pass
 
 
+def infer_handoff_type(item: dict[str, Any]) -> str:
+    activity = item.get("activity")
+    if activity == "RESEARCH":
+        return "RESEARCH"
+    if activity in {"DOCUMENTATION", "PLANNING"}:
+        return "DOCUMENTATION"
+    if (
+        item.get("role") == "PROTOTYPE_ENGINEER"
+        or item.get("workstream") == "PROTOTYPE"
+    ):
+        return "PROTOTYPE"
+    if activity == "TESTING":
+        return "VERIFICATION"
+    return "IMPLEMENTATION"
+
+
+def handoff_path_for(work_id: str, handoff_type: str) -> str:
+    return f"docs/solo-founder/handoffs/{handoff_type.lower()}/{work_id}.md"
+
+
 def upgrade_ledger(document: dict[str, Any]) -> bool:
-    """Upgrade the earlier open-owner Ledger to the two-role engineer model."""
-    if document.get("schema_version") != 1:
+    """Upgrade earlier Ledgers to PM-first execution with typed handoffs."""
+    schema_version = document.get("schema_version")
+    if schema_version not in {1, 2}:
         return False
     for raw in document.get("work") or []:
         if not isinstance(raw, dict):
             continue
         owner = str(raw.get("owner") or "")
         workstream = str(raw.get("workstream") or "")
-        if not raw.get("role"):
+        if schema_version == 1 and not raw.get("role"):
             if owner == "PM":
                 raw["role"] = "PM"
             elif workstream == "PROTOTYPE" or "PROTOTYPE" in owner.upper():
@@ -94,7 +165,39 @@ def upgrade_ledger(document: dict[str, Any]) -> bool:
                 else "FULL_STACK"
             )
         raw["execution"] = "DIRECT" if raw.get("role") == "PM" else "DELEGATED"
-    document["schema_version"] = 2
+        if raw.get("role") == "PM":
+            raw["delegation_reason"] = None
+            raw["handoff_type"] = None
+            raw["handoff_path"] = None
+            raw["handoff_submitted_at"] = None
+            raw["handoff_submitted_hash"] = None
+            raw["handoff_consumed_at"] = None
+        else:
+            handoff_type = raw.get("handoff_type") or infer_handoff_type(raw)
+            raw["delegation_reason"] = (
+                raw.get("delegation_reason") or "LEGACY_ASSIGNMENT"
+            )
+            raw["handoff_type"] = handoff_type
+            raw["handoff_path"] = raw.get("handoff_path") or handoff_path_for(
+                str(raw.get("id") or "WORK-LEGACY"), handoff_type
+            )
+            timestamp = (
+                raw.get("updated_at")
+                or raw.get("created_at")
+                or datetime.now().astimezone().isoformat(timespec="seconds")
+            )
+            raw["handoff_submitted_at"] = (
+                timestamp
+                if raw.get("status") in {"VERIFYING", "DONE", "REWORK"}
+                else None
+            )
+            raw["handoff_submitted_hash"] = None
+            raw["handoff_consumed_at"] = (
+                raw.get("completed_at") or timestamp
+                if raw.get("status") in {"DONE", "REWORK"}
+                else None
+            )
+    document["schema_version"] = 3
     return True
 
 
@@ -302,6 +405,66 @@ def parse_yaml(text: str) -> dict[str, Any]:
     return value
 
 
+def handoff_section_body(text: str, heading: str) -> str:
+    match = re.search(
+        rf"^## {re.escape(heading)}\s*$\n(.*?)(?=^## |\Z)",
+        text,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    if not match:
+        return ""
+    return re.sub(r"<!--.*?-->", "", match.group(1), flags=re.DOTALL).strip()
+
+
+def validate_handoff_file(product_root: Path, item: dict[str, Any]) -> str:
+    relative_path = Path(str(item.get("handoff_path") or ""))
+    path = product_root / relative_path
+    if not path.is_file():
+        raise ArtifactError(f"Handoff file is missing: {relative_path}")
+    content = path.read_bytes()
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ArtifactError(f"Handoff is not valid UTF-8: {relative_path}") from error
+    parts = text.split("---", 2)
+    if len(parts) != 3 or parts[0].strip():
+        raise ArtifactError(f"Invalid handoff frontmatter: {relative_path}")
+    header = parse_yaml(parts[1])
+    expected = {
+        "schema_version": 1,
+        "handoff_id": f"HANDOFF-{item['id']}",
+        "work_id": item["id"],
+        "type": item["handoff_type"],
+        "producer_role": item["role"],
+        "producer_id": item["owner"],
+        "consumer": "PM",
+    }
+    for field, value in expected.items():
+        if header.get(field) != value:
+            raise ArtifactError(f"Handoff {field} must be {value}")
+    if not str(header.get("created_at") or "").strip():
+        raise ArtifactError("Handoff requires created_at")
+    required_sections = (
+        HANDOFF_UNIVERSAL_SECTIONS + HANDOFF_PAYLOAD_SECTIONS[item["handoff_type"]]
+    )
+    for heading in required_sections:
+        if not handoff_section_body(parts[2], heading):
+            raise ArtifactError(f"Handoff requires content in: {heading}")
+    return hashlib.sha256(content).hexdigest()
+
+
+def validate_submitted_handoff(product_root: Path, item: dict[str, Any]) -> None:
+    current_hash = validate_handoff_file(product_root, item)
+    expected_hash = item.get("handoff_submitted_hash")
+    if item.get("delegation_reason") == "PARALLELISM":
+        if not isinstance(expected_hash, str) or not re.fullmatch(
+            r"[0-9a-f]{64}", expected_hash
+        ):
+            raise ArtifactError("Delegated handoff requires a submitted content hash")
+        if current_hash != expected_hash:
+            raise ArtifactError("Delegated handoff changed after submission")
+
+
 def scalar_yaml(value: Any) -> str:
     if value is None:
         return "null"
@@ -443,8 +606,8 @@ def validate_truth(document: dict[str, Any]) -> None:
 
 def validate_ledger(document: dict[str, Any]) -> None:
     schema_version = document.get("schema_version")
-    if schema_version not in {1, 2}:
-        raise ArtifactError("product-ledger.yaml requires schema_version: 1 or 2")
+    if schema_version not in {1, 2, 3}:
+        raise ArtifactError("product-ledger.yaml requires schema_version: 1, 2, or 3")
     require_mapping(document.get("product"), "product")
     current = require_mapping(document.get("current"), "current")
     if current.get("mode") not in MODES:
@@ -494,7 +657,7 @@ def validate_ledger(document: dict[str, Any]) -> None:
         if not str(item.get("owner") or "").strip():
             raise ArtifactError(f"{work_id} requires owner")
         role = item.get("role")
-        if schema_version == 2:
+        if schema_version in {2, 3}:
             if role not in ROLES:
                 raise ArtifactError(f"{work_id} has invalid role")
             expected_execution = "DIRECT" if role == "PM" else "DELEGATED"
@@ -504,8 +667,6 @@ def validate_ledger(document: dict[str, Any]) -> None:
                 )
             if role == "PM" and item.get("owner") != "PM":
                 raise ArtifactError(f"{work_id} PM work requires owner: PM")
-            if role == "PM" and item.get("activity") == "IMPLEMENTATION":
-                raise ArtifactError(f"{work_id} implementation requires an engineer")
             if role == "PROTOTYPE_ENGINEER" and item.get("workstream") != "PROTOTYPE":
                 raise ArtifactError(
                     f"{work_id} Prototype Engineer requires PROTOTYPE workstream"
@@ -518,6 +679,51 @@ def validate_ledger(document: dict[str, Any]) -> None:
                 raise ArtifactError(
                     f"{work_id} Full-Stack Engineer requires an engineering focus"
                 )
+        if schema_version == 3:
+            if role == "PM":
+                if any(
+                    item.get(field) is not None
+                    for field in (
+                        "delegation_reason",
+                        "handoff_type",
+                        "handoff_path",
+                        "handoff_submitted_at",
+                        "handoff_submitted_hash",
+                        "handoff_consumed_at",
+                    )
+                ):
+                    raise ArtifactError(
+                        f"{work_id} direct PM work cannot have a handoff"
+                    )
+            else:
+                if item.get("delegation_reason") not in DELEGATION_REASONS:
+                    raise ArtifactError(f"{work_id} has invalid delegation reason")
+                handoff_type = item.get("handoff_type")
+                if handoff_type not in HANDOFF_TYPES:
+                    raise ArtifactError(f"{work_id} has invalid handoff type")
+                expected_path = handoff_path_for(work_id, handoff_type)
+                if item.get("handoff_path") != expected_path:
+                    raise ArtifactError(
+                        f"{work_id} handoff path must be {expected_path}"
+                    )
+                if (
+                    item.get("status") in {"VERIFYING", "DONE", "REWORK"}
+                    and not str(item.get("handoff_submitted_at") or "").strip()
+                ):
+                    raise ArtifactError(f"{work_id} requires submitted handoff time")
+                if (
+                    item.get("delegation_reason") == "PARALLELISM"
+                    and item.get("status") in {"VERIFYING", "DONE", "REWORK"}
+                    and not re.fullmatch(
+                        r"[0-9a-f]{64}", str(item.get("handoff_submitted_hash") or "")
+                    )
+                ):
+                    raise ArtifactError(f"{work_id} requires submitted handoff hash")
+                if (
+                    item.get("status") in {"DONE", "REWORK"}
+                    and not str(item.get("handoff_consumed_at") or "").strip()
+                ):
+                    raise ArtifactError(f"{work_id} requires consumed handoff time")
         require_list(item.get("acceptance_criteria"), f"{work_id}.acceptance_criteria")
         require_list(item.get("evidence"), f"{work_id}.evidence")
         require_list(item.get("owned_paths"), f"{work_id}.owned_paths")

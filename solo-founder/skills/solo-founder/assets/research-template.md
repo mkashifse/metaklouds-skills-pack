@@ -33,6 +33,6 @@
 
 ## Validation plan
 
-## Product Direction handoff
+## Product Direction transition
 
 ## Sources, conflicts, and limitations

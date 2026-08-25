@@ -16,7 +16,8 @@ Positioning:
 
 > Solo Founder is a business-first AI product operating system that helps one
 > founder discover, define, prototype, build, and operate a product through one
-> persistent AI Product Manager and directly assigned specialists.
+> persistent AI Product Manager, with optional parallel executors when they
+> will make delivery faster.
 
 The operating model is:
 
@@ -24,16 +25,16 @@ The operating model is:
 Founder
   ↓
 Solo Founder Product Manager
-  ├── Performs research, documentation, planning, and trivial non-code work
-  ├── Assigns prototype code to one Prototype Engineer
-  └── Assigns production code end-to-end to one Full-Stack Engineer
+  ├── Performs every bounded activity directly by default
+  ├── May delegate prototype work for parallel speed
+  └── May delegate full-stack work for parallel speed
 ```
 
 The name intentionally prioritizes the solo-founder audience. The PM remains
 the Human's single contact, business direction precedes product direction, and
-the only specialist roles are Prototype Engineer and Full-Stack Engineer. A
-second Full-Stack Engineer is introduced only when justified parallelism makes
-delivery faster without excessive coordination. There is no PM Assistant or
+the only optional executor roles are Prototype Engineer and Full-Stack
+Engineer. They are introduced only when bounded parallelism makes delivery
+faster after coordination and integration cost. There is no PM Assistant or
 mandatory lead hierarchy.
 
 The implementation uses `solo-founder` consistently for the skill package and
@@ -64,8 +65,8 @@ Solo Founder owns the following proprietary capabilities:
 - business-first discovery and the Mode/Layer model;
 - persistent Product Manager identity and context restoration;
 - Canonical Truth and Product Ledger schemas;
-- Trivial/Non-Trivial classification, single-owner vertical engineering, and
-  exception-only parallelism policy;
+- Trivial/Non-Trivial classification, PM-first execution, optional parallel
+  delegation, and typed handoff policy;
 - production-intent prototyping and frontend-promotion policy;
 - Fat Slice definition, approval, and development gates;
 - drift, verification, and Human-authority boundaries;
@@ -87,20 +88,23 @@ solo-founder/
 │   ├── production-prototyping.md
 │   ├── fat-slice-planning.md
 │   ├── implementation-and-quality.md
+│   ├── handoff-contract.md
 │   └── dashboard-contract.md
 ├── scripts/
 │   ├── restore_context.py
 │   ├── update_ledger.py
+│   ├── create_handoff.py
 │   ├── validate_artifacts.py
 │   └── serve_dashboard.py
 └── assets/
     ├── canonical-truth-template.yaml
     ├── product-ledger-template.yaml
     ├── research-template.md
+    ├── handoff-template.md
     └── fat-slice-template.md
 ```
 
-Third-party support skills are loaded only when bounded engineer work
+Third-party support skills are loaded only when bounded PM or engineer work
 requires them:
 
 | Area | Third-party skills |
@@ -141,6 +145,12 @@ structure additively:
 │   ├── reports/
 │   ├── architecture/
 │   └── handoffs/
+│       ├── research/
+│       ├── documentation/
+│       ├── prototype/
+│       ├── implementation/
+│       ├── verification/
+│       └── exception/
 ├── prototypes/
 │   ├── frontend/
 │   └── mobile/
@@ -165,11 +175,12 @@ directories receive `.gitkeep` so the structure is preserved by Git. It does
 not generate framework code or choose monorepo tooling before relevant
 `TECHNOLOGY` and `SYSTEM_DESIGN` Truth is approved.
 
-Prototype Engineer work belongs in `prototypes/frontend/` or
-`prototypes/mobile/`. Promotion targets the corresponding `apps/` surface;
-shared approved components may move to `packages/ui/`, stable contracts belong
-in `packages/contracts/`, and the promotion map is recorded in
-`docs/solo-founder/handoffs/`.
+Prototype work belongs in `prototypes/frontend/` or `prototypes/mobile/` no
+matter whether the PM or an optional Prototype Engineer executes it. Promotion
+targets the corresponding `apps/` surface; shared approved components may move
+to `packages/ui/`, and stable contracts belong in `packages/contracts/`.
+`docs/solo-founder/handoffs/` contains return envelopes only for delegated
+work; direct PM work records normal Work Package evidence.
 
 ## Human–PM interaction modes
 
@@ -188,12 +199,14 @@ and Product Manager are interacting; it is not a delivery or work status.
 ### `IMPLEMENTATION`
 
 - The Product Manager executes sufficiently defined and approved work.
-- Research, documentation, planning, and trivial non-code work are performed
-  directly by the Product Manager.
-- Prototype code is assigned to one Prototype Engineer; production code is
-  assigned end-to-end to one Full-Stack Engineer regardless of classification.
-- Additional Full-Stack Engineers are used only for justified parallelism,
-  without a PM Assistant or mandatory lead hierarchy.
+- Research, documentation, planning, prototypes, production code, verification,
+  release, and operations are performed directly by the Product Manager by
+  default.
+- A Prototype Engineer or Full-Stack Engineer is used only for a bounded,
+  independently verifiable assignment whose parallel execution has a clear net
+  speed benefit.
+- Before and after direct implementation, the PM restores the compact role and
+  product snapshot so execution does not displace PM context.
 - If implementation reveals an unresolved decision, only the affected work
   returns to Discovery.
 
@@ -423,7 +436,7 @@ For each material risk:
 - Customer interviews or demand tests
 - Stop, continue, and change signals
 
-## 12. Product Direction handoff
+## 12. Product Direction transition
 
 - Product implications
 - Decisions ready for Product Direction
@@ -700,9 +713,9 @@ Dashboard approval safety rules:
 | Actor | Can do | Cannot do |
 | --- | --- | --- |
 | **Human** | Set direction; switch Mode or current Layer; approve or reject Truth; approve high-risk actions; redirect, pause, or stop work. | Be expected to maintain files, logs, or implementation details. |
-| **Product Manager** | Remain the Human's single contact; perform research, documentation, planning, and trivial non-code work; propose Truth; record chat approvals; classify and assign work; manage the complete Product Ledger; verify engineer results; mark work `DONE` or `REWORK`. | Self-approve Truth; perform code implementation; silently override Human-approved Truth. |
-| **Prototype Engineer** | Build the assigned production-intent prototype end-to-end; update its own work to `ACTIVE`, `VERIFYING`, or `BLOCKED`; attach code, results, evidence, and handoff. | Work outside assigned prototype paths; change product authority or scope; perform unassigned production promotion; delegate further; mark work `DONE`. |
-| **Full-Stack Engineer** | Execute the assigned production change across database, backend, contracts, frontend/mobile, tests, infrastructure, release, or operations; report evidence, risk, blockers, and drift. | Change Mode, Layer, scope, role, owner, focus, acceptance, dependencies, initiative state, next action, authority, approved Truth, or another Work Package; delegate further; mark work `DONE`. |
+| **Product Manager** | Remain the Human's single contact; directly perform any bounded research, documentation, prototype, production, verification, release, or operations work; propose Truth; record chat approvals; classify and optionally delegate work; manage the complete Product Ledger; consume handoffs; mark work `DONE` or `REWORK`. | Self-approve Truth; silently override Human-approved Truth or cross a Human-approval boundary. |
+| **Prototype Engineer** | Optionally execute one assigned parallel prototype package; update its own work to `ACTIVE`, `VERIFYING`, or `BLOCKED`; return code, evidence, and a typed handoff. | Work outside assigned paths; change product authority or scope; perform unassigned promotion; delegate further; mark work `DONE`. |
+| **Full-Stack Engineer** | Optionally execute one assigned parallel package across research, documentation, database, backend, contracts, frontend/mobile, tests, infrastructure, release, or operations; return evidence, risks, blockers, drift, and a typed handoff. | Change Mode, Layer, scope, role, owner, focus, acceptance, dependencies, initiative state, next action, authority, approved Truth, or another Work Package; delegate further; mark work `DONE`. |
 | **Dashboard** | Display Canonical Truth and the Product Ledger; allow the Human to approve `PROPOSED` Truth; safely update Canonical Truth approval metadata. | Edit the Product Ledger; create product decisions; change work or initiative state; approve Truth without an explicit Human action. |
 | **Ledger Updater** | Apply validated, permission-scoped Product Ledger updates; enforce allowed transitions; lock, validate, and atomically save the file. | Make decisions; classify or assign work; approve Truth; change Canonical Truth; invent missing information. |
 
@@ -712,7 +725,7 @@ fields of its own work and issues discovered within that assignment. The
 Ledger Updater is the sole physical writer of the Product Ledger and must
 enforce these boundaries.
 
-The standard engineer work lifecycle is:
+The delegated engineer work lifecycle is:
 
 ```text
 PM: READY
@@ -722,9 +735,9 @@ PM: READY
 ```
 
 The engineer may move its own work to `BLOCKED` when it records the blocker.
-It must provide result and evidence before moving work to `VERIFYING`. Only the
-Product Manager may verify completion and mark work `DONE` or return it as
-`REWORK`.
+It must provide result, evidence, and a complete typed handoff before moving
+work to `VERIFYING`. Only the Product Manager may consume the handoff, verify
+completion, and mark work `DONE` or return it as `REWORK`.
 
 ## Trivial and non-trivial work
 
@@ -736,30 +749,30 @@ not merely the time a task might take.
 - `NON_TRIVIAL` work involves substantial uncertainty, experimentation,
   architecture, integration, production impact, or material risk.
 
-Classification and assignment are separate. The PM performs trivial non-code
-work. Any code mutation is assigned to one Prototype Engineer or Full-Stack
-Engineer by default, even when it is `TRIVIAL`. A large document may remain
-trivial when it only organizes approved information.
+Classification and assignment are separate. The PM performs both classes
+directly by default, including code. A large document may remain trivial when
+it only organizes approved information, while a small irreversible change may
+be non-trivial. Neither classification requires delegation.
 
 ### Layer routing matrix
 
-The Product Manager never delegates an entire Layer. The PM retains research,
-Human communication, direction, canonical documentation, Truth proposals, and
-final verification. Only implementation or bounded engineering feasibility is
-assigned to an engineer.
+The Product Manager never delegates an entire Layer. The PM retains Human
+communication, direction, canonical documentation, Truth proposals, and final
+verification. Any independently bounded work may be delegated solely for
+parallel speed; the PM remains able to perform every category directly.
 
-| Layer | Trivial work handled directly by PM | Non-trivial work | Direct delegation route |
+| Layer | Trivial work | Non-trivial work | Execution and optional delegation |
 | --- | --- | --- | --- |
-| `BUSINESS_DIRECTION` | Trend, competitor, pricing, market, financial, and regulatory research; synthesis and recommendations. | Material professional uncertainty or external validation. | PM researches and documents; if reliable authority is insufficient, PM recommends qualified external help to the Human. |
-| `PRODUCT_DIRECTION` | Users, problems, outcomes, scope, priorities, roadmap, analytics, and success metrics. | Material domain uncertainty requiring external validation. | PM owns the work and escalates the limitation to the Human when necessary. |
-| `PRODUCT_BEHAVIOR` | Capabilities, workflows, permissions, rules, and ordinary edge cases. | Runnable behavior experiment or production implementation. | Prototype Engineer for prototype evidence; Full-Stack Engineer for production code. |
-| `EXPERIENCE` | Journeys, screen structure, content, accessibility expectations, and design direction. | Production-intent interactive implementation. | Prototype Engineer builds; PM and Human review. |
-| `DOMAIN_DATA` | Terminology, conceptual entities, relationships, privacy requirements, and retention decisions. | Schema, migration, pipeline, integrity, or data implementation. | One Full-Stack Engineer owns the complete production change. |
-| `SYSTEM_DESIGN` | Components, constraints, architecture options, risks, and straightforward contracts. | Technical spike or production architecture implementation. | Prototype Engineer for prototype feasibility; Full-Stack Engineer for production engineering. |
-| `TECHNOLOGY` | Current documentation, versions, comparisons, and recommendation. | Benchmark, spike, or repository implementation. | Applicable engineer returns technical evidence; PM writes the decision. |
-| `QUALITY` | Acceptance criteria, scenarios, checklists, and evidence review. | Automated, integration, performance, security, accessibility, or release tests. | The engineer owning the change owns its tests; PM verifies the evidence. |
-| `DELIVERY` | Slices, sequencing, priorities, dependencies, and release plan. | CI/CD, deployment, migration, rollback, or release implementation. | One Full-Stack Engineer owns implementation end-to-end. |
-| `OPERATIONS` | Metrics, alerts, support process, incident framing, and outcome review. | Observability, incident remediation, recovery automation, or tuning. | One Full-Stack Engineer owns production changes; PM verifies the outcome. |
+| `BUSINESS_DIRECTION` | Trend, competitor, pricing, market, financial, and regulatory research; synthesis and recommendations. | Deep multi-source research, uncertain evidence, or material professional limitations. | PM researches and writes the final conclusion. A bounded research package may run in parallel; professional limitations go to the Human for qualified external help. |
+| `PRODUCT_DIRECTION` | Users, problems, outcomes, scope, priorities, roadmap, analytics, and success metrics. | Material domain uncertainty, extensive evidence synthesis, or validation design. | PM owns the direction. A bounded research or documentation package may run in parallel and returns evidence only. |
+| `PRODUCT_BEHAVIOR` | Capabilities, workflows, permissions, rules, and ordinary edge cases. | Runnable behavior experiment or substantial implementation. | PM executes by default; optionally delegate a bounded prototype or implementation package for parallel speed. |
+| `EXPERIENCE` | Journeys, screen structure, content, accessibility expectations, and design direction. | Production-intent interactive implementation or complex usability evidence. | PM builds and reviews by default; optionally delegate a bounded prototype package. |
+| `DOMAIN_DATA` | Terminology, conceptual entities, relationships, privacy requirements, and retention decisions. | Schema, migration, pipeline, integrity, or data implementation. | PM owns end-to-end execution by default; optionally delegate an isolated full-stack package. |
+| `SYSTEM_DESIGN` | Components, constraints, architecture options, risks, and straightforward contracts. | Technical spike or production architecture implementation. | PM executes by default; optionally delegate a bounded spike or implementation package and consume its evidence. |
+| `TECHNOLOGY` | Current documentation, versions, comparisons, and recommendation. | Benchmark, spike, or repository implementation. | PM researches and decides; a parallel executor may return technical evidence but cannot make the decision. |
+| `QUALITY` | Acceptance criteria, scenarios, checklists, and evidence review. | Automated, integration, performance, security, accessibility, or release tests. | PM verifies by default; optionally delegate an independent verification package, then consume the handoff. |
+| `DELIVERY` | Slices, sequencing, priorities, dependencies, and release plan. | CI/CD, deployment, migration, rollback, or release implementation. | PM executes by default; optionally delegate an isolated full-stack package. |
+| `OPERATIONS` | Metrics, alerts, support process, incident framing, and outcome review. | Observability, incident remediation, recovery automation, or tuning. | PM executes and verifies by default; optionally delegate an isolated package. |
 
 ### Work-structure classification
 
@@ -771,12 +784,12 @@ smallest executable unit, normally the Work Package.
 | --- | --- | --- | --- |
 | **User Story** | A clear user need and acceptance criteria derived from approved Truth. | Requires unresolved behavior or engineering feasibility evidence. | PM always owns and writes the final Story; an engineer may return bounded feasibility evidence. |
 | **Slice** | A small end-to-end outcome using known behavior, architecture, and delivery paths. | A cross-system outcome involving uncertain behavior, integrations, migrations, or release risk. | PM owns Slice shaping, scope, Stories, acceptance, and boundaries. Engineers review only bounded feasibility. |
-| **Work Package** | Research, documentation, planning, or a small reversible engineering change. | Substantial prototype or production engineering. | PM owns non-code work. Code goes end-to-end to one applicable engineer regardless of classification. |
-| **Prototype** | Textual flow, screen outline, simple wireframe, or no-code concept used to clarify an idea. | Runnable prototype, complex interaction, state logic, realistic data, animation, or technical feasibility spike. | PM defines the question and acceptance; Prototype Engineer builds; PM and Human review the result. |
-| **Documentation** | Research summaries, product definitions, Stories, Slice documents, plans, decisions, and reports. | Deep technical evidence coupled to code. | PM owns canonical documents. The implementing engineer supplies evidence and maintains code-coupled documentation. |
+| **Work Package** | Research, documentation, planning, or a small reversible engineering change. | Substantial research, prototype, production, verification, or operational work. | PM executes directly by default. Delegate only an independent package whose parallel execution is net faster. |
+| **Prototype** | Textual flow, screen outline, simple wireframe, or no-code concept used to clarify an idea. | Runnable prototype, complex interaction, state logic, realistic data, animation, or technical feasibility spike. | PM defines, builds, and reviews by default. An optional Prototype Engineer returns code and a `PROTOTYPE` handoff. |
+| **Documentation** | Research summaries, product definitions, Stories, Slice documents, plans, decisions, and reports. | Deep synthesis or technical evidence coupled to code. | PM owns final documents. A parallel executor may return a draft through a `DOCUMENTATION` handoff. |
 | **Research** | Market, product, competitor, documentation, financial, regulatory, or familiar technical research. | Research where the PM cannot provide reliable authority. | PM researches and writes; material professional limitations are escalated to the Human for external help. |
-| **Implementation** | A small reversible code change. | Substantial prototype or production engineering. | Prototype code → one Prototype Engineer. Production code → one Full-Stack Engineer. Classification never causes an automatic stack split. |
-| **QA and verification** | Acceptance review, evidence inspection, or a simple manual checklist. | Automated, integration, performance, accessibility, security, migration, or release verification. | The engineer owning the code owns its tests; PM makes the final Product Ledger transition. |
+| **Implementation** | A small reversible code change. | Substantial prototype or production engineering. | PM implements end-to-end by default. Optional delegation uses one applicable executor and an `IMPLEMENTATION` or `PROTOTYPE` handoff. |
+| **QA and verification** | Acceptance review, evidence inspection, or a simple manual checklist. | Automated, integration, performance, accessibility, security, migration, or release verification. | PM verifies by default. An independent parallel verifier returns a `VERIFICATION` handoff; PM makes the final transition. |
 
 The structural relationship is:
 
@@ -785,9 +798,8 @@ Slice
 ├── User Stories
 │   └── Acceptance Criteria
 └── Work Packages
-    ├── Non-code → PM
-    ├── Prototype code → Prototype Engineer
-    └── Production code → one Full-Stack Engineer
+    ├── Default → PM direct execution
+    └── Optional parallel package → one assigned engineer → typed handoff → PM
 ```
 
 Rules:
@@ -805,27 +817,20 @@ Rules:
 
 ### Delegation transparency
 
-Before assigning engineering work, the Product Manager informs the Human
-concisely. For a small vertical code change:
+Before optional delegation, the Product Manager informs the Human concisely.
+Do not emit a delegation message for direct PM work.
 
 ```text
-I am assigning this end-to-end to one Full-Stack Engineer because it changes
-code. It is a small cross-stack change, so I will not split it.
-```
-
-For non-trivial engineering:
-
-```text
-I am delegating this task because it is non-trivial: {brief reason}.
+I am delegating this bounded task for parallel speed: {brief reason}.
 Assigned to: {Prototype Engineer or Full-Stack Engineer}.
+It may take a while.
 I will verify the result against: {acceptance criteria or expected outcome}.
 ```
 
 Delegation-notice rules:
 
 - Give the notice before the engineer begins, not after completion.
-- State whether the reason is code ownership, non-triviality, or justified
-  parallelism.
+- State why parallel execution is expected to reduce total delivery time.
 - Do not request Human approval merely to delegate unless the work itself
   crosses a Human-approval boundary.
 - Group closely related Work Packages in one notice when they share the same
@@ -840,8 +845,8 @@ applicable message without exposing internal worker chatter:
 
 ```text
 Before delegation:
-I am delegating this because it is non-trivial and requires a {Prototype Engineer or Full-Stack Engineer}.
-It may take a while; I will update you when it is ready for verification.
+I am delegating this bounded task for parallel speed: {brief reason}.
+Assigned to: {Prototype Engineer or Full-Stack Engineer}. It may take a while.
 
 When work continues for longer:
 The engineer is still working on this. No decision is needed from you right now.
@@ -867,13 +872,43 @@ blocker. Do not send repetitive status messages.
 roles. All production engineers use the `FULL_STACK_ENGINEER` role and a
 distinct owner identity.
 
-One Full-Stack Engineer owns a production change across database, contracts,
-backend, frontend/mobile, tests, and evidence by default. A second Full-Stack
-Engineer is introduced only when independent Work Packages can run
-concurrently, the shared contract and integration owner are established,
-owned paths do not conflict, each package can be independently verified, and
-the expected time saved exceeds coordination cost. Engineers cannot delegate
-further; the PM is the only coordinator and Human contact.
+The PM owns a production change across database, contracts, backend,
+frontend/mobile, tests, and evidence by default. One or more Full-Stack
+Engineers are introduced only when independent Work Packages can run
+concurrently, the shared contract and PM integration responsibility are
+established, owned paths do not conflict, each package can be independently
+verified, and expected time saved exceeds coordination cost. Engineers cannot
+delegate further; the PM is the only coordinator and Human contact.
+
+### Delegated handoff guardrail
+
+A durable handoff is required only when a Work Package crosses from the PM to
+an optional executor. Batched tools used directly by the PM remain PM work and
+do not create handoffs.
+
+The PM defines the handoff type, path, acceptance, and consumption point before
+delegation. The engineer creates and completes the envelope, then requests
+`VERIFYING`. The updater validates its identity, type, path, and required
+sections. The PM consumes it before `DONE` or `REWORK`.
+Repository artifact validation re-checks submitted and consumed handoffs so a
+later deletion or identity/content mismatch cannot pass silently. Submission
+records a content hash. The producer cannot edit while the package is
+`VERIFYING` or after consumption; `REWORK → ACTIVE` clears the old submission
+and allows revision.
+
+| Type | Required return | PM consumption point |
+| --- | --- | --- |
+| `RESEARCH` | Sources/findings, conflicts/confidence, preliminary implications | Before final research, recommendation, or Truth proposal |
+| `DOCUMENTATION` | Target documents, draft contribution, traceability/conflicts | Before PM edits any canonical document |
+| `PROTOTYPE` | Checkpoint, behavior/states, promotion inputs, proposed findings | Before prototype review, Truth proposals, or Slice shaping |
+| `IMPLEMENTATION` | Changed paths/commits, contracts/migrations, tests/rollback | Before completion, release, or promotion decisions |
+| `VERIFICATION` | Acceptance matrix, test results, failures/residual risk | Before completion or release decisions |
+| `EXCEPTION` | Impact, blocked work, options/recommendation | When a durable blocker, drift, or risk needs PM action |
+
+Every handoff also contains the Work Package, producer identity, outcome,
+deliverables, evidence, risks, open decisions, and exact PM consumption target.
+Worker conclusions remain evidence until the PM incorporates them into a final
+document, Truth proposal, Slice, verification decision, or next work.
 
 ## Production-intent prototyping
 
@@ -929,7 +964,8 @@ direction that will govern the prototype.
 
 ### Prototype engineering requirements
 
-For a React or Next.js product, the Prototype Engineer must use:
+For a React or Next.js product, the PM or delegated Prototype Engineer must
+use:
 
 - `frontend-design`;
 - `vercel-react-best-practices`;
@@ -946,7 +982,7 @@ The prototype must contain:
 - realistic local seed data;
 - a stable frontend data or service interface separating UI from data access;
 - a local seed-data adapter implementing that interface;
-- a promotion handoff identifying reusable files and remaining production
+- a promotion map identifying reusable files and remaining production
   integration work.
 
 Components must not import scattered seed records directly. UI code consumes
@@ -969,7 +1005,9 @@ into the product's frontend application area whenever they satisfy the target
 stack. Prefer direct file promotion over manually recreating or rewriting the
 same UI.
 
-One Full-Stack Engineer is responsible end-to-end for:
+The PM is responsible end-to-end by default. An optional Full-Stack Engineer
+may receive a bounded promotion package only for justified parallelism. The
+executor is responsible for:
 
 - removing or disabling the seed-data adapter in production;
 - implementing any database, contract, backend API, and frontend adapter change;
@@ -980,13 +1018,13 @@ One Full-Stack Engineer is responsible end-to-end for:
 
 Approved pages, navigation, component structure, visual design, and UX remain
 unchanged during production development. A technical constraint that appears
-to require a UI or behavior change is drift: the Full-Stack Engineer records it
-and the PM routes the affected decision to the Human instead of allowing a
-silent redesign.
+to require a UI or behavior change is drift: the executor records it and the PM
+routes the affected decision to the Human instead of allowing a silent
+redesign.
 
 This intentionally moves most frontend construction into Prototyping.
 Production development is primarily code promotion, end-to-end integration,
-hardening, and verification by one owner.
+hardening, and verification by one owner—normally the PM.
 
 ## Product Manager workflow
 
@@ -1085,7 +1123,7 @@ The prototype has enough evidence for Fat Slice shaping when:
 - consequential findings have been proposed and either resolved or identified
   as non-blocking;
 - the approved design direction remains consistent;
-- reusable production-intent files and the promotion handoff are identifiable;
+- reusable production-intent files and the promotion map are identifiable;
 - the remaining uncertainty can be bounded inside future Slice planning rather
   than requiring open-ended product discovery.
 
@@ -1108,11 +1146,11 @@ Each proposed Fat Slice must define:
   privacy, accessibility, and operational expectations;
 - contracts, state transitions, dependencies, assumptions, and risks;
 - observability, support, rollout, rollback, and acceptance evidence;
-- the approved prototype checkpoint and promotion handoff when applicable.
+- the approved prototype checkpoint and promotion map when applicable.
 
 The PM owns and writes the Fat Slice. Material prototype or production
-engineering feasibility questions may be assigned directly to the applicable
-engineer under the delegation-transparency rules. Engineers provide evidence
+engineering feasibility questions may be delegated to an applicable engineer
+only when parallel execution is net faster. Engineers provide evidence
 but cannot redefine or approve the Slice.
 
 #### Hard development gate
@@ -1153,28 +1191,22 @@ flowchart TD
 
     S --> WP[Create Work Package when execution is required]
     WP --> C[Classify TRIVIAL or NON_TRIVIAL]
-    C --> K{Code mutation?}
+    C --> X{Bounded parallel delegation<br/>clearly net faster?}
 
-    K -- No --> PD[PM performs research, documentation,<br/>planning, or other non-code work]
-    PD --> PV[PM verifies result]
+    X -- No --> PD[PM restores snapshot and executes<br/>the complete package directly]
+    PD --> PV[PM verifies and restores PM context]
     PV --> PL[Update documents and Product Ledger]
 
-    K -- Yes --> T{Prototype or production?}
-    T -- Prototype --> N[Inform Human and assign one<br/>Prototype Engineer]
-    T -- Production --> X{Parallel execution clearly faster?}
-    X -- No --> F[Assign one Full-Stack Engineer<br/>end-to-end]
-    X -- Yes --> M[Create independent packages and assign<br/>multiple Full-Stack Engineers]
+    X -- Yes --> N[Inform Human; assign one optional executor;<br/>define typed handoff and consumption point]
     N --> A[Engineer: ACTIVE]
-    F --> A
-    M --> A
     A --> B{Blocked?}
 
     B -- Yes --> BR[Engineer records blocker]
     BR --> PE[PM informs Human or resolves within authority]
     PE --> A
 
-    B -- No --> V[Engineer: VERIFYING<br/>result and evidence]
-    V --> Q{PM verification}
+    B -- No --> V[Engineer completes typed handoff<br/>and requests VERIFYING]
+    V --> Q{PM consumes handoff<br/>and verifies acceptance}
 
     Q -- Failed --> RW[PM: REWORK]
     RW --> A
@@ -1191,25 +1223,24 @@ Delegation varies by phase:
 
 | Work area | PM direct | Delegated |
 | --- | ---: | ---: |
-| Business and Product Discovery | 95–100% | 0–5% engineering feasibility |
-| Research and Documentation | 95–100% | 0–5% code-coupled evidence |
-| User Stories and Slice shaping | 90–100% | 0–10% engineering feasibility |
-| Runnable Prototyping | 20–30% | 70–80% |
-| Production Implementation | 10–20% | 80–90% |
-| QA and Verification | 30–40% | 60–70% |
-| Release and Operations | 30–45% | 55–70% |
+| Business and Product Discovery | 90–100% | 0–10% bounded research/evidence |
+| Research and Documentation | 85–100% | 0–15% bounded drafts/evidence |
+| User Stories and Slice shaping | 90–100% | 0–10% feasibility evidence |
+| Runnable Prototyping | 50–100% | 0–50% independent prototype work |
+| Production Implementation | 50–100% | 0–50% independent implementation |
+| QA and Verification | 60–100% | 0–40% independent verification |
+| Release and Operations | 70–100% | 0–30% independent execution |
 
 The expected overall balance is:
 
 | Measurement | PM | Engineers |
 | --- | ---: | ---: |
-| Number of tasks | Approximately 65% | Approximately 35% |
-| Execution effort or time | Approximately 35–45% | Approximately 55–65% |
+| Number of tasks | Approximately 75–100% | Approximately 0–25% |
+| Execution effort or time | Approximately 60–100% | Approximately 0–40% |
 
-Solo Founder is not delegation-heavy during discovery, but it becomes strongly
-delegation-heavy during implementation. These percentages are planning
-estimates, not quotas. Code ownership determines engineering assignment;
-parallel workers must never be added merely to reach a target percentage.
+Solo Founder is PM-first, not delegation-heavy. These percentages are planning
+ranges, not quotas. If parallel delegation will not reduce end-to-end time, the
+correct delegated share is zero—even for non-trivial code.
 
 ## Classification model
 

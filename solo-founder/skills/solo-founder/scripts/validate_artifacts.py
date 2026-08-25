@@ -9,7 +9,13 @@ import re
 import sys
 from pathlib import Path
 
-from solo_founder_core import ArtifactError, read_yaml, validate_ledger, validate_truth
+from solo_founder_core import (
+    ArtifactError,
+    read_yaml,
+    validate_ledger,
+    validate_submitted_handoff,
+    validate_truth,
+)
 
 
 def validate_slices(base: Path) -> list[str]:
@@ -39,7 +45,21 @@ def run(product_root: Path) -> list[str]:
     except (ArtifactError, OSError) as error:
         diagnostics.append(str(error))
     try:
-        validate_ledger(read_yaml(base / "product-ledger.yaml"))
+        ledger = read_yaml(base / "product-ledger.yaml")
+        validate_ledger(ledger)
+        if ledger.get("schema_version") == 3:
+            for item in ledger["work"]:
+                if (
+                    item.get("execution") == "DELEGATED"
+                    and item.get("status")
+                    in {
+                        "VERIFYING",
+                        "DONE",
+                        "REWORK",
+                    }
+                    and item.get("delegation_reason") == "PARALLELISM"
+                ):
+                    validate_submitted_handoff(product_root, item)
     except (ArtifactError, OSError) as error:
         diagnostics.append(str(error))
     diagnostics.extend(validate_slices(base))

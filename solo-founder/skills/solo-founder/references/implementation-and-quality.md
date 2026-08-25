@@ -2,13 +2,13 @@
 
 Implementation begins only for a Human-approved, development-ready Fat Slice.
 The PM creates bounded Work Packages and classifies each as `TRIVIAL` or
-`NON_TRIVIAL`. Classification does not select the actor: every production code
-change is assigned end-to-end to one `FULL_STACK_ENGINEER` by default, even
-when the change is trivial.
+`NON_TRIVIAL`. Classification does not select the actor: the PM executes each
+production change end-to-end by default, including code.
 
 Do not split database, backend, and frontend portions merely because all are
-present. Use multiple Full-Stack Engineers only when the parallelism criteria
-in [work-classification.md](work-classification.md) are satisfied.
+present. Delegate to a Full-Stack Engineer only when the parallelism criteria
+in [work-classification.md](work-classification.md) are satisfied. Multiple
+engineers require independent Work Packages and a clear PM integration owner.
 
 ## Work Package contract
 
@@ -16,6 +16,8 @@ Each package records:
 
 - immutable instruction and expected outcome;
 - role, owner identity, focus/workstream, activity, owned paths, and exclusions;
+- direct or delegated execution, delegation reason, and typed handoff when
+  delegated;
 - linked approved Truth and Slice IDs;
 - dependencies and acceptance criteria;
 - required tests and evidence;
@@ -29,8 +31,10 @@ PENDING → READY → ACTIVE → VERIFYING → DONE
 VERIFYING → REWORK → ACTIVE
 ```
 
-The engineer submits the integrated result and durable evidence at `VERIFYING`.
-Only the PM may mark `DONE` or `REWORK` after acceptance review.
+For direct work, the PM verifies the result and records completion. For
+delegated work, the engineer submits the integrated result, durable evidence,
+and complete typed handoff at `VERIFYING`. Only the PM may mark `DONE` or
+`REWORK` after consuming the handoff and reviewing acceptance.
 
 ## Quality and release
 

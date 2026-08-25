@@ -13,14 +13,14 @@ validation.
 Founder
   ↓
 Solo Founder Product Manager
-  ├── Performs research, documentation, planning, and trivial non-code work
-  ├── Assigns prototypes to one Prototype Engineer
-  └── Assigns production code end-to-end to one Full-Stack Engineer
+  ├── Performs all bounded work directly by default
+  ├── May delegate prototype work for parallel speed
+  └── May delegate full-stack work for parallel speed
 ```
 
 There is no PM Assistant, frontend/backend role split, or mandatory lead
-hierarchy. Additional Full-Stack Engineers are used only for justified
-parallelism.
+hierarchy. Prototype and Full-Stack Engineers are optional parallel capacity,
+not mandatory routing stages.
 
 ## Why this architecture
 
@@ -30,8 +30,9 @@ skills and a PM Assistant. Solo Founder replaces that orchestration chain with:
 - one installed proprietary skill;
 - a fast, local context restore from two canonical YAML artifacts;
 - progressive references loaded only for the current stage;
-- only two specialist roles, loaded only for engineering work;
-- one Full-Stack Engineer owns a vertical production change by default;
+- only two optional executor roles, loaded only when parallelism will save time;
+- the PM remains context-aware before and after direct implementation;
+- every delegated result returns through one typed, verifiable handoff;
 - conditional upstream implementation skills;
 - an optional local dashboard rather than a per-message runtime dependency.
 
@@ -70,12 +71,13 @@ DOMAIN_DATA, SYSTEM_DESIGN, TECHNOLOGY, QUALITY, DELIVERY, OPERATIONS
 
 The smallest executable unit is classified independently from assignment:
 
-- `TRIVIAL`: bounded, reversible, and low-risk. The PM performs non-code work;
-  one engineer still owns any code mutation.
+- `TRIVIAL`: bounded, reversible, and low-risk. The PM performs it directly by
+  default, including code.
 - `NON_TRIVIAL`: substantial uncertainty, experimentation, architecture,
-  integration, risk, or production impact.
+  integration, risk, or production impact. The PM still performs it directly
+  unless parallel delegation has a clear net speed benefit.
 
-Exactly two specialist roles exist:
+Exactly two optional executor roles exist:
 
 - `PROTOTYPE_ENGINEER` for production-intent prototype implementation;
 - `FULL_STACK_ENGINEER` for database, backend, contracts, frontend/mobile,
@@ -83,8 +85,8 @@ Exactly two specialist roles exist:
 
 `FRONTEND`, `BACKEND`, and `FULL_STACK` are temporary assignment focuses, not
 roles. A small field change crossing a table, API, and UI goes to one
-Full-Stack Engineer. Multiple Full-Stack Engineers are used only when bounded
-packages can run independently and the time saved exceeds coordination cost.
+executor—normally the PM. Engineers are used only when bounded packages can run
+independently and the time saved exceeds coordination cost.
 
 Engineer work follows:
 
@@ -92,12 +94,16 @@ Engineer work follows:
 PM: READY → Engineer: ACTIVE → Engineer: VERIFYING → PM: DONE or REWORK
 ```
 
+Before `VERIFYING`, a delegated engineer must complete the Work Package's typed
+handoff. The PM consumes it before `DONE` or `REWORK`.
+
 ## Production-intent prototypes
 
 Prototypes are frontend foundations, not disposable demonstrations. For
-React/Next.js, the Prototype Engineer uses the frontend design and Vercel
-support skills to build production-quality pages, navigation, reusable
-components, UI states, accessibility, and responsive behavior.
+React/Next.js, the PM—or an optional parallel Prototype Engineer—uses the
+frontend design and Vercel support skills to build production-quality pages,
+navigation, reusable components, UI states, accessibility, and responsive
+behavior.
 
 Local seed data lives behind a stable frontend service interface:
 
@@ -107,9 +113,10 @@ Pages and components
 → local seed adapter now / backend API adapter later
 ```
 
-One Full-Stack Engineer promotes the approved files, replaces the seed adapter,
+The PM promotes the approved files by default, replaces the seed adapter,
 connects database/backend/API/authentication changes, and performs production
-hardening end-to-end. The engineer does not silently redesign approved UI/UX.
+hardening end-to-end. A Full-Stack Engineer may take a bounded promotion package
+only for justified parallelism and may not silently redesign approved UI/UX.
 
 ## Canonical product artifacts
 
@@ -124,6 +131,12 @@ docs/solo-founder/
 ├── reports/
 ├── architecture/
 └── handoffs/
+    ├── research/
+    ├── documentation/
+    ├── prototype/
+    ├── implementation/
+    ├── verification/
+    └── exception/
 prototypes/
 ├── frontend/
 └── mobile/
@@ -146,7 +159,11 @@ tests/
 - **Canonical Truth** stores current `PROPOSED` and Human-`APPROVED` product
   decisions grouped by Layer.
 - **Product Ledger** stores current Mode/Layer, initiatives, Work Packages,
-  issues, results, evidence, and lifecycle timestamps.
+  issues, results, evidence, delegation, handoff consumption, and lifecycle
+  timestamps.
+- **Typed handoffs** return delegated research, documentation, prototype,
+  implementation, verification, or exception evidence to the PM. Direct PM
+  work does not create them.
 - Git preserves artifact history; the files contain current state.
 
 The initializer creates this structure additively without overwriting existing
@@ -154,9 +171,10 @@ content. It preserves empty leaf directories with `.gitkeep`, but does not
 choose frameworks or generate stack-specific boilerplate until the relevant
 Technology and System Design Truth is approved.
 
-The PM and assigned Prototype or Full-Stack Engineers have scoped logical write
-authority. A deterministic updater is the Product Ledger's sole physical
-writer.
+The PM owns product authority and the complete Ledger. Assigned Prototype or
+Full-Stack Engineers have scoped write authority only for their Work Package
+execution fields and typed handoff. A deterministic updater is the Product
+Ledger's sole physical writer.
 
 ## Context persistence
 

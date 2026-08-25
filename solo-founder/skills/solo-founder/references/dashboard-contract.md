@@ -10,7 +10,8 @@ Read only repository-backed evidence:
 - `docs/solo-founder/canonical-truth.yaml`;
 - `docs/solo-founder/product-ledger.yaml`;
 - `docs/solo-founder/slices/*.md`;
-- research, reports, prototype handoffs, and local Git evidence when useful.
+- research, reports, typed delegated handoffs, and local Git evidence when
+  useful.
 
 The dashboard never maintains a separate product projection file.
 
@@ -31,5 +32,10 @@ The dashboard is read-only except for explicit Human approval of one
 
 The dashboard cannot edit the Product Ledger, create product decisions, change
 Mode or Layer, assign work, or approve without an explicit Human click.
+
+Active work visibility should distinguish `DIRECT` PM execution from
+`DELEGATED` parallel execution. For delegated work, show its handoff type and
+whether it is awaiting submission or PM consumption. The dashboard remains a
+projection of the Product Ledger and must not invent another handoff status.
 
 Bind only to `127.0.0.1`. Reuse one healthy runtime for the same product root.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 import tempfile
@@ -54,7 +55,12 @@ class SoloFounderTests(unittest.TestCase):
             "docs/solo-founder/slices",
             "docs/solo-founder/reports",
             "docs/solo-founder/architecture",
-            "docs/solo-founder/handoffs",
+            "docs/solo-founder/handoffs/research",
+            "docs/solo-founder/handoffs/documentation",
+            "docs/solo-founder/handoffs/prototype",
+            "docs/solo-founder/handoffs/implementation",
+            "docs/solo-founder/handoffs/verification",
+            "docs/solo-founder/handoffs/exception",
             "prototypes/frontend",
             "prototypes/mobile",
             "apps/frontend",
@@ -138,6 +144,10 @@ class SoloFounderTests(unittest.TestCase):
                 "FULL_STACK_ENGINEER",
                 "--owner",
                 "full-stack-1",
+                "--delegation-reason",
+                "PARALLELISM",
+                "--handoff-type",
+                "IMPLEMENTATION",
                 "--acceptance",
                 "Page renders",
                 "--status",
@@ -167,40 +177,106 @@ class SoloFounderTests(unittest.TestCase):
         )
         self.assertNotEqual(0, failed.returncode)
 
-    def test_only_approved_engineer_roles_can_own_code(self) -> None:
+    def test_pm_is_default_executor_for_code(self) -> None:
         updater = self.skill / "scripts" / "update_ledger.py"
         base = [sys.executable, str(updater), str(self.root)]
-        for work_id, role, owner in (
-            ("WORK-BAD-ROLE", "FRONTEND_ENGINEER", "frontend-1"),
-            ("WORK-PM-CODE", "PM", "PM"),
-        ):
-            failed = subprocess.run(
-                base
-                + [
-                    "--actor",
-                    "PM",
-                    "--create-work",
-                    work_id,
-                    "--title",
-                    "Invalid engineering assignment",
-                    "--classification",
-                    "TRIVIAL",
-                    "--workstream",
-                    "FULL_STACK",
-                    "--activity",
-                    "IMPLEMENTATION",
-                    "--role",
-                    role,
-                    "--owner",
-                    owner,
-                ],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-            self.assertNotEqual(0, failed.returncode, role)
+        subprocess.run(
+            base
+            + [
+                "--actor",
+                "PM",
+                "--create-work",
+                "WORK-PM-CODE",
+                "--title",
+                "Small end-to-end code change",
+                "--classification",
+                "TRIVIAL",
+                "--workstream",
+                "FULL_STACK",
+                "--activity",
+                "IMPLEMENTATION",
+                "--status",
+                "READY",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        ledger = read_yaml(self.base / "product-ledger.yaml")
+        item = next(work for work in ledger["work"] if work["id"] == "WORK-PM-CODE")
+        self.assertEqual("PM", item["role"])
+        self.assertEqual("PM", item["owner"])
+        self.assertEqual("DIRECT", item["execution"])
+        self.assertIsNone(item["handoff_path"])
 
-    def test_trivial_cross_stack_change_has_one_full_stack_owner(self) -> None:
+        subprocess.run(
+            base
+            + [
+                "--actor",
+                "PM",
+                "--work-id",
+                "WORK-PM-CODE",
+                "--status",
+                "DONE",
+                "--result",
+                "Small change completed",
+                "--evidence",
+                "tests:passed",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        completed = read_yaml(self.base / "product-ledger.yaml")
+        validate_ledger(completed)
+        item = next(work for work in completed["work"] if work["id"] == "WORK-PM-CODE")
+        self.assertEqual("DONE", item["status"])
+        self.assertIsNone(item["handoff_submitted_at"])
+        self.assertIsNone(item["handoff_consumed_at"])
+
+        failed = subprocess.run(
+            base
+            + [
+                "--actor",
+                "PM",
+                "--create-work",
+                "WORK-BAD-ROLE",
+                "--title",
+                "Invalid role",
+                "--classification",
+                "TRIVIAL",
+                "--role",
+                "FRONTEND_ENGINEER",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, failed.returncode)
+
+        missing_contract = subprocess.run(
+            base
+            + [
+                "--actor",
+                "PM",
+                "--create-work",
+                "WORK-MISSING-HANDOFF",
+                "--title",
+                "Invalid delegated package",
+                "--classification",
+                "NON_TRIVIAL",
+                "--role",
+                "FULL_STACK_ENGINEER",
+                "--owner",
+                "full-stack-1",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, missing_contract.returncode)
+
+    def test_delegated_research_handoff_is_required_and_consumed(self) -> None:
         updater = self.skill / "scripts" / "update_ledger.py"
         base = [sys.executable, str(updater), str(self.root)]
         subprocess.run(
@@ -211,25 +287,25 @@ class SoloFounderTests(unittest.TestCase):
                 "--create-work",
                 "WORK-0002",
                 "--title",
-                "Add one profile field end-to-end",
+                "Deep parallel technical research",
                 "--classification",
-                "TRIVIAL",
+                "NON_TRIVIAL",
                 "--workstream",
                 "FULL_STACK",
                 "--activity",
-                "IMPLEMENTATION",
+                "RESEARCH",
                 "--role",
                 "FULL_STACK_ENGINEER",
                 "--owner",
-                "full-stack-1",
+                "research-1",
+                "--delegation-reason",
+                "PARALLELISM",
+                "--handoff-type",
+                "RESEARCH",
                 "--owned-path",
-                "apps/frontend",
-                "--owned-path",
-                "apps/backend",
-                "--owned-path",
-                "packages/contracts",
+                "docs/solo-founder/handoffs/research",
                 "--acceptance",
-                "Backend data renders",
+                "Reproducible evidence supports the PM decision",
                 "--status",
                 "READY",
             ],
@@ -243,7 +319,7 @@ class SoloFounderTests(unittest.TestCase):
                 "--actor",
                 "ENGINEER",
                 "--identity",
-                "full-stack-1",
+                "research-1",
                 "--work-id",
                 "WORK-0002",
                 "--status",
@@ -253,21 +329,64 @@ class SoloFounderTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
+        failed = subprocess.run(
+            base
+            + [
+                "--actor",
+                "ENGINEER",
+                "--identity",
+                "research-1",
+                "--work-id",
+                "WORK-0002",
+                "--status",
+                "VERIFYING",
+                "--result",
+                "Research complete",
+                "--evidence",
+                "source:https://example.com",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, failed.returncode)
+
+        subprocess.run(
+            [
+                sys.executable,
+                str(self.skill / "scripts" / "create_handoff.py"),
+                str(self.root),
+                "--work-id",
+                "WORK-0002",
+                "--identity",
+                "research-1",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        handoff = self.base / "handoffs" / "research" / "WORK-0002.md"
+        content = handoff.read_text(encoding="utf-8")
+        content = re.sub(
+            r"<!--.*?-->", "Completed with durable evidence.", content, flags=re.DOTALL
+        )
+        handoff.write_text(content, encoding="utf-8")
+
         subprocess.run(
             base
             + [
                 "--actor",
                 "ENGINEER",
                 "--identity",
-                "full-stack-1",
+                "research-1",
                 "--work-id",
                 "WORK-0002",
                 "--status",
                 "VERIFYING",
                 "--result",
-                "Connected adapter",
+                "Research complete",
                 "--evidence",
-                "commit:abc123",
+                "source:https://example.com",
             ],
             check=True,
             capture_output=True,
@@ -291,11 +410,39 @@ class SoloFounderTests(unittest.TestCase):
         validate_ledger(ledger)
         item = next(work for work in ledger["work"] if work["id"] == "WORK-0002")
         self.assertEqual("DONE", item["status"])
-        self.assertEqual("TRIVIAL", item["classification"])
+        self.assertEqual("NON_TRIVIAL", item["classification"])
         self.assertEqual("DELEGATED", item["execution"])
         self.assertEqual("FULL_STACK_ENGINEER", item["role"])
-        self.assertEqual("full-stack-1", item["owner"])
+        self.assertEqual("research-1", item["owner"])
+        self.assertEqual("PARALLELISM", item["delegation_reason"])
+        self.assertEqual("RESEARCH", item["handoff_type"])
+        self.assertTrue(item["handoff_submitted_at"])
+        self.assertRegex(item["handoff_submitted_hash"], r"^[0-9a-f]{64}$")
+        self.assertTrue(item["handoff_consumed_at"])
         self.assertNotIn("WORK-0002", ledger["current"]["active_work_ids"])
+
+        validator = self.skill / "scripts" / "validate_artifacts.py"
+        subprocess.run(
+            [sys.executable, str(validator), str(self.root)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        handoff.write_text(
+            handoff.read_text(encoding="utf-8").replace(
+                "Completed with durable evidence.",
+                "Changed after PM consumption.",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        failed_audit = subprocess.run(
+            [sys.executable, str(validator), str(self.root)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, failed_audit.returncode)
 
     def test_parallel_engineers_cannot_cross_assignment_boundaries(self) -> None:
         updater = self.skill / "scripts" / "update_ledger.py"
@@ -323,6 +470,10 @@ class SoloFounderTests(unittest.TestCase):
                     "FULL_STACK_ENGINEER",
                     "--owner",
                     owner,
+                    "--delegation-reason",
+                    "PARALLELISM",
+                    "--handoff-type",
+                    "IMPLEMENTATION",
                     "--acceptance",
                     "Bounded result",
                     "--status",
@@ -369,8 +520,10 @@ class SoloFounderTests(unittest.TestCase):
         ]
         self.assertTrue(upgrade_ledger(ledger))
         validate_ledger(ledger)
-        self.assertEqual(2, ledger["schema_version"])
+        self.assertEqual(3, ledger["schema_version"])
         self.assertEqual("FULL_STACK_ENGINEER", ledger["work"][0]["role"])
+        self.assertEqual("LEGACY_ASSIGNMENT", ledger["work"][0]["delegation_reason"])
+        self.assertEqual("IMPLEMENTATION", ledger["work"][0]["handoff_type"])
 
     def test_layer_order_is_stable(self) -> None:
         truth = read_yaml(self.base / "canonical-truth.yaml")

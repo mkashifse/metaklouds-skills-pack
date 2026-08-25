@@ -633,6 +633,34 @@ current:
   affected_layers: []
 ```
 
+### Product Ledger Issue Sidecar
+
+Issue tracking must preserve delivery speed. `DRIFT`, `BLOCKER`, `RISK`, and
+`EXTERNAL_DEPENDENCY` share one Product Ledger `issues` collection and exactly
+three statuses: `OPEN`, `AWAITING_HUMAN`, and `RESOLVED`. Resolution method is
+separate: `AUTO_WITHIN_AUTHORITY`, `HUMAN_APPROVED`, or
+`EXTERNAL_RESOLUTION`.
+
+The PM keeps issue events in memory while doing the actual work and flushes
+them once when leaving a Work Package or checkpoint. The deterministic updater
+applies the whole exit sweep in one locked, validated, atomic Ledger write. A
+safe issue may be logged directly as `RESOLVED`; it does not need an `OPEN`
+transition first.
+
+Auto-resolution is allowed only when it follows approved Truth, is local and
+reversible, changes no scope or acceptance, introduces no security, privacy,
+legal, financial, health, production, or irreversible concern, and passes
+existing verification. If uncertain, record `OPEN`. When Human authority is
+required, record `AWAITING_HUMAN` with one recommendation and impact, skip only
+the affected action, and continue unrelated work. Do not start separate
+research, documentation, delegation, or issue ceremony unless the Issue later
+becomes material work.
+
+Durable Human decisions become proposed Canonical Truth and link back to the
+resolved Issue. One-time authorization remains in the Issue resolution.
+Resolved history stays visible but is not part of the default active dashboard
+view.
+
 ### Dashboard Truth view
 
 The dashboard must:
@@ -662,8 +690,9 @@ The dashboard has exactly four tabs matching current canonical sources:
 3. `Work`: Product Ledger Work Packages, defaulting to active work, including
    direct/delegated execution, owner, status, acceptance, result, evidence,
    blocker, and typed handoff state.
-4. `Issues`: Drift, blockers, risks, and external dependencies, including Human
-   attention requirements.
+4. `Issues`: Drift, blockers, risks, and external dependencies, defaulting to
+   unresolved work, with Human Attention and resolved-history filters plus
+   resolution method, action, and evidence.
 
 One compact strip above all views displays current Mode, Layer and affected
 Layers, active initiative, and next recommended action. Do not restore obsolete
@@ -753,9 +782,10 @@ Dashboard approval safety rules:
 
 The Product Manager has full logical write authority over the Product Ledger.
 An assigned engineer has logical write authority only over the execution
-fields of its own work and issues discovered within that assignment. The
-Ledger Updater is the sole physical writer of the Product Ledger and must
-enforce these boundaries.
+fields of its own work and reports discovered issues through the typed handoff.
+The PM consumes and batches those reports during its exit sweep. The Ledger
+Updater is the sole physical writer of the Product Ledger and must enforce
+these boundaries.
 
 The delegated engineer work lifecycle is:
 

@@ -43,6 +43,12 @@ WORK_STATUSES = {
 }
 CLASSIFICATIONS = {"TRIVIAL", "NON_TRIVIAL"}
 ISSUE_KINDS = {"DRIFT", "BLOCKER", "RISK", "EXTERNAL_DEPENDENCY"}
+ISSUE_STATUSES = {"OPEN", "AWAITING_HUMAN", "RESOLVED"}
+ISSUE_RESOLUTION_METHODS = {
+    "AUTO_WITHIN_AUTHORITY",
+    "HUMAN_APPROVED",
+    "EXTERNAL_RESOLUTION",
+}
 INITIATIVE_STATUSES = {"ACTIVE", "PAUSED", "DONE", "CANCELLED"}
 ROLES = {"PM", "PROTOTYPE_ENGINEER", "FULL_STACK_ENGINEER"}
 ENGINEER_ROLES = {"PROTOTYPE_ENGINEER", "FULL_STACK_ENGINEER"}
@@ -136,68 +142,146 @@ def handoff_path_for(work_id: str, handoff_type: str) -> str:
 
 
 def upgrade_ledger(document: dict[str, Any]) -> bool:
-    """Upgrade earlier Ledgers to PM-first execution with typed handoffs."""
+    """Upgrade earlier Ledgers to PM-first execution and the Issue Sidecar."""
     schema_version = document.get("schema_version")
-    if schema_version not in {1, 2}:
+    if schema_version not in {1, 2, 3}:
         return False
-    for raw in document.get("work") or []:
+    if schema_version in {1, 2}:
+        for raw in document.get("work") or []:
+            if not isinstance(raw, dict):
+                continue
+            owner = str(raw.get("owner") or "")
+            workstream = str(raw.get("workstream") or "")
+            if schema_version == 1 and not raw.get("role"):
+                if owner == "PM":
+                    raw["role"] = "PM"
+                elif workstream == "PROTOTYPE" or "PROTOTYPE" in owner.upper():
+                    raw["role"] = "PROTOTYPE_ENGINEER"
+                else:
+                    raw["role"] = "FULL_STACK_ENGINEER"
+            if raw.get("role") == "PROTOTYPE_ENGINEER":
+                raw["workstream"] = "PROTOTYPE"
+            elif raw.get("role") == "FULL_STACK_ENGINEER" and workstream not in {
+                "FRONTEND",
+                "BACKEND",
+                "FULL_STACK",
+            }:
+                raw["workstream"] = (
+                    "BACKEND"
+                    if workstream in {"DATA", "PLATFORM", "SECURITY"}
+                    else "FULL_STACK"
+                )
+            raw["execution"] = "DIRECT" if raw.get("role") == "PM" else "DELEGATED"
+            if raw.get("role") == "PM":
+                raw["delegation_reason"] = None
+                raw["handoff_type"] = None
+                raw["handoff_path"] = None
+                raw["handoff_submitted_at"] = None
+                raw["handoff_submitted_hash"] = None
+                raw["handoff_consumed_at"] = None
+            else:
+                handoff_type = raw.get("handoff_type") or infer_handoff_type(raw)
+                raw["delegation_reason"] = (
+                    raw.get("delegation_reason") or "LEGACY_ASSIGNMENT"
+                )
+                raw["handoff_type"] = handoff_type
+                raw["handoff_path"] = raw.get("handoff_path") or handoff_path_for(
+                    str(raw.get("id") or "WORK-LEGACY"), handoff_type
+                )
+                timestamp = (
+                    raw.get("updated_at")
+                    or raw.get("created_at")
+                    or datetime.now().astimezone().isoformat(timespec="seconds")
+                )
+                raw["handoff_submitted_at"] = (
+                    timestamp
+                    if raw.get("status") in {"VERIFYING", "DONE", "REWORK"}
+                    else None
+                )
+                raw["handoff_submitted_hash"] = None
+                raw["handoff_consumed_at"] = (
+                    raw.get("completed_at") or timestamp
+                    if raw.get("status") in {"DONE", "REWORK"}
+                    else None
+                )
+    migration_time = document.get(
+        "updated_at"
+    ) or datetime.now().astimezone().isoformat(timespec="seconds")
+    for raw in document.get("issues") or []:
         if not isinstance(raw, dict):
             continue
-        owner = str(raw.get("owner") or "")
-        workstream = str(raw.get("workstream") or "")
-        if schema_version == 1 and not raw.get("role"):
-            if owner == "PM":
-                raw["role"] = "PM"
-            elif workstream == "PROTOTYPE" or "PROTOTYPE" in owner.upper():
-                raw["role"] = "PROTOTYPE_ENGINEER"
-            else:
-                raw["role"] = "FULL_STACK_ENGINEER"
-        if raw.get("role") == "PROTOTYPE_ENGINEER":
-            raw["workstream"] = "PROTOTYPE"
-        elif raw.get("role") == "FULL_STACK_ENGINEER" and workstream not in {
-            "FRONTEND",
-            "BACKEND",
-            "FULL_STACK",
-        }:
-            raw["workstream"] = (
-                "BACKEND"
-                if workstream in {"DATA", "PLATFORM", "SECURITY"}
-                else "FULL_STACK"
+        raw["summary"] = str(
+            raw.get("summary")
+            or raw.get("title")
+            or raw.get("description")
+            or f"Migrated {raw.get('kind', 'issue')} {raw.get('id', '')}"
+        )
+        raw["linked_work_ids"] = list(
+            raw.get("linked_work_ids") or raw.get("work_ids") or []
+        )
+        raw["linked_truth_ids"] = list(
+            raw.get("linked_truth_ids") or raw.get("truth_ids") or []
+        )
+        raw["detected_at"] = str(
+            raw.get("detected_at") or raw.get("created_at") or migration_time
+        )
+        original_human = bool(raw.get("human_approval_required"))
+        original_status = str(raw.get("status") or "").upper()
+        resolved = bool(raw.get("resolved_at")) or original_status in {
+            "DONE",
+            "CLOSED",
+            "RESOLVED",
+            "CANCELLED",
+        }
+        if resolved:
+            existing_resolution = raw.get("resolution")
+            resolution = (
+                dict(existing_resolution)
+                if isinstance(existing_resolution, dict)
+                else {}
             )
-        raw["execution"] = "DIRECT" if raw.get("role") == "PM" else "DELEGATED"
-        if raw.get("role") == "PM":
-            raw["delegation_reason"] = None
-            raw["handoff_type"] = None
-            raw["handoff_path"] = None
-            raw["handoff_submitted_at"] = None
-            raw["handoff_submitted_hash"] = None
-            raw["handoff_consumed_at"] = None
+            resolution["method"] = resolution.get("method") or (
+                "HUMAN_APPROVED" if original_human else "EXTERNAL_RESOLUTION"
+            )
+            resolution["action"] = str(
+                resolution.get("action")
+                or existing_resolution
+                or raw.get("recommendation")
+                or "Preserved the legacy resolution"
+            )
+            resolution["evidence"] = list(
+                resolution.get("evidence")
+                or raw.get("evidence")
+                or ["Legacy Product Ledger record"]
+            )
+            resolution["resolved_by"] = str(
+                resolution.get("resolved_by") or raw.get("resolved_by") or "PM"
+            )
+            resolution["resolved_at"] = str(
+                resolution.get("resolved_at")
+                or raw.get("resolved_at")
+                or migration_time
+            )
+            raw["status"] = "RESOLVED"
+            raw["human_approval_required"] = False
+            raw["resolution"] = resolution
+        elif original_human:
+            raw["status"] = "AWAITING_HUMAN"
+            raw["human_approval_required"] = True
+            raw["recommendation"] = str(
+                raw.get("recommendation") or "Human review is required"
+            )
+            raw["impact"] = str(
+                raw.get("impact")
+                or raw.get("description")
+                or "Only the affected scope remains paused"
+            )
+            raw["resolution"] = None
         else:
-            handoff_type = raw.get("handoff_type") or infer_handoff_type(raw)
-            raw["delegation_reason"] = (
-                raw.get("delegation_reason") or "LEGACY_ASSIGNMENT"
-            )
-            raw["handoff_type"] = handoff_type
-            raw["handoff_path"] = raw.get("handoff_path") or handoff_path_for(
-                str(raw.get("id") or "WORK-LEGACY"), handoff_type
-            )
-            timestamp = (
-                raw.get("updated_at")
-                or raw.get("created_at")
-                or datetime.now().astimezone().isoformat(timespec="seconds")
-            )
-            raw["handoff_submitted_at"] = (
-                timestamp
-                if raw.get("status") in {"VERIFYING", "DONE", "REWORK"}
-                else None
-            )
-            raw["handoff_submitted_hash"] = None
-            raw["handoff_consumed_at"] = (
-                raw.get("completed_at") or timestamp
-                if raw.get("status") in {"DONE", "REWORK"}
-                else None
-            )
-    document["schema_version"] = 3
+            raw["status"] = "OPEN"
+            raw["human_approval_required"] = False
+            raw["resolution"] = None
+    document["schema_version"] = 4
     return True
 
 
@@ -606,8 +690,10 @@ def validate_truth(document: dict[str, Any]) -> None:
 
 def validate_ledger(document: dict[str, Any]) -> None:
     schema_version = document.get("schema_version")
-    if schema_version not in {1, 2, 3}:
-        raise ArtifactError("product-ledger.yaml requires schema_version: 1, 2, or 3")
+    if schema_version not in {1, 2, 3, 4}:
+        raise ArtifactError(
+            "product-ledger.yaml requires schema_version: 1, 2, 3, or 4"
+        )
     require_mapping(document.get("product"), "product")
     current = require_mapping(document.get("current"), "current")
     if current.get("mode") not in MODES:
@@ -657,7 +743,7 @@ def validate_ledger(document: dict[str, Any]) -> None:
         if not str(item.get("owner") or "").strip():
             raise ArtifactError(f"{work_id} requires owner")
         role = item.get("role")
-        if schema_version in {2, 3}:
+        if schema_version in {2, 3, 4}:
             if role not in ROLES:
                 raise ArtifactError(f"{work_id} has invalid role")
             expected_execution = "DIRECT" if role == "PM" else "DELEGATED"
@@ -679,7 +765,7 @@ def validate_ledger(document: dict[str, Any]) -> None:
                 raise ArtifactError(
                     f"{work_id} Full-Stack Engineer requires an engineering focus"
                 )
-        if schema_version == 3:
+        if schema_version in {3, 4}:
             if role == "PM":
                 if any(
                     item.get(field) is not None
@@ -738,6 +824,68 @@ def validate_ledger(document: dict[str, Any]) -> None:
         issue_ids.add(issue_id)
         if item.get("kind") not in ISSUE_KINDS:
             raise ArtifactError(f"{issue_id} has invalid kind")
+        if schema_version == 4:
+            if not str(item.get("summary") or "").strip():
+                raise ArtifactError(f"{issue_id} requires summary")
+            status = item.get("status")
+            if status not in ISSUE_STATUSES:
+                raise ArtifactError(f"{issue_id} has invalid status")
+            human_required = item.get("human_approval_required")
+            if not isinstance(human_required, bool):
+                raise ArtifactError(
+                    f"{issue_id}.human_approval_required must be boolean"
+                )
+            linked_work = require_list(
+                item.get("linked_work_ids"), f"{issue_id}.linked_work_ids"
+            )
+            require_list(item.get("linked_truth_ids"), f"{issue_id}.linked_truth_ids")
+            unknown_issue_work = [
+                work_id for work_id in linked_work if work_id not in work_ids
+            ]
+            if unknown_issue_work:
+                raise ArtifactError(
+                    f"{issue_id} links unknown work: {unknown_issue_work[0]}"
+                )
+            if not str(item.get("detected_at") or "").strip():
+                raise ArtifactError(f"{issue_id} requires detected_at")
+            resolution = item.get("resolution")
+            if status == "OPEN":
+                if human_required or resolution is not None:
+                    raise ArtifactError(
+                        f"{issue_id} OPEN cannot require Human approval or resolution"
+                    )
+            elif status == "AWAITING_HUMAN":
+                if not human_required or resolution is not None:
+                    raise ArtifactError(
+                        f"{issue_id} AWAITING_HUMAN requires Human approval and no resolution"
+                    )
+                if (
+                    not str(item.get("recommendation") or "").strip()
+                    or not str(item.get("impact") or "").strip()
+                ):
+                    raise ArtifactError(
+                        f"{issue_id} AWAITING_HUMAN requires recommendation and impact"
+                    )
+            else:
+                if human_required:
+                    raise ArtifactError(
+                        f"{issue_id} RESOLVED cannot await Human approval"
+                    )
+                resolution_map = require_mapping(resolution, f"{issue_id}.resolution")
+                if resolution_map.get("method") not in ISSUE_RESOLUTION_METHODS:
+                    raise ArtifactError(f"{issue_id} has invalid resolution method")
+                if not str(resolution_map.get("action") or "").strip():
+                    raise ArtifactError(f"{issue_id} resolution requires action")
+                evidence = require_list(
+                    resolution_map.get("evidence"),
+                    f"{issue_id}.resolution.evidence",
+                )
+                if not evidence:
+                    raise ArtifactError(f"{issue_id} resolution requires evidence")
+                if not str(resolution_map.get("resolved_by") or "").strip():
+                    raise ArtifactError(f"{issue_id} resolution requires resolved_by")
+                if not str(resolution_map.get("resolved_at") or "").strip():
+                    raise ArtifactError(f"{issue_id} resolution requires resolved_at")
     unknown_active = [
         work_id
         for work_id in require_list(

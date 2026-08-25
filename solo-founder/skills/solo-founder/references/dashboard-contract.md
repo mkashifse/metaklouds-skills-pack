@@ -52,7 +52,9 @@ Use exactly four primary views:
    blocked, complete, and all filters available.
 4. `Issues`: Product Ledger `DRIFT`, `BLOCKER`, `RISK`, and
    `EXTERNAL_DEPENDENCY` records, including Human attention and available
-   links/evidence.
+   links/evidence. Default to unresolved records, provide a Human Attention
+   filter, and keep resolved history—including resolution method, action, and
+   evidence—available without making it delivery noise.
 
 Do not restore obsolete Meta PDS views for branches, pull requests, Scrum,
 generic activity, or a separate prototype tab. Solo Founder does not maintain

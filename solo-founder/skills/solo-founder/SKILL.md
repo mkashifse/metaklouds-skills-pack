@@ -103,8 +103,9 @@ The engineer lifecycle is:
 PM: READY → Engineer: ACTIVE → Engineer: VERIFYING → PM: DONE or REWORK
 ```
 
-Engineers may update only their assigned work's execution fields and linked
-issues. They cannot delegate further; change Mode, Layer, scope, role, owner,
+Engineers may update only their assigned work's execution fields and report
+discovered issues through their typed handoff for the PM's exit sweep. They
+cannot delegate further; change Mode, Layer, scope, role, owner,
 focus, acceptance, dependencies, initiative state, next action, authority,
 approved Truth, or other work; or mark work `DONE`. Read
 [references/work-classification.md](references/work-classification.md) before
@@ -149,6 +150,13 @@ The Product Ledger stores operational context, initiatives, Work Packages,
 issues, evidence, results, and timestamps. A deterministic updater is its only
 physical writer. Read [references/truth-and-product-ledger.md](references/truth-and-product-ledger.md)
 before creating, approving, or updating Truth or Ledger state.
+
+Issue handling is a sidecar, never a competing workflow. Keep delivering,
+pause only affected scope, and batch issue events into the next natural Ledger
+write. Auto-resolve only local, reversible details inside approved Truth and PM
+authority. Log consequential issues as `AWAITING_HUMAN`, skip that action, and
+continue unrelated work. Do not create separate issue research, delegation, or
+ceremony unless the issue later becomes material work.
 
 ## Product repository structure
 

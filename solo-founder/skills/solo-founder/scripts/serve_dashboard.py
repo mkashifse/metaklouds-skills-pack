@@ -40,7 +40,7 @@ STATIC_FILES = {
     "/demo-data.js": ("demo-data.js", "text/javascript; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
-RUNTIME_VERSION = 4
+RUNTIME_VERSION = 5
 TERMINAL_WORK_STATUSES = {"DONE", "CANCELLED"}
 
 

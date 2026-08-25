@@ -161,6 +161,9 @@ tests/
 - **Product Ledger** stores current Mode/Layer, initiatives, Work Packages,
   issues, results, evidence, delegation, handoff consumption, and lifecycle
   timestamps.
+- **Issue Sidecar** batches safe auto-resolutions, passive open issues, and
+  Human-required decisions into one exit-sweep Ledger write so only affected
+  scope pauses and unrelated delivery continues.
 - **Typed handoffs** return delegated research, documentation, prototype,
   implementation, verification, or exception evidence to the PM. Direct PM
   work does not create them.

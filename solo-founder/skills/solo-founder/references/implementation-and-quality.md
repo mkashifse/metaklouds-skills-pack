@@ -62,5 +62,8 @@ business and product outcomes. Recommend continue, modify, rollback, or replan.
 Drift is any mismatch between implementation evidence and approved Truth,
 Slice acceptance, prototype behavior, contracts, or authority. Pause only the
 affected dependency closure. Safe reversible implementation details may be
-resolved within authority; consequential drift becomes `PROPOSED` Truth or a
-Human decision with one recommendation and impact.
+resolved within authority and logged as `RESOLVED` during the next exit sweep;
+do not interrupt the work merely to write the Issue. Consequential drift becomes
+`AWAITING_HUMAN` with one recommendation and impact. Skip only that action and
+continue unrelated work. Durable Human decisions become `PROPOSED` Truth;
+one-time authorization remains in the Issue resolution.

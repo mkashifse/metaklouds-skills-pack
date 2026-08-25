@@ -23,7 +23,7 @@
   const terminalWork = new Set(["DONE", "CANCELLED"]);
   const completeStatuses = new Set(["APPROVED", "DONE", "RELEASED", "OUTCOME_VALIDATED", "PASSED", "CLOSED", "RESOLVED"]);
   const activeStatuses = new Set(["ACTIVE", "IN_PROGRESS", "IMPLEMENTATION", "EXECUTING"]);
-  const reviewStatuses = new Set(["PROPOSED", "VERIFYING", "REWORK", "REVIEW", "HUMAN_APPROVAL_REQUIRED"]);
+  const reviewStatuses = new Set(["PROPOSED", "VERIFYING", "REWORK", "REVIEW", "HUMAN_APPROVAL_REQUIRED", "AWAITING_HUMAN"]);
   const readyStatuses = new Set(["READY", "APPROVED_FOR_IMPLEMENTATION"]);
   const blockedStatuses = new Set(["BLOCKED", "FAILED", "AT_RISK"]);
 
@@ -150,6 +150,7 @@
     const itemStatus = issueStatus(item);
     const title = item.title || item.summary || `${pretty(item.kind)} ${item.id}`;
     const detail = item.description || item.detail || item.impact || item.blocker || "No issue detail recorded.";
+    const resolution = item.resolution && typeof item.resolution === "object" ? item.resolution : null;
     return [
       `# ${item.id} — ${title}`,
       `- **Entity:** Product Ledger Issue`,
@@ -162,6 +163,7 @@
       `## Evidence\n${markdownItems(item.evidence)}`,
       `## Linked Work\n${markdownItems(item.work_ids || item.linked_work_ids)}`,
       `## Linked Truth\n${markdownItems(item.truth_ids || item.linked_truth_ids)}`,
+      resolution ? `## Resolution\n- **Method:** ${resolution.method}\n- **Action:** ${resolution.action}\n- **Resolved by:** ${resolution.resolved_by}\n- **Resolved at:** ${resolution.resolved_at}\n\n### Resolution evidence\n${markdownItems(resolution.evidence)}` : "",
     ].filter(Boolean).join("\n\n");
   }
 
@@ -522,6 +524,7 @@
     const itemStatus = issueStatus(item);
     const title = item.title || item.summary || `${pretty(item.kind)} ${item.id}`;
     const detail = item.description || item.detail || item.impact || item.blocker || "No issue detail recorded.";
+    const resolution = item.resolution && typeof item.resolution === "object" ? item.resolution : null;
     return `<details class="document-row">
       <summary>
         <span class="entity-icon">${icon("alert")}</span>
@@ -530,12 +533,14 @@
         <span class="chevron">${icon("chevron")}</span>
       </summary>
       <div class="row-body">
-        <div class="body-main">${textSection("Detail", detail)}${item.recommendation ? textSection("Recommendation", item.recommendation) : ""}${listSection("Evidence", item.evidence)}</div>
+        <div class="body-main">${textSection("Detail", detail)}${item.recommendation ? textSection("Recommendation", item.recommendation) : ""}${item.impact ? textSection("Impact", item.impact) : ""}${listSection("Evidence", item.evidence)}${resolution ? textSection("Resolution", resolution.action) + listSection("Resolution evidence", resolution.evidence) : ""}</div>
         ${propertyRows([
           ["Kind", esc(pretty(item.kind))],
           ["Status", status(itemStatus)],
           ["Severity", esc(pretty(item.severity || "Not set"))],
           ["Human approval", item.human_approval_required ? "Required" : "Not required"],
+          ["Resolution method", esc(pretty(resolution?.method || "None"))],
+          ["Resolved by", esc(resolution?.resolved_by || "—")],
           ["Linked work", esc(values(item.work_ids || item.linked_work_ids).join(", ") || "None")],
           ["Linked Truth", esc(values(item.truth_ids || item.linked_truth_ids).join(", ") || "None")],
         ])}
@@ -548,7 +553,7 @@
     const open = all.filter(issueIsOpen);
     const human = all.filter((item) => item.human_approval_required);
     const shown = all.filter(issueMatches);
-    $("#issue-filters").innerHTML = filterButtons([["open", "Open", open.length], ["human", "Human Attention", human.length], ["closed", "Closed", all.length - open.length], ["all", "All", all.length]], issueFilter);
+    $("#issue-filters").innerHTML = filterButtons([["open", "Open", open.length], ["human", "Human Attention", human.length], ["closed", "Resolved", all.length - open.length], ["all", "All", all.length]], issueFilter);
     $("#issue-summary").innerHTML = `<span>Drift<strong>${esc(all.filter((item) => item.kind === "DRIFT").length)}</strong></span><span>Blockers<strong>${esc(all.filter((item) => item.kind === "BLOCKER").length)}</strong></span><span>Risks<strong>${esc(all.filter((item) => item.kind === "RISK").length)}</strong></span>`;
     $("#issue-list").innerHTML = shown.length ? shown.map(issueRow).join("") : emptyState("No matching Issues", all.length ? "Change the filter to see other issues." : "Drift, blockers, risks, and external dependencies will appear here.");
   }

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -12,6 +13,8 @@ from solo_founder_core import (
     CLASSIFICATIONS,
     ENGINEER_ROLES,
     HANDOFF_TYPES,
+    ISSUE_KINDS,
+    ISSUE_RESOLUTION_METHODS,
     LAYERS,
     MODES,
     ROLES,
@@ -44,6 +47,121 @@ def find_work(ledger: dict, work_id: str) -> dict:
         if item.get("id") == work_id:
             return item
     raise ArtifactError(f"Unknown Work ID: {work_id}")
+
+
+def find_issue(ledger: dict, issue_id: str) -> dict:
+    for item in ledger["issues"]:
+        if item.get("id") == issue_id:
+            return item
+    raise ArtifactError(f"Unknown Issue ID: {issue_id}")
+
+
+def string_list(value: object, label: str) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) or not item.strip() for item in value
+    ):
+        raise ArtifactError(f"{label} must be a list of non-empty strings")
+    return list(dict.fromkeys(item.strip() for item in value))
+
+
+def resolution_from_event(event: dict, method: str) -> dict:
+    action = str(event.get("resolution_action") or "").strip()
+    evidence = string_list(event.get("resolution_evidence"), "resolution_evidence")
+    if not action or not evidence:
+        raise ArtifactError("Issue resolution requires action and evidence")
+    resolved_by = {
+        "AUTO_WITHIN_AUTHORITY": "PM",
+        "HUMAN_APPROVED": "HUMAN",
+        "EXTERNAL_RESOLUTION": str(event.get("resolved_by") or "EXTERNAL"),
+    }[method]
+    return {
+        "method": method,
+        "action": action,
+        "evidence": evidence,
+        "resolved_by": resolved_by,
+        "resolved_at": now(),
+    }
+
+
+def log_issue(ledger: dict, event: dict) -> None:
+    issue_id = str(event.get("id") or "")
+    if any(item.get("id") == issue_id for item in ledger["issues"]):
+        raise ArtifactError(f"Duplicate Issue ID: {issue_id}")
+    kind = str(event.get("kind") or "")
+    if kind not in ISSUE_KINDS:
+        raise ArtifactError(f"Invalid Issue kind: {kind}")
+    summary = str(event.get("summary") or "").strip()
+    if not summary:
+        raise ArtifactError("Issue LOG requires summary")
+    disposition = str(event.get("disposition") or "OPEN")
+    if disposition not in {"OPEN", "AWAITING_HUMAN", "AUTO_RESOLVED"}:
+        raise ArtifactError(f"Invalid Issue disposition: {disposition}")
+    item = {
+        "id": issue_id,
+        "kind": kind,
+        "summary": summary,
+        "description": str(event.get("description") or "").strip() or None,
+        "status": "RESOLVED" if disposition == "AUTO_RESOLVED" else disposition,
+        "severity": str(event.get("severity") or "UNSET"),
+        "human_approval_required": disposition == "AWAITING_HUMAN",
+        "recommendation": str(event.get("recommendation") or "").strip() or None,
+        "impact": str(event.get("impact") or "").strip() or None,
+        "evidence": string_list(event.get("evidence"), "evidence"),
+        "linked_work_ids": string_list(event.get("linked_work_ids"), "linked_work_ids"),
+        "linked_truth_ids": string_list(
+            event.get("linked_truth_ids"), "linked_truth_ids"
+        ),
+        "detected_at": str(event.get("detected_at") or now()),
+        "resolution": None,
+    }
+    if disposition == "AWAITING_HUMAN" and not (
+        item["recommendation"] and item["impact"]
+    ):
+        raise ArtifactError("AWAITING_HUMAN requires one recommendation and its impact")
+    if disposition == "AUTO_RESOLVED":
+        item["resolution"] = resolution_from_event(event, "AUTO_WITHIN_AUTHORITY")
+    ledger["issues"].append(item)
+
+
+def resolve_issue(ledger: dict, event: dict) -> None:
+    item = find_issue(ledger, str(event.get("id") or ""))
+    if item.get("status") == "RESOLVED":
+        raise ArtifactError(f"Issue is already resolved: {item['id']}")
+    method = str(event.get("resolution_method") or "")
+    if method not in ISSUE_RESOLUTION_METHODS:
+        raise ArtifactError(f"Invalid Issue resolution method: {method}")
+    if item.get("status") == "AWAITING_HUMAN" and method != "HUMAN_APPROVED":
+        raise ArtifactError("AWAITING_HUMAN requires HUMAN_APPROVED resolution")
+    if item.get("status") == "OPEN" and method == "HUMAN_APPROVED":
+        raise ArtifactError("OPEN Issue cannot claim HUMAN_APPROVED resolution")
+    item["status"] = "RESOLVED"
+    item["human_approval_required"] = False
+    item["resolution"] = resolution_from_event(event, method)
+    new_truth = string_list(event.get("linked_truth_ids"), "linked_truth_ids")
+    item["linked_truth_ids"] = list(
+        dict.fromkeys(list(item.get("linked_truth_ids") or []) + new_truth)
+    )
+
+
+def apply_issue_events(ledger: dict, payload: str) -> None:
+    try:
+        events = json.loads(payload)
+    except json.JSONDecodeError as error:
+        raise ArtifactError(f"Invalid Issue events JSON: {error.msg}") from error
+    if not isinstance(events, list) or not events or len(events) > 100:
+        raise ArtifactError("Issue exit sweep requires 1 to 100 events")
+    for event in events:
+        if not isinstance(event, dict):
+            raise ArtifactError("Each Issue event must be an object")
+        action = str(event.get("action") or "LOG")
+        if action == "LOG":
+            log_issue(ledger, event)
+        elif action == "RESOLVE":
+            resolve_issue(ledger, event)
+        else:
+            raise ArtifactError(f"Invalid Issue event action: {action}")
 
 
 def create_work(ledger: dict, args: argparse.Namespace) -> dict:
@@ -226,6 +344,7 @@ def main() -> int:
     parser.add_argument("--result")
     parser.add_argument("--evidence", action="append")
     parser.add_argument("--blocker")
+    parser.add_argument("--issue-events-json")
     parser.add_argument("--mode")
     parser.add_argument("--layer")
     args = parser.parse_args()
@@ -240,8 +359,18 @@ def main() -> int:
             ledger = read_yaml(path)
             validate_ledger(ledger)
             upgrade_ledger(ledger)
-            if args.actor != "PM" and (args.mode or args.layer or args.create_work):
-                raise ArtifactError("Engineers cannot change PM context or create work")
+            if args.actor != "PM" and (
+                args.mode or args.layer or args.create_work or args.issue_events_json
+            ):
+                raise ArtifactError(
+                    "Engineers cannot change PM context, create work, or write Issues"
+                )
+            if args.issue_events_json and any(
+                (args.mode, args.layer, args.create_work, args.work_id)
+            ):
+                raise ArtifactError(
+                    "Issue exit sweep cannot be combined with another Ledger operation"
+                )
             if args.mode:
                 if args.mode not in MODES:
                     raise ArtifactError(f"Invalid Mode: {args.mode}")
@@ -255,9 +384,11 @@ def main() -> int:
             elif args.work_id:
                 item = find_work(ledger, args.work_id)
                 update_work(root, item, args)
+            elif args.issue_events_json:
+                apply_issue_events(ledger, args.issue_events_json)
             elif not (args.mode or args.layer):
                 raise ArtifactError(
-                    "Provide --create-work, --work-id, --mode, or --layer"
+                    "Provide --create-work, --work-id, --issue-events-json, --mode, or --layer"
                 )
             ledger["updated_at"] = now()
             ledger["updated_by"] = args.identity or args.actor

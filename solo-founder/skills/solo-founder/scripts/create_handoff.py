@@ -42,7 +42,7 @@ def create(product_root: Path, work_id: str, identity: str) -> Path:
     ledger_path = product_root / "docs" / "solo-founder" / "product-ledger.yaml"
     ledger = read_yaml(ledger_path)
     validate_ledger(ledger)
-    if ledger.get("schema_version") != 3:
+    if ledger.get("schema_version") not in {3, 4}:
         raise ArtifactError("Update the Product Ledger before creating a handoff")
     item = find_work(ledger, work_id)
     if item.get("role") not in ENGINEER_ROLES or item.get("execution") != "DELEGATED":

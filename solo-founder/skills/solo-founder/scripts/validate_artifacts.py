@@ -47,7 +47,7 @@ def run(product_root: Path) -> list[str]:
     try:
         ledger = read_yaml(base / "product-ledger.yaml")
         validate_ledger(ledger)
-        if ledger.get("schema_version") == 3:
+        if ledger.get("schema_version") in {3, 4}:
             for item in ledger["work"]:
                 if (
                     item.get("execution") == "DELEGATED"

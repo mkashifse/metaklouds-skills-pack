@@ -41,9 +41,53 @@ It contains:
   status, evidence, result, and timestamps;
 - issues of kind `DRIFT`, `BLOCKER`, `RISK`, or `EXTERNAL_DEPENDENCY`.
 
-Durable Human product decisions belong in Canonical Truth. A one-time
-operational authorization remains an issue with
-`human_approval_required: true`; there is no `HUMAN_DECISION` issue kind.
+Durable Human product decisions belong in Canonical Truth. A pending one-time
+operational authorization uses `human_approval_required: true`; after the
+decision, it remains in the Issue's `HUMAN_APPROVED` resolution. There is no
+`HUMAN_DECISION` issue kind.
+
+### Issue Sidecar and exit sweep
+
+Issues use exactly three statuses:
+
+- `OPEN`: unresolved but not waiting for a Human;
+- `AWAITING_HUMAN`: the affected action is skipped pending one Human decision;
+- `RESOLVED`: durable resolution action and evidence are recorded.
+
+Resolution method is separate: `AUTO_WITHIN_AUTHORITY`, `HUMAN_APPROVED`, or
+`EXTERNAL_RESOLUTION`. Auto-resolution is allowed only when the change follows
+approved Truth, is local and reversible, changes no scope or acceptance,
+introduces no security, privacy, legal, financial, health, production, or
+irreversibility concern, and passes existing verification. If any condition is
+uncertain, leave it `OPEN` or use `AWAITING_HUMAN`.
+
+Issue handling must not become a parallel delivery workflow. During work, keep
+a small in-memory queue. At the natural exit from a Work Package or checkpoint,
+flush all issue events through one `--issue-events-json` updater call and one
+atomic Ledger write. A safe issue may be logged directly as resolved. A Human
+issue records one recommendation and impact, pauses only affected scope, and
+does not receive more investigation while unrelated work remains available.
+An `OPEN` issue also remains passive until it reaches the critical path.
+
+Durable Human decisions become proposed Canonical Truth and link back to the
+resolved issue. One-time authorization remains in the issue resolution. The
+dashboard defaults to active and Human-attention records; resolved history is
+available without creating delivery noise.
+
+Pass the queued events together so the updater validates and writes once:
+
+```text
+python3 scripts/update_ledger.py <product-root> --actor PM \
+  --issue-events-json '[
+    {"action":"LOG","id":"ISSUE-0012","kind":"DRIFT","summary":"Spacing token diverged","disposition":"AUTO_RESOLVED","resolution_action":"Restored the approved token","resolution_evidence":["visual test passed"]},
+    {"action":"LOG","id":"ISSUE-0013","kind":"RISK","summary":"Calorie target needs direction","disposition":"AWAITING_HUMAN","recommendation":"Skip calorie targets","impact":"Workout delivery continues"}
+  ]'
+```
+
+Use `action: RESOLVE` with `resolution_method`, `resolution_action`, and
+`resolution_evidence` to close an existing issue. `AWAITING_HUMAN` accepts only
+`HUMAN_APPROVED`; an `OPEN` issue accepts `AUTO_WITHIN_AUTHORITY` or
+`EXTERNAL_RESOLUTION`. The updater rejects the whole batch on any invalid event.
 
 ## Actor boundaries
 
@@ -51,8 +95,8 @@ operational authorization remains an issue with
 | --- | --- |
 | Human | Direction, Truth approval, consequential risk, redirect/pause/stop |
 | PM | Full Product Ledger management, proposals, chat approval recording, classification, assignment, verification, `DONE`/`REWORK` |
-| Prototype Engineer | Optional assigned parallel prototype execution, typed handoff, result/evidence, blocker, and linked discovered issues |
-| Full-Stack Engineer | Optional assigned parallel execution, typed handoff, result/evidence, blocker, and linked discovered issues |
+| Prototype Engineer | Optional assigned parallel prototype execution, typed handoff, result/evidence, blocker, and discovered issue reports for PM consumption |
+| Full-Stack Engineer | Optional assigned parallel execution, typed handoff, result/evidence, blocker, and discovered issue reports for PM consumption |
 | Dashboard | Read all; approve proposed Truth only after Human confirmation |
 | Ledger updater | Physical scoped writes only; no judgment or approval |
 

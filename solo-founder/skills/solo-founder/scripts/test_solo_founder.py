@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -125,7 +126,7 @@ class SoloFounderTests(unittest.TestCase):
     def test_dashboard_projects_current_solo_founder_data(self) -> None:
         for name in ("index.html", "styles.css", "demo-data.js", "app.js"):
             self.assertTrue((DASHBOARD_ROOT / name).is_file(), name)
-        self.assertEqual(4, RUNTIME_VERSION)
+        self.assertEqual(5, RUNTIME_VERSION)
 
         slice_path = self.base / "slices" / "SLICE-0001.md"
         template = (self.skill / "assets" / "fat-slice-template.md").read_text(
@@ -591,12 +592,147 @@ class SoloFounderTests(unittest.TestCase):
                 "owned_paths": [],
             }
         ]
+        ledger["issues"] = [
+            {
+                "id": "ISSUE-LEGACY",
+                "kind": "DRIFT",
+                "title": "Legacy issue awaiting direction",
+                "status": "OPEN",
+                "human_approval_required": True,
+                "description": "Only the affected behavior must wait",
+            }
+        ]
         self.assertTrue(upgrade_ledger(ledger))
         validate_ledger(ledger)
-        self.assertEqual(3, ledger["schema_version"])
+        self.assertEqual(4, ledger["schema_version"])
         self.assertEqual("FULL_STACK_ENGINEER", ledger["work"][0]["role"])
         self.assertEqual("LEGACY_ASSIGNMENT", ledger["work"][0]["delegation_reason"])
         self.assertEqual("IMPLEMENTATION", ledger["work"][0]["handoff_type"])
+        self.assertEqual("AWAITING_HUMAN", ledger["issues"][0]["status"])
+        self.assertTrue(ledger["issues"][0]["human_approval_required"])
+        self.assertIsNone(ledger["issues"][0]["resolution"])
+
+    def test_issue_exit_sweep_is_batched_non_blocking_and_atomic(self) -> None:
+        updater = self.skill / "scripts" / "update_ledger.py"
+        base = [sys.executable, str(updater), str(self.root), "--actor", "PM"]
+        subprocess.run(
+            base
+            + [
+                "--create-work",
+                "WORK-ISSUE-SCOPE",
+                "--title",
+                "Continue unaffected delivery",
+                "--classification",
+                "TRIVIAL",
+                "--status",
+                "ACTIVE",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        events = [
+            {
+                "action": "LOG",
+                "id": "ISSUE-AUTO",
+                "kind": "DRIFT",
+                "summary": "Spacing token diverged from approved design",
+                "disposition": "AUTO_RESOLVED",
+                "linked_work_ids": ["WORK-ISSUE-SCOPE"],
+                "resolution_action": "Restored the approved spacing token",
+                "resolution_evidence": ["visual:test:passed"],
+            },
+            {
+                "action": "LOG",
+                "id": "ISSUE-HUMAN",
+                "kind": "RISK",
+                "summary": "Calorie target requires a product decision",
+                "disposition": "AWAITING_HUMAN",
+                "recommendation": "Skip calorie targets until boundaries are approved",
+                "impact": "Workout delivery continues; only calorie behavior waits",
+                "linked_work_ids": ["WORK-ISSUE-SCOPE"],
+            },
+            {
+                "action": "LOG",
+                "id": "ISSUE-OPEN",
+                "kind": "EXTERNAL_DEPENDENCY",
+                "summary": "External review is not yet available",
+                "disposition": "OPEN",
+                "linked_work_ids": ["WORK-ISSUE-SCOPE"],
+            },
+        ]
+        subprocess.run(
+            base + ["--issue-events-json", json.dumps(events)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        ledger = read_yaml(self.base / "product-ledger.yaml")
+        validate_ledger(ledger)
+        self.assertEqual(4, ledger["schema_version"])
+        issues = {item["id"]: item for item in ledger["issues"]}
+        self.assertEqual("RESOLVED", issues["ISSUE-AUTO"]["status"])
+        self.assertEqual(
+            "AUTO_WITHIN_AUTHORITY",
+            issues["ISSUE-AUTO"]["resolution"]["method"],
+        )
+        self.assertEqual("AWAITING_HUMAN", issues["ISSUE-HUMAN"]["status"])
+        self.assertTrue(issues["ISSUE-HUMAN"]["human_approval_required"])
+        self.assertEqual("OPEN", issues["ISSUE-OPEN"]["status"])
+        self.assertIn("WORK-ISSUE-SCOPE", ledger["current"]["active_work_ids"])
+
+        invalid_batch = [
+            {
+                "action": "LOG",
+                "id": "ISSUE-MUST-NOT-PERSIST",
+                "kind": "DRIFT",
+                "summary": "This event precedes a failing event",
+                "disposition": "OPEN",
+            },
+            {
+                "action": "RESOLVE",
+                "id": "ISSUE-HUMAN",
+                "resolution_method": "AUTO_WITHIN_AUTHORITY",
+                "resolution_action": "Unsafe automatic decision",
+                "resolution_evidence": ["none"],
+            },
+        ]
+        failed = subprocess.run(
+            base + ["--issue-events-json", json.dumps(invalid_batch)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, failed.returncode)
+        unchanged = read_yaml(self.base / "product-ledger.yaml")
+        self.assertFalse(
+            any(item["id"] == "ISSUE-MUST-NOT-PERSIST" for item in unchanged["issues"])
+        )
+
+        human_resolution = [
+            {
+                "action": "RESOLVE",
+                "id": "ISSUE-HUMAN",
+                "resolution_method": "HUMAN_APPROVED",
+                "resolution_action": "Keep calorie targets out of the initial product",
+                "resolution_evidence": ["Human approval in chat"],
+                "linked_truth_ids": ["DOMAIN_DATA-001"],
+            }
+        ]
+        subprocess.run(
+            base + ["--issue-events-json", json.dumps(human_resolution)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        resolved = read_yaml(self.base / "product-ledger.yaml")
+        validate_ledger(resolved)
+        human_issue = next(
+            item for item in resolved["issues"] if item["id"] == "ISSUE-HUMAN"
+        )
+        self.assertEqual("RESOLVED", human_issue["status"])
+        self.assertFalse(human_issue["human_approval_required"])
+        self.assertEqual("HUMAN_APPROVED", human_issue["resolution"]["method"])
 
     def test_layer_order_is_stable(self) -> None:
         truth = read_yaml(self.base / "canonical-truth.yaml")

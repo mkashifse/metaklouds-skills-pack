@@ -1,6 +1,0 @@
-interface:
-  display_name: "Rapid Prototyping"
-  short_description: "Rapid manual-validation product prototyping"
-  default_prompt: "Use $rapid-prototyping to test these product decisions with a disposable prototype."
-policy:
-  allow_implicit_invocation: false

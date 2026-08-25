@@ -1,0 +1,39 @@
+schema_version: 1
+product:
+  id: "PRODUCT-0001"
+  title: ""
+updated_at: null
+updated_by: null
+current:
+  mode: "DISCOVERY"
+  layer: "BUSINESS_DIRECTION"
+  affected_layers: []
+  active_initiative_id: "INIT-0001"
+  active_work_ids: []
+  next_recommended_action:
+    title: "Clarify the business direction"
+    impact: "Establish the customer, problem, opportunity, and founder fit."
+    human_approval_required: false
+authority:
+  autonomous_actions:
+    - "Reversible work inside approved Truth and repository scope"
+  human_approval_required_for:
+    - "Canonical Truth"
+    - "Material scope or acceptance changes"
+    - "Destructive, security-sensitive, or irreversible actions"
+    - "Production release unless explicitly delegated"
+  stop_boundary: null
+initiatives:
+  -
+    id: "INIT-0001"
+    title: ""
+    status: "ACTIVE"
+    linked_truth_ids: []
+    active_slice_ids: []
+    active_prototype_path: null
+    started_at: null
+    paused_at: null
+    completed_at: null
+    outcome: null
+work: []
+issues: []

@@ -2,15 +2,10 @@
   "schema_version": 2,
   "name": "metaklouds-skills-pack",
   "default_profile": {
-    "name": "meta-pds",
-    "entrypoint": "meta-pds",
+    "name": "solo-founder",
+    "entrypoint": "solo-founder",
     "skills": [
-      "meta-pds",
-      "rapid-prototyping",
-      "slice-planning",
-      "slice-development",
-      "slice-qa",
-      "prototype",
+      "solo-founder",
       "vercel-react-best-practices",
       "frontend-design",
       "vercel-composition-patterns",
@@ -25,16 +20,11 @@
   },
   "skills": [
     {
-      "name": "meta-pds",
+      "name": "solo-founder",
       "kind": "bundled",
-      "path": "meta-pds/skills/meta-pds",
+      "path": "solo-founder/skills/solo-founder",
       "role": "flagship",
       "dependencies": [
-        "rapid-prototyping",
-        "slice-planning",
-        "slice-development",
-        "slice-qa",
-        "prototype",
         "vercel-react-best-practices",
         "frontend-design",
         "vercel-composition-patterns",
@@ -46,43 +36,6 @@
         "supabase",
         "supabase-postgres-best-practices"
       ],
-      "license": "MIT"
-    },
-    {
-      "name": "rapid-prototyping",
-      "kind": "bundled",
-      "path": "meta-pds/skills/rapid-prototyping",
-      "role": "internal-function",
-      "license": "MIT"
-    },
-    {
-      "name": "slice-planning",
-      "kind": "bundled",
-      "path": "meta-pds/skills/slice-planning",
-      "role": "internal-function",
-      "license": "MIT"
-    },
-    {
-      "name": "slice-development",
-      "kind": "bundled",
-      "path": "meta-pds/skills/slice-development",
-      "role": "internal-function",
-      "license": "MIT"
-    },
-    {
-      "name": "slice-qa",
-      "kind": "bundled",
-      "path": "meta-pds/skills/slice-qa",
-      "role": "internal-function",
-      "license": "MIT"
-    },
-    {
-      "name": "prototype",
-      "kind": "upstream",
-      "role": "support",
-      "repository": "https://github.com/mattpocock/skills.git",
-      "revision": "2ab958093e83e0ec752e6c1c5932da465bf23e0c",
-      "path": "skills/engineering/prototype",
       "license": "MIT"
     },
     {

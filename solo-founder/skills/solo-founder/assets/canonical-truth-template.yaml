@@ -1,0 +1,13 @@
+schema_version: 1
+initiative_id: "INIT-0001"
+truth:
+  BUSINESS_DIRECTION: []
+  PRODUCT_DIRECTION: []
+  PRODUCT_BEHAVIOR: []
+  EXPERIENCE: []
+  DOMAIN_DATA: []
+  SYSTEM_DESIGN: []
+  TECHNOLOGY: []
+  QUALITY: []
+  DELIVERY: []
+  OPERATIONS: []

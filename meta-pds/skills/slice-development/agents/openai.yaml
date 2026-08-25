@@ -1,6 +1,0 @@
-interface:
-  display_name: "Slice Development"
-  short_description: "Execute one fat slice through bounded work"
-  default_prompt: "Use $slice-development to mobilize and implement this approved slice."
-policy:
-  allow_implicit_invocation: false

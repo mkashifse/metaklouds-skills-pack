@@ -1,0 +1,7 @@
+interface:
+  display_name: "Solo Founder"
+  short_description: "Business-first AI Product Manager for founders"
+  brand_color: "#5B5BD6"
+  default_prompt: "Use $solo-founder to start or resume this product as my business-first AI Product Manager."
+policy:
+  allow_implicit_invocation: true

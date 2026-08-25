@@ -1,6 +1,0 @@
-interface:
-  display_name: "Slice QA"
-  short_description: "Independently verify one complete fat slice"
-  default_prompt: "Use $slice-qa to verify release readiness for this slice."
-policy:
-  allow_implicit_invocation: false

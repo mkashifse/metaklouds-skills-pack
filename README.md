@@ -1,142 +1,173 @@
-# Metaklouds Skills Pack
+# Solo Founder Skills Pack
 
-A human-centered product delivery system for Codex and Claude Code.
+Solo Founder is a business-first AI product operating system for a founder
+building without a conventional product-delivery team.
 
-`meta-pds` is the flagship and the Human's single point of contact. It turns an
-idea into locked product Truth, manually reviewed prototypes, approved fat
-slices, bounded implementation tasks, independent QA, release evidence, and
-outcome validation. The Product Manager is a token-efficient communication and
-instruction role. A PM Assistant performs research, canonical writing, task
-administration, and specialist coordination; the Human receives one concise
-status, the decisions that need judgment, and one recommended next action.
-
-An event-driven heartbeat reconstructs the Product Manager's role and delivery
-state before every Human message and after context compaction. It uses repository artifacts and
-runtime evidence instead of relying on chat memory. Meta PDS starts or reuses
-one local dashboard per project, checkpoints meaningful work with local commits,
-and keeps unfinished or approval-dependent work visible without inventing
-progress. Bundled examples are available only through an explicitly labelled
-demo view and are never copied into a user's project.
-
-Once a Human places a product under Meta PDS control, a small managed block in
-the project `AGENTS.md` reactivates the PM for untagged screenshots, prototype
-corrections, short follow-ups, fresh tasks, and post-compaction continuation.
-Every PM message begins with one visible repository-backed liveness line:
-`🟠 MetaPDS · Mode: <MODE> · Heartbeat: <STATUS> — If this line is missing,
-invoke $meta-pds.`
-
-The flagship supports five working modes—Explore, Decision Review, Prototype,
-Slice Shaping, and Delivery—so consequential choices can be captured without
-breaking a brainstorming flow. Locked Truth uses stable semantic keys,
-append-only revisions, upstream-to-downstream types, phase assignments,
-dependencies, and explicit contradiction links.
-
-The complete profile turns an idea into a validated initiative, plans it as fat
-end-to-end vertical slices, and implements each slice as one releasable unit:
+`solo-founder` is the single proprietary flagship skill and the Human's only
+product contact. Its persistent AI Product Manager guides the founder from
+business direction through product definition, a production-intent frontend
+prototype, approved Fat Slices, implementation, QA, release, and outcome
+validation.
 
 ```text
-meta-pds (the Human-facing flagship)
-  -> rapid-prototyping
-  -> slice-planning
-  -> slice-development
-  -> slice-qa
-  -> stack-specific implementation and testing support
+Founder
+  ↓
+Solo Founder Product Manager
+  ├── Performs TRIVIAL work directly
+  └── Delegates NON_TRIVIAL work directly to specialists
 ```
 
-Meta PDS owns change control and continuously projects authoritative decisions,
-slices, Scrum tasks, detected drift, repository branches, pull requests, and
-release evidence into its installed local dashboard. Earlier Metaklouds delivery
-workflows are retired and are not publicly discoverable or installed.
+There is no PM Assistant and no mandatory lead hierarchy.
 
-## Included skills
+## Why this architecture
 
-The full installer provides the sixteen-skill Meta PDS profile:
+The earlier Meta PDS flagship routed every action through several bundled
+skills and a PM Assistant. Solo Founder replaces that orchestration chain with:
+
+- one installed proprietary skill;
+- a fast, local context restore from two canonical YAML artifacts;
+- progressive references loaded only for the current stage;
+- direct specialist delegation only for bounded non-trivial work;
+- conditional upstream implementation skills;
+- an optional local dashboard rather than a per-message runtime dependency.
+
+## Product journey
+
+```text
+BUSINESS_DIRECTION
+→ PRODUCT_DIRECTION
+→ PRODUCT_BEHAVIOR
+→ EXPERIENCE and approved minimum design system
+→ production-intent frontend prototype
+→ proposed and approved prototype Truth
+→ proposed Fat Slice
+→ Human-approved Fat Slice
+→ Development Intake
+→ IMPLEMENTATION
+→ QA, release, and outcome validation
+```
+
+No development starts for an unapproved Fat Slice. Approval is per Slice, so
+later Slices may remain in Discovery while one approved ready Slice executes.
+
+## Modes, Layers, and work classification
+
+Solo Founder has two Human–PM interaction Modes:
+
+- `DISCOVERY`: research, clarify, compare, prototype, decide, and define;
+- `IMPLEMENTATION`: execute a sufficiently defined, Human-approved Fat Slice.
+
+The PM selects one current focus Layer from:
+
+```text
+BUSINESS_DIRECTION, PRODUCT_DIRECTION, PRODUCT_BEHAVIOR, EXPERIENCE,
+DOMAIN_DATA, SYSTEM_DESIGN, TECHNOLOGY, QUALITY, DELIVERY, OPERATIONS
+```
+
+The smallest executable unit is classified as:
+
+- `TRIVIAL`: PM performs it directly;
+- `NON_TRIVIAL`: PM gives the Human a short reason, delegates directly to the
+  appropriate specialist, then verifies the evidence.
+
+Specialist work follows:
+
+```text
+PM: READY → Specialist: ACTIVE → Specialist: VERIFYING → PM: DONE or REWORK
+```
+
+## Production-intent prototypes
+
+Prototypes are frontend foundations, not disposable demonstrations. For
+React/Next.js, the Prototype Engineer uses the frontend design and Vercel
+support skills to build production-quality pages, navigation, reusable
+components, UI states, accessibility, and responsive behavior.
+
+Local seed data lives behind a stable frontend service interface:
+
+```text
+Pages and components
+→ stable frontend interface
+→ local seed adapter now / backend API adapter later
+```
+
+Frontend implementation promotes the approved files, replaces the seed adapter,
+connects backend APIs and authentication, and performs production hardening. It
+does not silently redesign approved UI/UX.
+
+## Canonical product artifacts
+
+Each governed product uses:
+
+```text
+docs/solo-founder/
+├── canonical-truth.yaml
+├── product-ledger.yaml
+├── research/
+├── slices/
+└── reports/
+prototypes/
+```
+
+- **Canonical Truth** stores current `PROPOSED` and Human-`APPROVED` product
+  decisions grouped by Layer.
+- **Product Ledger** stores current Mode/Layer, initiatives, Work Packages,
+  issues, results, evidence, and lifecycle timestamps.
+- Git preserves artifact history; the files contain current state.
+
+The PM and assigned specialists have scoped logical write authority. A
+deterministic updater is the Product Ledger's sole physical writer.
+
+## Context persistence
+
+Initialization adds a managed block to the product's `AGENTS.md`. On each
+governed interaction, the PM restores its identity and compact context locally:
+
+```bash
+python3 ~/.codex/skills/solo-founder/scripts/restore_context.py /absolute/product/root
+```
+
+This read does not launch the dashboard, query GitHub, call the network, run a
+repository-wide validation, or delegate work.
+
+## Dashboard
+
+The optional local dashboard displays Canonical Truth and Product Ledger state:
+
+```bash
+python3 ~/.codex/skills/solo-founder/scripts/serve_dashboard.py /absolute/product/root --ensure
+```
+
+It binds to `127.0.0.1` and is read-only except for explicit Human-confirmed
+approval of one proposed Truth item. Concurrent changes reject the approval and
+require refresh.
+
+## Proprietary and upstream skills
+
+The complete profile installs 11 skills:
 
 | Skill | Ownership | Purpose |
 | --- | --- | --- |
-| `meta-pds` | Metaklouds | Coordinate the human-centered delivery suite and its per-project dashboard |
-| `rapid-prototyping` | Metaklouds | Build disposable or production-intent prototypes for manual Human review and controlled frontend promotion |
-| `slice-planning` | Metaklouds | Define implementation-ready fat slices |
-| `slice-development` | Metaklouds | Mobilize and execute bounded slice work packages |
-| `slice-qa` | Metaklouds | Independently verify release and outcome evidence |
-| `prototype` | Upstream | Keep exploratory prototypes fast, explicit, and disposable |
-| `vercel-react-best-practices` | Upstream | Guide React and Next.js implementation |
-| `frontend-design` | Upstream | Create distinctive, intentional production interfaces |
-| `vercel-composition-patterns` | Upstream | Structure scalable React components and reusable APIs |
-| `fastapi` | Upstream | Guide FastAPI and Pydantic implementation |
-| `nodejs-backend-patterns` | Upstream | Build production Node.js and TypeScript APIs |
-| `python-testing-patterns` | Upstream | Test Python APIs, async services, databases, and integrations with pytest |
-| `vitest` | Upstream | Test TypeScript and frontend units, components, mocks, and coverage |
-| `playwright-best-practices` | Upstream | Build reliable Playwright E2E, component, API, visual, and accessibility tests |
-| `supabase` | Upstream | Guide Supabase implementation and security |
-| `supabase-postgres-best-practices` | Upstream | Guide Postgres schemas, migrations, RLS, and performance |
+| `solo-founder` | Metaklouds | Business-first PM workflow, Truth, Ledger, prototyping, Fat Slices, dashboard, and gates |
+| `frontend-design` | Upstream | Production interface design |
+| `vercel-react-best-practices` | Upstream | React and Next.js implementation |
+| `vercel-composition-patterns` | Upstream | Reusable React composition |
+| `fastapi` | Upstream | FastAPI and Pydantic implementation |
+| `nodejs-backend-patterns` | Upstream | Node.js and TypeScript backends |
+| `supabase` | Upstream | Supabase implementation and security |
+| `supabase-postgres-best-practices` | Upstream | Postgres schema, migration, RLS, and performance |
+| `python-testing-patterns` | Upstream | Python testing |
+| `vitest` | Upstream | TypeScript and frontend testing |
+| `playwright-best-practices` | Upstream | Browser, E2E, visual, and accessibility testing |
 
-The flagship and its four functional skills are bundled in this repository.
-The eleven upstream support skills are downloaded at pinned revisions from
-their original repositories during installation. See
-[THIRD_PARTY.md](THIRD_PARTY.md) and
-[manifest.json](manifest.json).
+Support skills are loaded only for relevant bounded assignments. They never
+control Solo Founder Mode, Layers, Truth, Ledger, Slice approval, or Human
+authority. The disposable-oriented upstream `prototype` skill is intentionally
+not installed.
 
-## Delivery dashboard
+See [THIRD_PARTY.md](THIRD_PARTY.md) for pinned sources and license status.
 
-The dashboard is a read-only projection of the selected project's canonical
-artifacts and live repository evidence:
-
-| View | What it shows |
-| --- | --- |
-| **Truth** | Canonical and proposed decisions, revision history, phases, dependencies, contradictions, and affected artifacts |
-| **Slices** | Fat-slice status, outcomes, progress, dependencies, work packages, contracts, and tests |
-| **Drifts Detected** | Auto-resolved and approval-pending drift, confidence, recommendations, evidence, and paused versus continuing work |
-| **Branches** | Current and local branches, working-tree state, commit evidence, and GitHub pull-request status when available |
-| **Scrum Board** | Every actionable cross-phase instruction plus development work packages, filterable by phase, assignee, slice, priority, and delivery state |
-
-The dashboard server is owned by the installed `meta-pds` skill. It reuses a
-healthy runtime for the same project and returns both the live URL and, when
-useful, a separate demo URL. No dashboard application or sample data is written
-into the product repository.
-
-## Operating model
-
-- **Role-aware heartbeat:** before every response, Meta PDS restores the PM
-  identity, initiative, mode, tasks, decisions, drift, next action, and
-  communication-only boundary from durable evidence.
-- **Persistent PM reactivation:** an idempotent managed `AGENTS.md` block makes
-  governed product follow-ups route back through Meta PDS even when the Human
-  does not repeat the skill name.
-- **Visible liveness:** every PM response starts with the current mode and a
-  `LIVE`, `RECOVERED`, or `ATTENTION` heartbeat signal; a missing signal tells
-  the Human to invoke `$meta-pds` explicitly.
-- **Product Manager:** communicates with the Human, sets direction, prioritizes,
-  recommends, and instructs. It does not research, write, code, test, or edit
-  canonical artifacts.
-- **PM Assistant:** writes Meta PDS artifacts, performs research, logs every
-  actionable instruction, coordinates specialists, validates evidence, and
-  returns delta-only briefs to the Product Manager.
-- **Per-message routing:** Human instruction → Product Manager → PM Assistant →
-  assigned specialist → PM Assistant evidence update → compact PM response.
-
-- **New project:** Meta PDS explains that no canonical context exists, asks for
-  a short brief, records the authority envelope, and recommends the first
-  discovery action.
-- **Returning project:** it reads the current Truth, slices, Scrum tasks, drift,
-  branches, PRs, and evidence, then gives a compact recap and next action.
-- **Prototype reuse:** early exploration stays disposable. Once the frontend
-  stack is established, a production-intent prototype uses the applicable
-  frontend skills and emits a source-to-target promotion handoff. Frontend
-  workers promote approved files before generating replacements and must record
-  any evidence-backed regeneration exception.
-- **Human approval:** only affected dependency paths pause. Independent ready
-  work continues inside the approved authority envelope.
-- **Drift control:** safe, reversible, high-confidence drift may be resolved and
-  logged automatically. Ambiguous or consequential drift carries a recommendation
-  and waits for Human approval.
-- **Git control:** workers make bounded local checkpoints. Pushes, PR creation,
-  merges, releases, migrations, and other external actions require Product
-  Manager authorization; the PM Assistant executes them within recorded authority.
-- **Completion:** a component, task, or PR is not a completed slice. A slice
-  completes only after whole-slice QA, release evidence, and the release gate.
-
-## Install for Codex
+## Install
 
 ```bash
 git clone https://github.com/mkashifse/metaklouds-skills-pack.git
@@ -144,145 +175,69 @@ cd metaklouds-skills-pack
 ./scripts/install.sh codex
 ```
 
-Skills are installed into `${CODEX_HOME}/skills` when `CODEX_HOME` is set,
-otherwise into `~/.codex/skills`.
-
-Start a new Codex task after installation so the skill catalog refreshes.
-
-## Install for Claude Code
+Force a migration from an earlier pack:
 
 ```bash
-git clone https://github.com/mkashifse/metaklouds-skills-pack.git
-cd metaklouds-skills-pack
+./scripts/install.sh codex --force --only solo-founder
+```
+
+The installer backs up and retires installed `meta-pds`,
+`rapid-prototyping`, `slice-planning`, `slice-development`, and `slice-qa`
+directories when installing the complete Solo Founder profile.
+
+Start a new Codex task after installation, then invoke:
+
+```text
+Use $solo-founder to start or resume this product.
+```
+
+For Claude Code:
+
+```bash
 ./scripts/install.sh claude
 ```
 
-Skills are installed into `${CLAUDE_HOME}/skills` when `CLAUDE_HOME` is set,
-otherwise into `~/.claude/skills`.
+## Validate and test
 
-Restart Claude Code after installation so it discovers the new skills.
-
-## Update an existing installation
-
-Pull the latest pack and run the installer with `--force`:
+Validate the skill package:
 
 ```bash
-git pull
-./scripts/install.sh codex --force
-# or
-./scripts/install.sh claude --force
+python3 /path/to/skill-creator/scripts/quick_validate.py solo-founder/skills/solo-founder
 ```
 
-`--force` does not delete the current copy. It moves every replaced skill to a
-timestamped `metaklouds-skills-backups` directory outside the discoverable
-skills directory. A complete-profile install also moves any earlier legacy
-Metaklouds workflows there so they remain recoverable but inactive.
-
-Selecting the flagship always installs its complete dependency profile:
+Run the dependency-free behavior tests:
 
 ```bash
-./scripts/install.sh codex --force --only meta-pds
+python3 solo-founder/skills/solo-founder/scripts/test_solo_founder.py
 ```
 
-For an isolated or CI installation, provide an explicit destination:
+Test installation into an isolated destination:
 
 ```bash
-./scripts/install.sh codex --dest /absolute/path/to/skills
+./scripts/install.sh codex --dest /absolute/temp/skills --only solo-founder
 ```
 
-## Use the workflow
-
-Start with:
+## Repository structure
 
 ```text
-Use $meta-pds to start or resume this product initiative.
-```
-
-Meta PDS starts or reuses the project's local dashboard and returns its URL.
-It routes internally to its four functional skills and selects the installed
-implementation and testing skills from actual repository evidence. Users do
-not need to coordinate those skills directly.
-
-For a bounded autonomous delivery window, state the objective, completion
-condition, authority limits, and stopping time explicitly. The proposed Codex
-scheduled-supervision design uses a thread-attached heartbeat to wake Meta PDS,
-while canonical project artifacts remain the memory and authority source. The
-design includes a single-supervisor lease, overlap protection, daily resume
-briefs, approval-aware continuation, and terminal shutdown conditions. It is
-documented in
-[`scheduled-supervision-strategy.md`](meta-pds/skills/meta-pds/references/scheduled-supervision-strategy.md)
-and remains **proposed** until the delivery-state schema, validator, dashboard,
-and automation lifecycle implement it together.
-
-For visual inspection without initializing a project, open the explicitly
-labelled demo URL printed by the dashboard launcher. Demo delivery data is
-served by the same per-project runtime, never copied into the repository, and
-kept separate from the ordinary live URL and API response.
-
-The canonical product documents, prototype, frontend, and backend live in one
-product repository:
-
-```text
-product-root/
-├── docs/meta-pds/
-├── prototypes/
-├── frontend/
-└── backend/
-```
-
-Do not create nested repositories or submodules. Frontend and backend remain
-path-isolated and integrate through an explicit versioned contract. A slice is
-complete only after independent whole-slice QA and release evidence pass.
-
-Canonical delivery artifacts live under `docs/meta-pds/`:
-
-```text
-docs/meta-pds/
-├── initiative.md
-├── decision-log.yaml
-├── delivery-state.yaml
-├── drift-log.yaml              # created when drift is first detected
-├── delivery-events.jsonl       # optional append-only audit
-├── slices/
-├── execution/
-└── reports/
-```
-
-Truth and delivery state stay in these artifacts. The dashboard never becomes
-a second source of truth.
-
-## Installation contract
-
-Use `scripts/install.sh` to install the pack. Generic repository skill scanners
-can discover the five bundled Meta PDS skills, but they cannot fetch the eleven
-required upstream supports and therefore do not produce a complete profile.
-
-## Repository layout and validation
-
-```text
-metaklouds-skills-pack/
+.
 ├── README.md
 ├── THIRD_PARTY.md
 ├── manifest.json
 ├── scripts/install.sh
-└── meta-pds/
+├── solo-founder-planning.md
+└── solo-founder/
     ├── manifest.json
     ├── scripts/install.sh
-    └── skills/
-        ├── meta-pds/
-        ├── rapid-prototyping/
-        ├── slice-planning/
-        ├── slice-development/
-        └── slice-qa/
+    └── skills/solo-founder/
+        ├── SKILL.md
+        ├── agents/openai.yaml
+        ├── references/
+        ├── scripts/
+        └── assets/
 ```
-
-Before publishing a change, run the Meta PDS test suite and perform an isolated
-installer smoke test against a temporary destination. The installer must leave
-the user's existing skills recoverable, keep upstream dependencies pinned, and
-install the dashboard with the flagship skill.
 
 ## License
 
-Metaklouds-authored files are available under the [MIT License](LICENSE).
-Upstream skills retain their original ownership and licensing and are not
-vendored in this repository.
+Metaklouds-owned files are available under [LICENSE](LICENSE). Upstream skills
+remain governed by their respective licenses and repositories.

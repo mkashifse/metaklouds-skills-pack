@@ -105,6 +105,7 @@ solo-founder/
     └── dashboard/
         ├── index.html
         ├── styles.css
+        ├── demo-data.js
         └── app.js
 ```
 

@@ -92,11 +92,14 @@
 
   function renderHeader() {
     const truths = truthItems();
+    $("#environment-badge").hidden = !data.demo;
     $("#truth-count").textContent = truths.length;
     $("#slice-count").textContent = data.slices.length;
     $("#work-count").textContent = data.counts.active_work;
     $("#issue-count").textContent = data.counts.issues;
-    $("#projection-source").textContent = `Parsed ${dateTime(data.generated_at)} · ${data.ledger.product?.title || data.ledger.product?.id || "Product"}`;
+    $("#projection-source").textContent = data.demo
+      ? `Demo seed data · ${data.ledger.product?.title || "Sample product"}`
+      : `Parsed ${dateTime(data.generated_at)} · ${data.ledger.product?.title || data.ledger.product?.id || "Product"}`;
   }
 
   function renderHealth() {
@@ -134,7 +137,9 @@
         <div class="body-main">
           ${textSection("Canonical statement", item.statement)}
           ${listSection("Evidence", item.evidence, "No evidence recorded")}
-          ${item.status === "PROPOSED" ? `<button class="approval-button" type="button" data-approve-truth="${esc(item.id)}">${icon("check")}Approve as Canonical Truth</button>` : ""}
+          ${item.status === "PROPOSED" ? data.demo
+            ? `<button class="approval-button demo-only" type="button" disabled>${icon("check")}Demo — approval unavailable</button>`
+            : `<button class="approval-button" type="button" data-approve-truth="${esc(item.id)}">${icon("check")}Approve as Canonical Truth</button>` : ""}
         </div>
         ${propertyRows([
           ["Status", status(item.status)],
@@ -337,7 +342,11 @@
     const refresh = $("#refresh-button");
     refresh.classList.add("is-loading");
     try {
-      data = await api("/api/state");
+      if (location.protocol === "file:" && window.SOLO_FOUNDER_DEMO_STATE) {
+        data = JSON.parse(JSON.stringify(window.SOLO_FOUNDER_DEMO_STATE));
+      } else {
+        data = await api("/api/state");
+      }
       renderAll();
     } catch (error) {
       $("#data-health").hidden = false;

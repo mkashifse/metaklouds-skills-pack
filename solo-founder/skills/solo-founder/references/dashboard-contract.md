@@ -17,6 +17,11 @@ Read only repository-backed evidence:
 
 The dashboard never maintains a separate product projection file.
 
+When `index.html` is opened directly from the skill assets, show the bundled,
+clearly labelled demo dataset so the visual system can be reviewed without a
+product repository. Demo data is read-only and must never replace, merge into,
+or mask canonical data when the local dashboard server is running.
+
 ## Visible projection
 
 Keep one compact context strip visible above every view:

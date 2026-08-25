@@ -163,6 +163,7 @@ verify_solo_founder_bundle() {
     assets/fat-slice-template.md
     assets/dashboard/index.html
     assets/dashboard/styles.css
+    assets/dashboard/demo-data.js
     assets/dashboard/app.js
   )
   for required in "${required_files[@]}"; do

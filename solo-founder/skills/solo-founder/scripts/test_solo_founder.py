@@ -123,9 +123,9 @@ class SoloFounderTests(unittest.TestCase):
         validate_truth(read_yaml(path))
 
     def test_dashboard_projects_current_solo_founder_data(self) -> None:
-        for name in ("index.html", "styles.css", "app.js"):
+        for name in ("index.html", "styles.css", "demo-data.js", "app.js"):
             self.assertTrue((DASHBOARD_ROOT / name).is_file(), name)
-        self.assertEqual(2, RUNTIME_VERSION)
+        self.assertEqual(3, RUNTIME_VERSION)
 
         slice_path = self.base / "slices" / "SLICE-0001.md"
         template = (self.skill / "assets" / "fat-slice-template.md").read_text(

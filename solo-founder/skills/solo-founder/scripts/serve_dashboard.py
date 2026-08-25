@@ -37,9 +37,10 @@ STATIC_FILES = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
+    "/demo-data.js": ("demo-data.js", "text/javascript; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
-RUNTIME_VERSION = 2
+RUNTIME_VERSION = 3
 TERMINAL_WORK_STATUSES = {"DONE", "CANCELLED"}
 
 

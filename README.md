@@ -190,7 +190,8 @@ repository-wide validation, or delegate work.
 
 ## Dashboard
 
-The optional local dashboard displays Canonical Truth and Product Ledger state:
+The optional local dashboard reuses the compact Meta PDS dark cockpit design
+while projecting only current Solo Founder data:
 
 ```bash
 python3 ~/.codex/skills/solo-founder/scripts/serve_dashboard.py /absolute/product/root --ensure
@@ -198,7 +199,8 @@ python3 ~/.codex/skills/solo-founder/scripts/serve_dashboard.py /absolute/produc
 
 It binds to `127.0.0.1` and is read-only except for explicit Human-confirmed
 approval of one proposed Truth item. Concurrent changes reject the approval and
-require refresh.
+require refresh. Its four views are Truth, Slices, Work, and Issues; a compact
+context strip keeps Mode, Layer, initiative, and next action visible.
 
 ## Proprietary and upstream skills
 

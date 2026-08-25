@@ -224,7 +224,8 @@ reuse it only when requested or materially useful:
 python3 <installed-solo-founder>/scripts/serve_dashboard.py <product-root> --ensure
 ```
 
-It reads Canonical Truth and the Product Ledger. It is read-only except for an
+It reads Canonical Truth, the Product Ledger, and Fat Slice files into the
+compact Truth, Slices, Work, and Issues cockpit. It is read-only except for an
 explicit Human-confirmed `PROPOSED` → `APPROVED` Truth transition. Read
 [references/dashboard-contract.md](references/dashboard-contract.md) before
 dashboard work.

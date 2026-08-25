@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the local Solo Founder dashboard and Human Truth approvals."""
+"""Serve the Solo Founder cockpit from canonical repository artifacts."""
 
 from __future__ import annotations
 
@@ -14,44 +14,33 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from solo_founder_core import (
     LAYERS,
     ArtifactError,
     approve_truth,
+    parse_yaml,
     read_yaml,
     sha256_file,
     validate_ledger,
     validate_truth,
 )
 
-HTML = r"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Solo Founder</title>
-<style>
-:root{color-scheme:light dark;--bg:#f6f5fb;--panel:#fff;--text:#242334;--muted:#6e6a7d;--line:#dedbe9;--brand:#5b5bd6;--ok:#16855b;--pending:#a75b00}*{box-sizing:border-box}body{margin:0;font:15px/1.5 ui-sans-serif,system-ui;background:var(--bg);color:var(--text)}header{padding:28px max(24px,calc((100% - 1120px)/2));background:linear-gradient(120deg,#36368c,#6e55c7);color:#fff}header h1{margin:0 0 4px;font-size:28px}header p{margin:0;opacity:.82}.shell{max-width:1120px;margin:0 auto;padding:24px}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}.metric,.panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:14px}.metric{padding:16px}.metric b{display:block;font-size:20px}.metric span,.muted{color:var(--muted)}.panel{padding:20px;margin:16px 0}.panel h2{margin:0 0 14px}.layer{margin-top:22px}.layer h3{font-size:13px;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}.cards{display:grid;gap:10px}.card{padding:14px}.row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:700}.approved{background:#dff4ea;color:var(--ok)}.proposed{background:#fff0d5;color:var(--pending)}button{border:0;border-radius:9px;background:var(--brand);color:#fff;padding:9px 12px;font-weight:700;cursor:pointer}button:disabled{opacity:.5}.evidence{font-size:12px;color:var(--muted);margin-top:8px}.empty{color:var(--muted);padding:8px 0}.error{background:#ffe7e7;color:#8d1d1d;padding:12px;border-radius:10px}.work{display:grid;grid-template-columns:110px 1fr 130px;gap:10px;padding:10px 0;border-top:1px solid var(--line)}@media(max-width:640px){.work{grid-template-columns:1fr}.row{display:block}.row button{margin-top:10px}}
-@media(prefers-color-scheme:dark){:root{--bg:#171621;--panel:#222130;--text:#f2f0f8;--muted:#aaa5bb;--line:#3a374b}}
-</style>
-</head>
-<body>
-<header><h1>Solo Founder</h1><p>Canonical Truth and product delivery visibility</p></header>
-<main class="shell"><div id="app">Loading…</div></main>
-<script>
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function api(path,options){const r=await fetch(path,options);const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');return data}
-function render(data){const t=data.truth, l=data.ledger, current=l.current||{}, work=l.work||[];window.truthItems={};let html=`<section class="summary"><div class="metric"><span>Mode</span><b>${esc(current.mode)}</b></div><div class="metric"><span>Current Layer</span><b>${esc(current.layer)}</b></div><div class="metric"><span>Approved Truth</span><b>${data.counts.approved}</b></div><div class="metric"><span>Proposed Truth</span><b>${data.counts.proposed}</b></div></section>`;html+=`<section class="panel"><h2>Canonical Truth</h2>`;for(const layer of data.layers){const items=t.truth[layer]||[];html+=`<div class="layer"><h3>${esc(layer.replaceAll('_',' '))}</h3><div class="cards">`;if(!items.length)html+=`<div class="empty">No Truth recorded.</div>`;for(const item of items){window.truthItems[item.id]={...item,layer};const proposed=item.status==='PROPOSED';html+=`<article class="card"><div class="row"><div><span class="badge ${proposed?'proposed':'approved'}">${esc(item.status)}</span><h4>${esc(item.title)}</h4><div>${esc(item.statement)}</div><div class="evidence">Affected: ${esc((item.affected_layers||[]).join(', ')||'none')} · Evidence: ${esc((item.evidence||[]).join(', ')||'none')}</div></div>${proposed?`<button onclick="approve('${item.id}')">Approve Truth</button>`:''}</div></article>`}html+=`</div></div>`}html+=`</section><section class="panel"><h2>Active work</h2>`;const active=work.filter(x=>!['DONE','CANCELLED'].includes(x.status));if(!active.length)html+=`<div class="empty">No active work.</div>`;for(const item of active){const handoff=item.execution==='DELEGATED'?`${item.handoff_type||'HANDOFF'} · ${item.handoff_consumed_at?'consumed':item.handoff_submitted_at?'awaiting PM':'awaiting submission'}`:'PM direct';html+=`<div class="work"><b>${esc(item.status)}</b><span>${esc(item.title)}<br><small class="muted">${esc(item.id)} · ${esc(item.classification)} · ${esc(item.workstream)} · ${esc(item.execution)}</small></span><span>${esc(item.role||'LEGACY')}<br><small class="muted">${esc(item.owner)} · ${esc(handoff)}</small></span></div>`}html+=`</section>`;document.querySelector('#app').innerHTML=html;window.fileHash=data.file_hash}
-async function load(){try{render(await api('/api/state'))}catch(e){document.querySelector('#app').innerHTML=`<div class="error">${esc(e.message)}</div>`}}
-async function approve(id){const item=window.truthItems[id];if(!item)return;const message=`Approve this as Canonical Truth?\n\nLayer: ${item.layer}\nTruth: ${item.statement}\nReplaces: ${item.replaces||'none'}\nAffected Layers: ${(item.affected_layers||[]).join(', ')||'none'}`;if(!confirm(message))return;try{await api('/api/truth/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,file_hash:window.fileHash})});await load()}catch(e){alert(e.message);await load()}}
-load();
-</script>
-</body></html>"""
+DASHBOARD_ROOT = Path(__file__).resolve().parent.parent / "assets" / "dashboard"
+STATIC_FILES = {
+    "/": ("index.html", "text/html; charset=utf-8"),
+    "/index.html": ("index.html", "text/html; charset=utf-8"),
+    "/styles.css": ("styles.css", "text/css; charset=utf-8"),
+    "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+}
+RUNTIME_VERSION = 2
+TERMINAL_WORK_STATUSES = {"DONE", "CANCELLED"}
 
 
 def runtime_path(product_root: Path) -> Path:
@@ -69,33 +58,87 @@ def read_runtime(path: Path) -> dict[str, Any] | None:
 
 
 def healthy(runtime: dict[str, Any] | None, product_root: Path) -> bool:
-    if not runtime or runtime.get("product_root") != str(product_root):
+    if (
+        not runtime
+        or runtime.get("product_root") != str(product_root)
+        or runtime.get("version") != RUNTIME_VERSION
+    ):
         return False
     try:
         with urllib.request.urlopen(
             runtime["url"] + "/api/health", timeout=0.5
         ) as response:
-            return response.status == 200
-    except (OSError, KeyError, ValueError, urllib.error.URLError):
+            payload = json.loads(response.read())
+            return (
+                response.status == 200
+                and payload.get("product_root") == str(product_root)
+                and payload.get("version") == RUNTIME_VERSION
+            )
+    except (
+        OSError,
+        KeyError,
+        ValueError,
+        json.JSONDecodeError,
+        urllib.error.URLError,
+    ):
         return False
 
 
-def slice_summaries(base: Path) -> list[dict[str, str]]:
-    result: list[dict[str, str]] = []
-    for path in (
-        sorted((base / "slices").glob("*.md")) if (base / "slices").exists() else []
-    ):
-        text = path.read_text(encoding="utf-8")
-        title = re.search(r"^title:\s*[\"']?(.+?)[\"']?\s*$", text, re.MULTILINE)
-        status = re.search(r"^status:\s*([A-Z_]+)\s*$", text, re.MULTILINE)
-        result.append(
-            {
-                "file": path.name,
-                "title": title.group(1) if title else path.stem,
-                "status": status.group(1) if status else "UNKNOWN",
-            }
-        )
-    return result
+def markdown_section(body: str, heading: str) -> str:
+    match = re.search(
+        rf"^## {re.escape(heading)}\s*$\n(.*?)(?=^## |\Z)",
+        body,
+        re.MULTILINE | re.DOTALL,
+    )
+    if not match:
+        return ""
+    value = re.sub(r"\s+", " ", match.group(1)).strip()
+    return value.removeprefix("-").strip()
+
+
+def read_slice(path: Path) -> dict[str, Any]:
+    text = path.read_text(encoding="utf-8")
+    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", text, re.DOTALL)
+    if not match:
+        raise ArtifactError(f"Slice requires YAML frontmatter: {path}")
+    header = parse_yaml(match.group(1))
+    body = match.group(2)
+    slice_id = str(header.get("slice_id") or path.stem)
+    return {
+        "id": slice_id,
+        "initiative_id": header.get("initiative_id"),
+        "title": str(header.get("title") or slice_id),
+        "status": str(header.get("status") or "UNKNOWN"),
+        "priority": str(header.get("priority") or "UNSET"),
+        "order": header.get("order"),
+        "dependencies": header.get("dependencies") or [],
+        "capability_family": header.get("capability_family"),
+        "prototype_checkpoint": header.get("prototype_checkpoint"),
+        "promotion_map": header.get("promotion_map"),
+        "approved_at": header.get("approved_at"),
+        "approved_by": header.get("approved_by"),
+        "outcome": markdown_section(body, "Capability outcome"),
+        "story_count": len(re.findall(r"^### US-[A-Za-z0-9-]+ — ", body, re.MULTILINE)),
+        "test_count": len(
+            re.findall(r"^### TEST-[A-Za-z0-9-]+ — ", body, re.MULTILINE)
+        ),
+        "file": path.name,
+    }
+
+
+def slice_summaries(base: Path) -> tuple[list[dict[str, Any]], list[str]]:
+    result: list[dict[str, Any]] = []
+    diagnostics: list[str] = []
+    paths = sorted((base / "slices").glob("*.md")) if (base / "slices").exists() else []
+    for path in paths:
+        try:
+            result.append(read_slice(path))
+        except (ArtifactError, OSError) as error:
+            diagnostics.append(str(error))
+    result.sort(
+        key=lambda item: (item.get("order") is None, item.get("order") or 0, item["id"])
+    )
+    return result, diagnostics
 
 
 def state(product_root: Path) -> dict[str, Any]:
@@ -105,23 +148,36 @@ def state(product_root: Path) -> dict[str, Any]:
     ledger = read_yaml(base / "product-ledger.yaml")
     validate_truth(truth)
     validate_ledger(ledger)
-    approved = sum(
-        item["status"] == "APPROVED"
-        for layer in LAYERS
-        for item in truth["truth"][layer]
-    )
-    proposed = sum(
-        item["status"] == "PROPOSED"
-        for layer in LAYERS
-        for item in truth["truth"][layer]
-    )
+    slices, diagnostics = slice_summaries(base)
+    truth_items = [item for layer in LAYERS for item in truth["truth"][layer]]
+    work = ledger["work"]
+    issues = ledger["issues"]
+    active_work = [
+        item for item in work if item["status"] not in TERMINAL_WORK_STATUSES
+    ]
     return {
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "layers": LAYERS,
         "truth": truth,
         "ledger": ledger,
-        "slices": slice_summaries(base),
+        "slices": slices,
+        "diagnostics": diagnostics,
         "file_hash": sha256_file(truth_path),
-        "counts": {"approved": approved, "proposed": proposed},
+        "counts": {
+            "approved": sum(item["status"] == "APPROVED" for item in truth_items),
+            "proposed": sum(item["status"] == "PROPOSED" for item in truth_items),
+            "slices": len(slices),
+            "work": len(work),
+            "active_work": len(active_work),
+            "blocked_work": sum(item["status"] == "BLOCKED" for item in work),
+            "direct_work": sum(
+                item.get("execution") == "DIRECT" for item in active_work
+            ),
+            "delegated_work": sum(
+                item.get("execution") == "DELEGATED" for item in active_work
+            ),
+            "issues": len(issues),
+        },
     }
 
 
@@ -132,34 +188,49 @@ class Handler(BaseHTTPRequestHandler):
         payload = json.dumps(value, ensure_ascii=False).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def send_static(self, name: str, content_type: str) -> None:
+        path = DASHBOARD_ROOT / name
+        payload = path.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Cache-Control", "no-cache")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
 
     def do_GET(self) -> None:
+        request_path = urlparse(self.path).path
         try:
-            if self.path == "/api/health":
-                self.send_json({"ok": True})
-            elif self.path == "/api/state":
+            if request_path == "/api/health":
+                self.send_json(
+                    {
+                        "ok": True,
+                        "product_root": str(self.product_root),
+                        "version": RUNTIME_VERSION,
+                    }
+                )
+            elif request_path == "/api/state":
                 self.send_json(state(self.product_root))
-            elif self.path in {"/", "/index.html"}:
-                payload = HTML.encode()
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(payload)))
-                self.end_headers()
-                self.wfile.write(payload)
+            elif request_path in STATIC_FILES:
+                self.send_static(*STATIC_FILES[request_path])
             else:
                 self.send_json({"error": "Not found"}, 404)
         except (ArtifactError, OSError) as error:
             self.send_json({"error": str(error)}, 422)
 
     def do_POST(self) -> None:
-        if self.path != "/api/truth/approve":
+        if urlparse(self.path).path != "/api/truth/approve":
             self.send_json({"error": "Not found"}, 404)
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
+            if length > 65536:
+                raise ValueError("Request body is too large")
             body = json.loads(self.rfile.read(length) or b"{}")
             item = approve_truth(
                 self.product_root,
@@ -180,7 +251,14 @@ def serve(product_root: Path) -> int:
     url = f"http://127.0.0.1:{server.server_port}"
     path = runtime_path(product_root)
     path.write_text(
-        json.dumps({"pid": os.getpid(), "url": url, "product_root": str(product_root)}),
+        json.dumps(
+            {
+                "pid": os.getpid(),
+                "url": url,
+                "product_root": str(product_root),
+                "version": RUNTIME_VERSION,
+            }
+        ),
         encoding="utf-8",
     )
     print(url, flush=True)
@@ -199,6 +277,11 @@ def ensure(product_root: Path) -> int:
     if healthy(existing, product_root):
         print(existing["url"])
         return 0
+    if existing and existing.get("pid"):
+        try:
+            os.kill(int(existing["pid"]), 15)
+        except (ProcessLookupError, ValueError):
+            pass
     if path.exists():
         path.unlink()
     subprocess.Popen(
@@ -225,7 +308,7 @@ def stop(product_root: Path) -> int:
     if runtime and runtime.get("pid"):
         try:
             os.kill(int(runtime["pid"]), 15)
-        except ProcessLookupError:
+        except (ProcessLookupError, ValueError):
             pass
     if path.exists():
         path.unlink()

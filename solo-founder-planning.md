@@ -101,7 +101,11 @@ solo-founder/
     ├── product-ledger-template.yaml
     ├── research-template.md
     ├── handoff-template.md
-    └── fat-slice-template.md
+    ├── fat-slice-template.md
+    └── dashboard/
+        ├── index.html
+        ├── styles.css
+        └── app.js
 ```
 
 Third-party support skills are loaded only when bounded PM or engineer work
@@ -622,8 +626,10 @@ Mode is interaction state and must not be stored as Canonical Truth. Keep the
 current Mode and current focus Layer in delivery state:
 
 ```yaml
-current_mode: DISCOVERY
-current_layer: BUSINESS_DIRECTION
+current:
+  mode: DISCOVERY
+  layer: BUSINESS_DIRECTION
+  affected_layers: []
 ```
 
 ### Dashboard Truth view
@@ -631,7 +637,12 @@ current_layer: BUSINESS_DIRECTION
 The dashboard must:
 
 - Render Truth from `canonical-truth.yaml`.
-- Group Truth by the ten finalized Layers.
+- Preserve the compact Meta PDS dark cockpit visual language: single-row
+  header, orange active accents, horizontal tabs, sticky toolbars, quiet
+  document rows, hairline separators, semantic status colors, and progressive
+  disclosure.
+- Label every Truth with its Layer in one chronological list; do not render ten
+  empty Layer sections.
 - Provide `APPROVED` and `PROPOSED` filters.
 - Visually distinguish authoritative Truth from pending proposals.
 - Highlight proposals awaiting Human approval.
@@ -639,6 +650,24 @@ The dashboard must:
 - Warn about invalid statuses, groups, IDs, or Layer references.
 - Use only `APPROVED` Truth when evaluating implementation and delivery
   readiness.
+
+The dashboard has exactly four tabs matching current canonical sources:
+
+1. `Truth`: proposed and approved Canonical Truth with evidence and approval.
+2. `Slices`: Fat Slice identity, outcome, priority, dependencies, Story/Test
+   counts, prototype checkpoint, promotion map, and linked Work Packages.
+3. `Work`: Product Ledger Work Packages, defaulting to active work, including
+   direct/delegated execution, owner, status, acceptance, result, evidence,
+   blocker, and typed handoff state.
+4. `Issues`: Drift, blockers, risks, and external dependencies, including Human
+   attention requirements.
+
+One compact strip above all views displays current Mode, Layer and affected
+Layers, active initiative, and next recommended action. Do not restore obsolete
+Meta PDS Branches, Pull Requests, Scrum, generic Activity, or separate
+Prototype views because Solo Founder does not keep their former canonical
+sources. Missing data produces one honest empty state rather than invented or
+duplicated projection data.
 
 ### Human approval channels
 

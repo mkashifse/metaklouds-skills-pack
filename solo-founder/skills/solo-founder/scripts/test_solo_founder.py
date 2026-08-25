@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from serve_dashboard import DASHBOARD_ROOT, RUNTIME_VERSION, state
 from solo_founder_core import (
     LAYERS,
     approve_truth,
@@ -120,6 +121,71 @@ class SoloFounderTests(unittest.TestCase):
         approved = approve_truth(self.root, "BUSINESS_DIRECTION-001", sha256_file(path))
         self.assertEqual("APPROVED", approved["status"])
         validate_truth(read_yaml(path))
+
+    def test_dashboard_projects_current_solo_founder_data(self) -> None:
+        for name in ("index.html", "styles.css", "app.js"):
+            self.assertTrue((DASHBOARD_ROOT / name).is_file(), name)
+        self.assertEqual(2, RUNTIME_VERSION)
+
+        slice_path = self.base / "slices" / "SLICE-0001.md"
+        template = (self.skill / "assets" / "fat-slice-template.md").read_text(
+            encoding="utf-8"
+        )
+        slice_path.write_text(
+            template.replace('title: ""', 'title: "Member workout plan"')
+            .replace(
+                "## Capability outcome\n",
+                "## Capability outcome\n\nMember completes a guided workout.\n",
+            )
+            .replace(
+                "## Test expectations\n",
+                "## Test expectations\n\n### TEST-0002 — Workout completion\n",
+            ),
+            encoding="utf-8",
+        )
+
+        updater = self.skill / "scripts" / "update_ledger.py"
+        subprocess.run(
+            [
+                sys.executable,
+                str(updater),
+                str(self.root),
+                "--actor",
+                "PM",
+                "--create-work",
+                "WORK-DASHBOARD",
+                "--title",
+                "Verify workout flow",
+                "--classification",
+                "TRIVIAL",
+                "--activity",
+                "TESTING",
+                "--status",
+                "ACTIVE",
+                "--acceptance",
+                "Workout evidence reviewed",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        projection = state(self.root)
+        self.assertEqual(1, projection["counts"]["slices"])
+        self.assertEqual(1, projection["counts"]["active_work"])
+        self.assertEqual(1, projection["counts"]["direct_work"])
+        self.assertEqual("SLICE-0001", projection["slices"][0]["id"])
+        self.assertEqual("Member workout plan", projection["slices"][0]["title"])
+        self.assertEqual(1, projection["slices"][0]["story_count"])
+        self.assertEqual(2, projection["slices"][0]["test_count"])
+        self.assertEqual([], projection["diagnostics"])
+
+        (self.base / "slices" / "BROKEN.md").write_text(
+            "# Missing frontmatter\n", encoding="utf-8"
+        )
+        degraded = state(self.root)
+        self.assertEqual(1, degraded["counts"]["slices"])
+        self.assertEqual(1, len(degraded["diagnostics"]))
 
     def test_engineer_cannot_mark_done(self) -> None:
         updater = self.skill / "scripts" / "update_ledger.py"

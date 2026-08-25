@@ -1,7 +1,7 @@
 {
   "name": "solo-founder",
   "displayName": "Solo Founder",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "entrySkill": "solo-founder",
   "skills": ["solo-founder"],
   "supportSkills": [
@@ -18,7 +18,9 @@
   ],
   "dashboard": {
     "entrypoint": "skills/solo-founder/scripts/serve_dashboard.py",
+    "assets": "skills/solo-founder/assets/dashboard",
     "lifecycle": "optional-ensure-one-local-runtime-per-project",
+    "views": ["TRUTH", "SLICES", "WORK", "ISSUES"],
     "writeBoundary": "human-confirmed-truth-approval-only"
   },
   "operatingModel": {

@@ -161,6 +161,9 @@ verify_solo_founder_bundle() {
     assets/handoff-template.md
     assets/research-template.md
     assets/fat-slice-template.md
+    assets/dashboard/index.html
+    assets/dashboard/styles.css
+    assets/dashboard/app.js
   )
   for required in "${required_files[@]}"; do
     [[ -f "$skill_directory/$required" ]] || { echo "Error: Solo Founder bundled file is missing: $required" >&2; exit 1; }

@@ -15,6 +15,9 @@
   let workFilter = "active";
   let issueFilter = "open";
   let toastTimer = null;
+  let modalSliceId = null;
+  let modalTab = "overview";
+  let modalReturnFocus = null;
 
   const terminalWork = new Set(["DONE", "CANCELLED"]);
   const completeStatuses = new Set(["APPROVED", "DONE", "RELEASED", "OUTCOME_VALIDATED", "PASSED", "CLOSED", "RESOLVED"]);
@@ -174,8 +177,8 @@
     return `<details class="document-row">
       <summary>
         <span class="entity-icon">${icon("layers")}</span>
-        <span class="row-copy"><span class="row-meta"><i class="state-dot ${tone(item.status)}"></i><span>${esc(item.id)} · ${esc(item.priority)} priority · ${esc(item.capability_family || "Capability")}</span></span><h2>${esc(item.title)}</h2><p>${esc(item.outcome || "Capability outcome is not recorded.")}</p></span>
-        <span class="row-side"><span>${esc(item.story_count)} stories · ${esc(linkedWork.length)} work</span>${status(item.status)}</span>
+        <span class="row-copy"><span class="row-meta"><i class="state-dot ${tone(item.status)}"></i><span>${esc(item.id)} · ${esc(item.priority)} priority · ${esc(item.capability_family || "Capability")}</span></span><h2><button class="slice-title-button" type="button" data-open-slice="${esc(item.id)}">${esc(item.title)}</button></h2><p>${esc(item.outcome || "Capability outcome is not recorded.")}</p></span>
+        <span class="row-side"><span>${esc(item.story_count)} stories · ${esc(linkedWork.length)} work</span>${status(item.status)}<button class="row-detail-button" type="button" data-open-slice="${esc(item.id)}">Details</button></span>
         <span class="chevron">${icon("chevron")}</span>
       </summary>
       <div class="row-body">
@@ -205,6 +208,119 @@
     $("#slice-filters").innerHTML = filterButtons([["all", "All", all.length], ["open", "Open", open.length], ["done", "Complete", done.length]], sliceFilter);
     $("#slice-summary").innerHTML = `<span>Stories<strong>${esc(all.reduce((sum, item) => sum + item.story_count, 0))}</strong></span><span>Tests<strong>${esc(all.reduce((sum, item) => sum + item.test_count, 0))}</strong></span>`;
     $("#slice-list").innerHTML = shown.length ? shown.map(sliceRow).join("") : emptyState("No matching Slices", all.length ? "Change the filter to see other Slices." : "Human-approved Fat Slices will appear here when shaped.");
+  }
+
+  function relatedWork(sliceId) {
+    return (data.ledger.work || []).filter((work) => values(work.linked_slice_ids).includes(sliceId));
+  }
+
+  function modalProperties(slice) {
+    return `<aside class="slice-detail-properties">
+      <section><h3>Properties</h3>
+        <div class="property-row"><span>Status</span><strong>${status(slice.status)}</strong></div>
+        <div class="property-row"><span>Priority</span><strong>${esc(slice.priority)}</strong></div>
+        <div class="property-row"><span>Stories</span><strong>${esc((slice.stories || []).length)}</strong></div>
+        <div class="property-row"><span>Test cases</span><strong>${esc((slice.test_cases || []).length)}</strong></div>
+        <div class="property-row"><span>Work Packages</span><strong>${esc(relatedWork(slice.id).length)}</strong></div>
+      </section>
+      <section><h3>Promotion</h3>
+        <div class="property-row"><span>Prototype</span><strong>${esc(slice.prototype_checkpoint || "None")}</strong></div>
+        <div class="property-row"><span>Frontend map</span><strong>${esc(slice.promotion_map || "None")}</strong></div>
+      </section>
+      <section><h3>Source</h3><code>${esc(`docs/solo-founder/slices/${slice.file}`)}</code></section>
+    </aside>`;
+  }
+
+  function storyDetail(story, slice) {
+    const criteria = values(story.acceptance_criteria);
+    return `<details class="detail-accordion">
+      <summary>
+        <i class="state-dot ${tone(slice.status)}"></i>
+        <span class="detail-copy"><small>${esc(story.id)}</small><strong>${esc(story.title)}</strong></span>
+        <span class="detail-count">${esc(criteria.length)} acceptance ${criteria.length === 1 ? "criterion" : "criteria"}</span>
+        <span class="detail-chevron">${icon("chevron")}</span>
+      </summary>
+      <div class="detail-body">
+        <p>${esc(story.description || "Story narrative is not recorded in the Slice artifact.")}</p>
+        <h4>Acceptance criteria</h4>
+        <ul>${criteria.length ? criteria.map((criterion) => `<li>${esc(criterion)}</li>`).join("") : "<li>No acceptance criteria recorded.</li>"}</ul>
+        <div class="detail-links">${values(story.test_ids).length ? values(story.test_ids).map((id) => `<code>${esc(id)}</code>`).join("") : "No linked Test IDs"}</div>
+      </div>
+    </details>`;
+  }
+
+  function workDetail(work) {
+    return `<details class="detail-accordion">
+      <summary>
+        <i class="state-dot ${tone(work.status)}"></i>
+        <span class="detail-copy"><small>${esc(work.id)} · ${esc(pretty(work.execution))} · ${esc(pretty(work.role))}</small><strong>${esc(work.title)}</strong></span>
+        <span class="detail-count">${esc(work.owner)} · ${esc(pretty(work.status))}</span>
+        <span class="detail-chevron">${icon("chevron")}</span>
+      </summary>
+      <div class="detail-body">
+        <h4>Expected outcome</h4><p>${esc(work.expected_outcome || "Not recorded")}</p>
+        <h4>Acceptance criteria</h4><ul>${values(work.acceptance_criteria).length ? values(work.acceptance_criteria).map((criterion) => `<li>${esc(criterion)}</li>`).join("") : "<li>Not recorded.</li>"}</ul>
+        ${work.result ? `<h4>Result</h4><p>${esc(work.result)}</p>` : ""}
+        ${work.blocker ? `<h4>Blocker</h4><p>${esc(work.blocker)}</p>` : ""}
+        <div class="detail-links">${values(work.evidence).length ? values(work.evidence).map((entry) => `<code>${esc(entry)}</code>`).join("") : "No evidence recorded"}</div>
+      </div>
+    </details>`;
+  }
+
+  function testDetail(test, slice) {
+    return `<details class="detail-accordion">
+      <summary>
+        <i class="state-dot ${tone(test.status || slice.status)}"></i>
+        <span class="detail-copy"><small>${esc(test.id)} · ${esc(pretty(test.type))}</small><strong>${esc(test.title)}</strong></span>
+        <span class="detail-count">${esc(values(test.supports).length)} linked ${values(test.supports).length === 1 ? "story" : "stories"}</span>
+        <span class="detail-chevron">${icon("chevron")}</span>
+      </summary>
+      <div class="detail-body">
+        <h4>Expected evidence</h4><p>${esc(test.expected_evidence || "Expected evidence is not recorded in the Slice artifact.")}</p>
+        <h4>Supports stories</h4>
+        <div class="detail-links">${values(test.supports).length ? values(test.supports).map((id) => `<code>${esc(id)}</code>`).join("") : "No linked Story IDs"}</div>
+      </div>
+    </details>`;
+  }
+
+  function renderModal() {
+    const slice = data.slices.find((item) => item.id === modalSliceId);
+    if (!slice) return;
+    const stories = slice.stories || [];
+    const tests = slice.test_cases || [];
+    const work = relatedWork(slice.id);
+    const tabs = [["overview", "Overview", null], ["stories", "User Stories", stories.length], ["work", "Work Packages", work.length], ["tests", "Test Cases", tests.length]];
+    $("#modal-id").textContent = slice.id;
+    $("#modal-title").textContent = slice.title;
+    $("#modal-subtitle").textContent = `${slice.priority} priority · ${pretty(slice.status)} · ${slice.capability_family || "Capability"}`;
+    $("#modal-tabs").innerHTML = tabs.map(([id, label, count]) => `<button class="modal-tab ${modalTab === id ? "is-active" : ""}" type="button" role="tab" data-modal-tab="${id}" aria-selected="${modalTab === id}">${label}${count == null ? "" : `<span>${count}</span>`}</button>`).join("");
+    const panes = {
+      overview: `<section class="slice-detail-section"><header><h2>Slice overview</h2><span>Canonical Fat Slice</span></header><div class="slice-overview-copy"><h3>Capability outcome</h3><p>${esc(slice.outcome || "Not recorded")}</p><h3>Dependencies</h3>${values(slice.dependencies).length ? `<ul>${values(slice.dependencies).map((dependency) => `<li>${esc(dependency)}</li>`).join("")}</ul>` : "<p>None</p>"}</div></section>`,
+      stories: `<section class="slice-detail-section"><header><h2>User stories and acceptance</h2><span>Click a story to expand</span></header><div class="detail-accordion-list">${stories.length ? stories.map((story) => storyDetail(story, slice)).join("") : '<div class="detail-empty">No User Stories are defined in this Slice.</div>'}</div></section>`,
+      work: `<section class="slice-detail-section"><header><h2>Related Work Packages</h2><span>PM direct and delegated work</span></header><div class="detail-accordion-list">${work.length ? work.map(workDetail).join("") : '<div class="detail-empty">No Work Packages are linked to this Slice.</div>'}</div></section>`,
+      tests: `<section class="slice-detail-section"><header><h2>Test cases</h2><span>Story traceability</span></header><div class="detail-accordion-list">${tests.length ? tests.map((test) => testDetail(test, slice)).join("") : '<div class="detail-empty">No Test Cases are defined in this Slice.</div>'}</div></section>`,
+    };
+    $("#modal-content").innerHTML = `<div class="slice-detail-layout"><div class="slice-detail-main">${panes[modalTab] || panes.overview}</div>${modalProperties(slice)}</div>`;
+    $("#modal-content").scrollTop = 0;
+  }
+
+  function openModal(sliceId) {
+    modalSliceId = sliceId;
+    modalTab = "overview";
+    modalReturnFocus = document.activeElement;
+    renderModal();
+    $("#slice-modal").classList.add("is-open");
+    $("#slice-modal").setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    $("#modal-close").focus();
+  }
+
+  function closeModal() {
+    $("#slice-modal").classList.remove("is-open");
+    $("#slice-modal").setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    modalSliceId = null;
+    if (modalReturnFocus) modalReturnFocus.focus();
   }
 
   function workMatches(item) {
@@ -379,9 +495,18 @@
   $("#refresh-button").addEventListener("click", load);
   $("#truth-filters").addEventListener("click", (event) => { const button = event.target.closest("[data-filter]"); if (button) { truthFilter = button.dataset.filter; renderTruth(); } });
   $("#slice-filters").addEventListener("click", (event) => { const button = event.target.closest("[data-filter]"); if (button) { sliceFilter = button.dataset.filter; renderSlices(); } });
+  $("#slice-list").addEventListener("click", (event) => { const button = event.target.closest("[data-open-slice]"); if (button) { event.preventDefault(); event.stopPropagation(); openModal(button.dataset.openSlice); } });
   $("#work-filters").addEventListener("click", (event) => { const button = event.target.closest("[data-filter]"); if (button) { workFilter = button.dataset.filter; renderWork(); } });
   $("#issue-filters").addEventListener("click", (event) => { const button = event.target.closest("[data-filter]"); if (button) { issueFilter = button.dataset.filter; renderIssues(); } });
   $("#truth-list").addEventListener("click", (event) => { const button = event.target.closest("[data-approve-truth]"); if (button) approveTruth(button.dataset.approveTruth, button); });
+  $("#modal-close").addEventListener("click", closeModal);
+  $("#modal-root").addEventListener("click", closeModal);
+  $("#slice-modal").addEventListener("click", (event) => {
+    if (event.target === $("#slice-modal")) { closeModal(); return; }
+    const tab = event.target.closest("[data-modal-tab]");
+    if (tab) { modalTab = tab.dataset.modalTab; renderModal(); }
+  });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && $("#slice-modal").classList.contains("is-open")) closeModal(); });
   window.addEventListener("hashchange", () => selectView(location.hash.slice(1), false));
 
   currentView = location.hash.slice(1) || "truth";

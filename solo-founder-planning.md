@@ -656,7 +656,9 @@ The dashboard has exactly four tabs matching current canonical sources:
 
 1. `Truth`: proposed and approved Canonical Truth with evidence and approval.
 2. `Slices`: Fat Slice identity, outcome, priority, dependencies, Story/Test
-   counts, prototype checkpoint, promotion map, and linked Work Packages.
+   counts, prototype checkpoint, promotion map, and linked Work Packages. The
+   Slice title opens a large detail modal with Overview, full User Stories and
+   acceptance criteria, related Work Packages, and traceable Test Cases.
 3. `Work`: Product Ledger Work Packages, defaulting to active work, including
    direct/delegated execution, owner, status, acceptance, result, evidence,
    blocker, and typed handoff state.

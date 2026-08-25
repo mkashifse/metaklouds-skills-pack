@@ -200,7 +200,9 @@ python3 ~/.codex/skills/solo-founder/scripts/serve_dashboard.py /absolute/produc
 It binds to `127.0.0.1` and is read-only except for explicit Human-confirmed
 approval of one proposed Truth item. Concurrent changes reject the approval and
 require refresh. Its four views are Truth, Slices, Work, and Issues; a compact
-context strip keeps Mode, Layer, initiative, and next action visible.
+context strip keeps Mode, Layer, initiative, and next action visible. Selecting
+a Slice opens its full User Stories, acceptance, Test Cases, and related Work
+Packages in the restored Meta PDS detail modal.
 Opening the bundled `index.html` directly shows a labelled, read-only gym and
 diet product demo; the managed server always projects repository artifacts.
 

@@ -125,7 +125,7 @@ class SoloFounderTests(unittest.TestCase):
     def test_dashboard_projects_current_solo_founder_data(self) -> None:
         for name in ("index.html", "styles.css", "demo-data.js", "app.js"):
             self.assertTrue((DASHBOARD_ROOT / name).is_file(), name)
-        self.assertEqual(3, RUNTIME_VERSION)
+        self.assertEqual(4, RUNTIME_VERSION)
 
         slice_path = self.base / "slices" / "SLICE-0001.md"
         template = (self.skill / "assets" / "fat-slice-template.md").read_text(
@@ -174,10 +174,17 @@ class SoloFounderTests(unittest.TestCase):
         self.assertEqual(1, projection["counts"]["slices"])
         self.assertEqual(1, projection["counts"]["active_work"])
         self.assertEqual(1, projection["counts"]["direct_work"])
-        self.assertEqual("SLICE-0001", projection["slices"][0]["id"])
-        self.assertEqual("Member workout plan", projection["slices"][0]["title"])
-        self.assertEqual(1, projection["slices"][0]["story_count"])
-        self.assertEqual(2, projection["slices"][0]["test_count"])
+        slice_projection = projection["slices"][0]
+        self.assertEqual("SLICE-0001", slice_projection["id"])
+        self.assertEqual("Member workout plan", slice_projection["title"])
+        self.assertEqual(1, slice_projection["story_count"])
+        self.assertEqual(2, slice_projection["test_count"])
+        self.assertEqual("US-0001", slice_projection["stories"][0]["id"])
+        self.assertEqual(["TEST-0001"], slice_projection["stories"][0]["test_ids"])
+        test_projection = next(
+            item for item in slice_projection["test_cases"] if item["id"] == "TEST-0001"
+        )
+        self.assertEqual(["US-0001"], test_projection["supports"])
         self.assertEqual([], projection["diagnostics"])
 
         (self.base / "slices" / "BROKEN.md").write_text(

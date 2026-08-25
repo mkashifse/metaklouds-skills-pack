@@ -40,7 +40,7 @@ STATIC_FILES = {
     "/demo-data.js": ("demo-data.js", "text/javascript; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
 }
-RUNTIME_VERSION = 3
+RUNTIME_VERSION = 4
 TERMINAL_WORK_STATUSES = {"DONE", "CANCELLED"}
 
 
@@ -97,6 +97,74 @@ def markdown_section(body: str, heading: str) -> str:
     return value.removeprefix("-").strip()
 
 
+def markdown_field(body: str, label: str) -> str:
+    match = re.search(
+        rf"^\*\*{re.escape(label)}:\*\*\s*(.*?)(?=^\*\*|\Z)",
+        body,
+        re.MULTILINE | re.DOTALL,
+    )
+    return re.sub(r"\s+", " ", match.group(1)).strip() if match else ""
+
+
+def slice_stories(body: str) -> list[dict[str, Any]]:
+    stories: list[dict[str, Any]] = []
+    for match in re.finditer(
+        r"^### (US-[A-Za-z0-9-]+) — (.+?)\s*$\n(.*?)(?=^### |^## |\Z)",
+        body,
+        re.MULTILINE | re.DOTALL,
+    ):
+        story_body = match.group(3)
+        acceptance_match = re.search(
+            r"^\*\*Acceptance criteria:\*\*\s*(.*)\Z",
+            story_body,
+            re.MULTILINE | re.DOTALL,
+        )
+        acceptance_body = acceptance_match.group(1) if acceptance_match else ""
+        stories.append(
+            {
+                "id": match.group(1),
+                "title": match.group(2).strip(),
+                "description": markdown_field(story_body, "Story"),
+                "acceptance_criteria": [
+                    value.strip()
+                    for value in re.findall(
+                        r"^\s*-\s+(.+)$", acceptance_body, re.MULTILINE
+                    )
+                    if value.strip()
+                ],
+                "test_ids": [],
+            }
+        )
+    return stories
+
+
+def slice_tests(body: str) -> list[dict[str, Any]]:
+    tests: list[dict[str, Any]] = []
+    for match in re.finditer(
+        r"^### (TEST-[A-Za-z0-9-]+) — (.+?)\s*$\n(.*?)(?=^### |^## |\Z)",
+        body,
+        re.MULTILINE | re.DOTALL,
+    ):
+        test_body = match.group(3)
+        tests.append(
+            {
+                "id": match.group(1),
+                "title": match.group(2).strip(),
+                "type": markdown_field(test_body, "Type") or "UNSPECIFIED",
+                "supports": sorted(
+                    set(
+                        re.findall(
+                            r"US-[A-Za-z0-9-]+",
+                            markdown_field(test_body, "Supports Stories"),
+                        )
+                    )
+                ),
+                "expected_evidence": markdown_field(test_body, "Expected evidence"),
+            }
+        )
+    return tests
+
+
 def read_slice(path: Path) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8")
     match = re.match(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", text, re.DOTALL)
@@ -105,6 +173,14 @@ def read_slice(path: Path) -> dict[str, Any]:
     header = parse_yaml(match.group(1))
     body = match.group(2)
     slice_id = str(header.get("slice_id") or path.stem)
+    stories = slice_stories(body)
+    tests = slice_tests(body)
+    tests_by_story: dict[str, list[str]] = {}
+    for test in tests:
+        for story_id in test["supports"]:
+            tests_by_story.setdefault(story_id, []).append(test["id"])
+    for story in stories:
+        story["test_ids"] = tests_by_story.get(story["id"], [])
     return {
         "id": slice_id,
         "initiative_id": header.get("initiative_id"),
@@ -119,10 +195,10 @@ def read_slice(path: Path) -> dict[str, Any]:
         "approved_at": header.get("approved_at"),
         "approved_by": header.get("approved_by"),
         "outcome": markdown_section(body, "Capability outcome"),
-        "story_count": len(re.findall(r"^### US-[A-Za-z0-9-]+ — ", body, re.MULTILINE)),
-        "test_count": len(
-            re.findall(r"^### TEST-[A-Za-z0-9-]+ — ", body, re.MULTILINE)
-        ),
+        "story_count": len(stories),
+        "test_count": len(tests),
+        "stories": stories,
+        "test_cases": tests,
         "file": path.name,
     }
 

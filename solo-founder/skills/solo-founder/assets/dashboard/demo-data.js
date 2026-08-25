@@ -484,4 +484,66 @@
       issues: 4,
     },
   };
+
+  const detailDefinitions = [
+    {
+      sliceId: "SLICE-0001",
+      storyStart: 1,
+      testStart: 1,
+      stories: [
+        ["Set goals and constraints", "As a new member, I want to record my goal and relevant constraints so the plan is appropriate for me.", ["Goal, experience, equipment, diet, and injury inputs are captured", "High-risk answers route to a safe boundary"], ["Valid onboarding profile", "High-risk profile boundary"]],
+        ["Define weekly availability", "As a busy member, I want to identify realistic workout and meal-preparation windows.", ["Each day supports available time and location", "The plan never exceeds the recorded availability"], ["Weekly schedule capture", "Availability constraint enforcement"]],
+        ["Generate the first plan", "As a member, I want one combined seven-day plan so I know exactly what to do.", ["Workout, meal, and recovery actions are generated together", "Generation completes with a recoverable failure state"], ["Combined plan generation", "Generation recovery path"]],
+        ["Review and accept the plan", "As a member, I want to review the plan before it becomes active.", ["The full week is understandable before acceptance", "Acceptance makes Today immediately actionable"], ["Plan review and activation"]],
+      ],
+    },
+    {
+      sliceId: "SLICE-0002",
+      storyStart: 5,
+      testStart: 8,
+      stories: [
+        ["View today's plan", "As a member, I want a focused Today view so I can act without planning again.", ["Workout, meals, recovery, and progress are visible", "The next recommended action is visually primary"], ["Today plan rendering", "Today empty and failure states"]],
+        ["Complete a workout", "As a member, I want to complete each workout step and record the outcome.", ["Progress persists after every completed set", "Finishing the workout updates today's progress"], ["Workout step completion", "Workout completion persistence"]],
+        ["Log meal adherence", "As a member, I want to mark a meal as followed, changed, or skipped.", ["One-tap adherence is supported", "A changed meal can record a short reason"], ["Meal adherence capture", "Changed meal reason"]],
+        ["Skip an activity", "As a member, I want to skip an activity without losing the rest of my plan.", ["Skipping requires no more than two actions", "Only affected recommendations are reconsidered"], ["Skip activity flow", "Localised adaptation after skip"]],
+        ["Rate activity difficulty", "As a member, I want to report that an activity was too easy or too hard.", ["Difficulty feedback is available after completion", "The next relevant recommendation reflects the feedback"], ["Difficulty feedback capture", "Difficulty-driven recommendation"]],
+        ["Understand and undo an adaptation", "As a member, I want to know why my plan changed and reverse it when needed.", ["Every adaptation shows a short reason and impact", "Undo restores the prior recommendation"], ["Adaptation explanation", "Adaptation undo"]],
+      ],
+    },
+    {
+      sliceId: "SLICE-0003",
+      storyStart: 11,
+      testStart: 20,
+      stories: [
+        ["Join the private beta", "As an invited member, I want to activate my beta account securely.", ["Only invited users can activate", "The beta scope and support limits are visible"], ["Invitation activation", "Invalid invitation rejection"]],
+        ["Give health-data consent", "As a member, I want clear control over the health information I share.", ["Consent is specific and revocable", "Optional data is never required for account access"], ["Consent capture", "Consent withdrawal"]],
+        ["Monitor beta adherence", "As the founder, I want a bounded operational view of engagement and failures.", ["Aggregate adherence and failure signals are visible", "The view excludes unnecessary sensitive detail"], ["Beta metrics visibility", "Sensitive data minimisation"]],
+        ["Request support or deletion", "As a member, I want an obvious route to help and data deletion.", ["Support requests carry enough diagnostic context", "Deletion is confirmed and auditable"], ["Support request flow", "Account deletion flow"]],
+        ["Pause or roll back the beta", "As the founder, I want to stop unsafe behavior without waiting for a new release.", ["New plan generation can be paused independently", "The last stable experience can be restored"], ["Beta pause and rollback"]],
+      ],
+    },
+  ];
+
+  for (const definition of detailDefinitions) {
+    const slice = window.SOLO_FOUNDER_DEMO_STATE.slices.find((item) => item.id === definition.sliceId);
+    if (!slice) continue;
+    let testNumber = definition.testStart;
+    slice.stories = definition.stories.map(([title, description, acceptanceCriteria, testTitles], index) => {
+      const storyId = `US-${String(definition.storyStart + index).padStart(4, "0")}`;
+      const testIds = testTitles.map(() => `TEST-${String(testNumber++).padStart(4, "0")}`);
+      return { id: storyId, title, description, acceptance_criteria: acceptanceCriteria, test_ids: testIds };
+    });
+    testNumber = definition.testStart;
+    slice.test_cases = definition.stories.flatMap((storyDefinition, storyIndex) => {
+      const storyId = `US-${String(definition.storyStart + storyIndex).padStart(4, "0")}`;
+      return storyDefinition[3].map((title, testIndex) => ({
+        id: `TEST-${String(testNumber++).padStart(4, "0")}`,
+        title,
+        type: testIndex % 2 === 0 ? "END_TO_END" : "INTEGRATION",
+        status: slice.status === "DONE" ? "PASSED" : slice.status === "ACTIVE" ? "READY" : "PLANNED",
+        supports: [storyId],
+        expected_evidence: `${title} completes with the expected product state and durable verification evidence.`,
+      }));
+    });
+  }
 })();

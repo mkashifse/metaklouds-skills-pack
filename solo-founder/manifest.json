@@ -1,7 +1,7 @@
 {
   "name": "solo-founder",
   "displayName": "Solo Founder",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "entrySkill": "solo-founder",
   "skills": ["solo-founder"],
   "supportSkills": [

@@ -18,6 +18,7 @@
       <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></symbol>
       <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
       <symbol id="icon-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
     </svg>
 
     <header class="app-header">
@@ -78,6 +79,23 @@
         <span id="projection-source">Waiting for repository data</span>
       </footer>
     </main>
+
+    <div class="modal-backdrop" id="slice-modal" aria-hidden="true">
+      <section class="slice-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <header class="modal-header">
+          <div class="modal-header-copy">
+            <nav class="modal-breadcrumbs" aria-label="Detail hierarchy"><button type="button" id="modal-root">Slices</button><span>/</span><strong id="modal-id">Slice</strong></nav>
+            <div class="modal-heading-row">
+              <span class="modal-entity-icon" aria-hidden="true"><svg class="icon"><use href="#icon-layers"></use></svg></span>
+              <div><h2 id="modal-title">Slice details</h2><p id="modal-subtitle"></p></div>
+            </div>
+          </div>
+          <button class="modal-close" id="modal-close" type="button" aria-label="Close Slice details"><svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg></button>
+        </header>
+        <nav class="modal-tabs" id="modal-tabs" role="tablist" aria-label="Slice detail views"></nav>
+        <div class="modal-content" id="modal-content"></div>
+      </section>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <script src="demo-data.js"></script>

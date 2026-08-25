@@ -39,7 +39,9 @@ Use exactly four primary views:
    state when no Truth exists.
 2. `Slices`: the current Fat Slice files with ID, title, status, priority,
    capability outcome, dependencies, Story/Test counts, prototype checkpoint,
-   promotion map, and linked Work Packages.
+   promotion map, and linked Work Packages. Selecting a Slice opens the Meta
+   PDS-style detail modal with Overview, User Stories and acceptance criteria,
+   related Work Packages, and Test Cases with Story traceability.
 3. `Work`: Product Ledger Work Packages with status, activity, classification,
    direct/delegated execution, role, owner, focus, acceptance, result, evidence,
    blocker, and handoff state/path. Default to active work while keeping review,

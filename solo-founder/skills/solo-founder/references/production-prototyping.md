@@ -40,6 +40,11 @@ The Prototype Engineer builds:
 - a local adapter implementing that interface;
 - a promotion handoff mapping reusable sources to frontend targets.
 
+Place web prototype sources in `prototypes/frontend/` and mobile prototype
+sources in `prototypes/mobile/`. Promotion targets `apps/frontend/` or
+`apps/mobile/`; shared approved components may move to `packages/ui/`, and
+stable service/API contracts belong in `packages/contracts/`.
+
 Components must not import scattered seed records directly:
 
 ```text
@@ -57,6 +62,9 @@ Frontend implementation promotes or moves exact approved files. It replaces
 the seed adapter, connects backend APIs and authentication, adds production
 configuration and telemetry, and performs hardening and tests. It does not
 rebuild navigation, pages, components, or approved UI/UX.
+
+Record the source-to-target map and remaining adapter work in
+`docs/solo-founder/handoffs/` before promotion is marked complete.
 
 A backend constraint requiring a UI or behavior change is drift. Record it and
 return the affected decision to the PM and Human; never silently redesign.

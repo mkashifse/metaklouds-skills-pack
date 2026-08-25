@@ -79,6 +79,7 @@ solo-founder/
 │   ├── modes-and-layers.md
 │   ├── truth-and-product-ledger.md
 │   ├── work-classification.md
+│   ├── repository-structure.md
 │   ├── production-prototyping.md
 │   ├── fat-slice-planning.md
 │   ├── implementation-and-quality.md
@@ -119,6 +120,52 @@ The upstream `prototype` skill is not a required dependency because its
 disposable-prototype assumptions conflict with Solo Founder's production-intent
 default. Production prototyping remains proprietary Solo Founder policy and
 uses the applicable frontend and Vercel support skills directly.
+
+## Product repository structure
+
+Solo Founder initialization creates the following implementation-ready product
+structure additively:
+
+```text
+.
+├── AGENTS.md
+├── docs/solo-founder/
+│   ├── canonical-truth.yaml
+│   ├── product-ledger.yaml
+│   ├── research/
+│   ├── slices/
+│   ├── reports/
+│   ├── architecture/
+│   └── handoffs/
+├── prototypes/
+│   ├── frontend/
+│   └── mobile/
+├── apps/
+│   ├── frontend/
+│   ├── mobile/
+│   └── backend/
+├── packages/
+│   ├── contracts/
+│   ├── domain/
+│   ├── ui/
+│   ├── shared/
+│   └── config/
+├── infrastructure/
+└── tests/
+    ├── e2e/
+    └── integration/
+```
+
+The initializer never overwrites existing repository content. Empty leaf
+directories receive `.gitkeep` so the structure is preserved by Git. It does
+not generate framework code or choose monorepo tooling before relevant
+`TECHNOLOGY` and `SYSTEM_DESIGN` Truth is approved.
+
+Prototype Engineer work belongs in `prototypes/frontend/` or
+`prototypes/mobile/`. Promotion targets the corresponding `apps/` surface;
+shared approved components may move to `packages/ui/`, stable contracts belong
+in `packages/contracts/`, and the promotion map is recorded in
+`docs/solo-founder/handoffs/`.
 
 ## Human–PM interaction modes
 

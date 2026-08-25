@@ -1,7 +1,7 @@
 {
   "name": "solo-founder",
   "displayName": "Solo Founder",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "entrySkill": "solo-founder",
   "skills": ["solo-founder"],
   "supportSkills": [
@@ -26,6 +26,7 @@
     "canonicalTruth": "docs/solo-founder/canonical-truth.yaml",
     "productLedger": "docs/solo-founder/product-ledger.yaml",
     "contextRestore": "skills/solo-founder/scripts/restore_context.py",
-    "ledgerUpdater": "skills/solo-founder/scripts/update_ledger.py"
+    "ledgerUpdater": "skills/solo-founder/scripts/update_ledger.py",
+    "repositoryStructure": "skills/solo-founder/references/repository-structure.md"
   }
 }

@@ -149,6 +149,7 @@ verify_solo_founder_bundle() {
     references/modes-and-layers.md
     references/truth-and-product-ledger.md
     references/work-classification.md
+    references/repository-structure.md
     references/production-prototyping.md
     references/fat-slice-planning.md
     references/implementation-and-quality.md

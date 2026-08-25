@@ -31,6 +31,27 @@ delegates only bounded non-trivial work to specialists.
 {END}
 """
 
+REPOSITORY_DIRECTORIES = (
+    "docs/solo-founder/research",
+    "docs/solo-founder/slices",
+    "docs/solo-founder/reports",
+    "docs/solo-founder/architecture",
+    "docs/solo-founder/handoffs",
+    "prototypes/frontend",
+    "prototypes/mobile",
+    "apps/frontend",
+    "apps/mobile",
+    "apps/backend",
+    "packages/contracts",
+    "packages/domain",
+    "packages/ui",
+    "packages/shared",
+    "packages/config",
+    "infrastructure",
+    "tests/e2e",
+    "tests/integration",
+)
+
 
 def install_bootstrap(product_root: Path) -> None:
     path = product_root / "AGENTS.md"
@@ -46,13 +67,12 @@ def install_bootstrap(product_root: Path) -> None:
 
 def initialize(product_root: Path, skill_root: Path) -> None:
     base = product_root / "docs" / "solo-founder"
-    for directory in (
-        base / "research",
-        base / "slices",
-        base / "reports",
-        product_root / "prototypes",
-    ):
+    for relative_path in REPOSITORY_DIRECTORIES:
+        directory = product_root / relative_path
         directory.mkdir(parents=True, exist_ok=True)
+        marker = directory / ".gitkeep"
+        if not any(directory.iterdir()):
+            marker.touch()
     assets = skill_root / "assets"
     targets = {
         assets / "canonical-truth-template.yaml": base / "canonical-truth.yaml",

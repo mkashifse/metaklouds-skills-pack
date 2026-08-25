@@ -47,6 +47,47 @@ class SoloFounderTests(unittest.TestCase):
         validate_ledger(read_yaml(self.base / "product-ledger.yaml"))
         self.assertIn("$solo-founder", (self.root / "AGENTS.md").read_text())
 
+    def test_repository_structure_is_additive_and_git_visible(self) -> None:
+        expected = (
+            "docs/solo-founder/research",
+            "docs/solo-founder/slices",
+            "docs/solo-founder/reports",
+            "docs/solo-founder/architecture",
+            "docs/solo-founder/handoffs",
+            "prototypes/frontend",
+            "prototypes/mobile",
+            "apps/frontend",
+            "apps/mobile",
+            "apps/backend",
+            "packages/contracts",
+            "packages/domain",
+            "packages/ui",
+            "packages/shared",
+            "packages/config",
+            "infrastructure",
+            "tests/e2e",
+            "tests/integration",
+        )
+        for relative_path in expected:
+            directory = self.root / relative_path
+            self.assertTrue(directory.is_dir(), relative_path)
+            self.assertTrue((directory / ".gitkeep").is_file(), relative_path)
+
+        existing = self.root / "apps" / "frontend" / "existing.txt"
+        existing.write_text("preserve me", encoding="utf-8")
+        subprocess.run(
+            [
+                sys.executable,
+                str(self.skill / "scripts" / "restore_context.py"),
+                str(self.root),
+                "--init",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual("preserve me", existing.read_text(encoding="utf-8"))
+
     def test_yaml_round_trip(self) -> None:
         value = {"name": "Gym plan", "items": [{"id": "ONE", "ok": True}], "empty": []}
         self.assertEqual(value, parse_yaml(dump_yaml(value)))

@@ -105,8 +105,26 @@ docs/solo-founder/
 ├── product-ledger.yaml
 ├── research/
 ├── slices/
-└── reports/
+├── reports/
+├── architecture/
+└── handoffs/
 prototypes/
+├── frontend/
+└── mobile/
+apps/
+├── frontend/
+├── mobile/
+└── backend/
+packages/
+├── contracts/
+├── domain/
+├── ui/
+├── shared/
+└── config/
+infrastructure/
+tests/
+├── e2e/
+└── integration/
 ```
 
 - **Canonical Truth** stores current `PROPOSED` and Human-`APPROVED` product
@@ -114,6 +132,11 @@ prototypes/
 - **Product Ledger** stores current Mode/Layer, initiatives, Work Packages,
   issues, results, evidence, and lifecycle timestamps.
 - Git preserves artifact history; the files contain current state.
+
+The initializer creates this structure additively without overwriting existing
+content. It preserves empty leaf directories with `.gitkeep`, but does not
+choose frameworks or generate stack-specific boilerplate until the relevant
+Technology and System Design Truth is approved.
 
 The PM and assigned specialists have scoped logical write authority. A
 deterministic updater is the Product Ledger's sole physical writer.

@@ -106,6 +106,16 @@ issues, evidence, results, and timestamps. A deterministic updater is its only
 physical writer. Read [references/truth-and-product-ledger.md](references/truth-and-product-ledger.md)
 before creating, approving, or updating Truth or Ledger state.
 
+## Product repository structure
+
+Initialization creates an additive implementation-ready structure for governed
+documents, production-intent prototypes, deployable frontend/mobile/backend
+apps, shared packages, infrastructure, and cross-application tests. It must not
+overwrite existing content or generate stack-specific boilerplate before the
+relevant Technology and System Design Truth is approved. Read
+[references/repository-structure.md](references/repository-structure.md) before
+initializing, reorganizing, or promoting prototype code in a product repository.
+
 ## Product journey and gates
 
 Guide the founder through:

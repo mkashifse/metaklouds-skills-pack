@@ -7,6 +7,7 @@
   const pretty = (value) => String(value ?? "Unknown").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
   const values = (value) => Array.isArray(value) ? value : value == null || value === "" ? [] : [value];
   const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
+  const copyButton = (entity, id) => `<button class="copy-button" type="button" data-copy-entity="${esc(entity)}" data-copy-id="${esc(id)}" aria-label="Copy ${esc(entity)} ${esc(id)} text" title="Copy text">${icon("copy")}</button>`;
 
   let data = null;
   let currentView = "truth";
@@ -84,6 +85,130 @@
     return `${pretty(item.handoff_type)} · awaiting submission`;
   }
 
+  function markdownItems(entries, fallback = "None") {
+    const items = values(entries).filter((entry) => entry != null && String(entry).trim());
+    return items.length ? items.map((item) => `- ${item}`).join("\n") : `- ${fallback}`;
+  }
+
+  function truthMarkdown(item) {
+    return [
+      `# ${item.id} — ${item.title}`,
+      `- **Entity:** Canonical Truth`,
+      `- **Status:** ${item.status}`,
+      `- **Layer:** ${item.layer}`,
+      `- **Affected Layers:** ${values(item.affected_layers).join(", ") || "None"}`,
+      `- **Replaces:** ${item.replaces || "None"}`,
+      `## Statement\n${item.statement || "Not recorded."}`,
+      `## Evidence\n${markdownItems(item.evidence)}`,
+    ].join("\n\n");
+  }
+
+  function sliceMarkdown(item) {
+    const work = relatedWork(item.id);
+    const stories = (item.stories || []).map((story) => [
+      `### ${story.id} — ${story.title}`,
+      story.description || "Story narrative not recorded.",
+      `**Acceptance criteria**\n${markdownItems(story.acceptance_criteria, "Not recorded")}`,
+      `**Linked tests:** ${values(story.test_ids).join(", ") || "None"}`,
+    ].join("\n\n"));
+    return [
+      `# ${item.id} — ${item.title}`,
+      `- **Entity:** Fat Slice`,
+      `- **Status:** ${item.status}`,
+      `- **Priority:** ${item.priority}`,
+      `- **Capability:** ${item.capability_family || "Not recorded"}`,
+      `- **Dependencies:** ${values(item.dependencies).join(", ") || "None"}`,
+      `## Capability outcome\n${item.outcome || "Not recorded."}`,
+      `## User Stories\n${stories.length ? stories.join("\n\n") : "No User Stories recorded."}`,
+      `## Related Work Packages\n${markdownItems(work.map((entry) => `${entry.id} — ${entry.title} [${entry.status}; ${entry.owner}]`))}`,
+      `## Source\n\`docs/solo-founder/slices/${item.file}\``,
+    ].join("\n\n");
+  }
+
+  function workMarkdown(item) {
+    return [
+      `# ${item.id} — ${item.title}`,
+      `- **Entity:** Work Package`,
+      `- **Status:** ${item.status}`,
+      `- **Execution:** ${item.execution}`,
+      `- **Classification:** ${item.classification}`,
+      `- **Activity:** ${item.activity}`,
+      `- **Role / owner:** ${item.role} / ${item.owner}`,
+      `- **Focus:** ${item.workstream}`,
+      `- **Linked Slices:** ${values(item.linked_slice_ids).join(", ") || "None"}`,
+      `## Instruction\n${item.instruction || "Not recorded."}`,
+      `## Expected outcome\n${item.expected_outcome || "Not recorded."}`,
+      `## Acceptance criteria\n${markdownItems(item.acceptance_criteria, "Not recorded")}`,
+      item.result ? `## Result\n${item.result}` : "",
+      item.blocker ? `## Blocker\n${item.blocker}` : "",
+      `## Evidence\n${markdownItems(item.evidence)}`,
+      item.handoff_path ? `## Handoff\n- **State:** ${handoffLabel(item)}\n- **Path:** \`${item.handoff_path}\`` : "",
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function issueMarkdown(item) {
+    const itemStatus = issueStatus(item);
+    const title = item.title || item.summary || `${pretty(item.kind)} ${item.id}`;
+    const detail = item.description || item.detail || item.impact || item.blocker || "No issue detail recorded.";
+    return [
+      `# ${item.id} — ${title}`,
+      `- **Entity:** Product Ledger Issue`,
+      `- **Kind:** ${item.kind}`,
+      `- **Status:** ${itemStatus}`,
+      `- **Severity:** ${item.severity || "Not set"}`,
+      `- **Human approval required:** ${item.human_approval_required ? "Yes" : "No"}`,
+      `## Detail\n${detail}`,
+      item.recommendation ? `## Recommendation\n${item.recommendation}` : "",
+      `## Evidence\n${markdownItems(item.evidence)}`,
+      `## Linked Work\n${markdownItems(item.work_ids || item.linked_work_ids)}`,
+      `## Linked Truth\n${markdownItems(item.truth_ids || item.linked_truth_ids)}`,
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function fallbackCopy(text) {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand("copy");
+    field.remove();
+    if (!copied) throw new Error("Clipboard access is unavailable");
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch (_error) {
+        fallbackCopy(text);
+        return;
+      }
+    }
+    fallbackCopy(text);
+  }
+
+  async function copyEntity(entity, id) {
+    const lookups = {
+      truth: () => truthItems().find((item) => item.id === id),
+      slice: () => data.slices.find((item) => item.id === id),
+      work: () => (data.ledger.work || []).find((item) => item.id === id),
+      issue: () => (data.ledger.issues || []).find((item) => item.id === id),
+    };
+    const serializers = { truth: truthMarkdown, slice: sliceMarkdown, work: workMarkdown, issue: issueMarkdown };
+    const item = lookups[entity]?.();
+    if (!item || !serializers[entity]) return;
+    try {
+      await copyText(serializers[entity](item));
+      showToast(`${id} copied to clipboard.`);
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  }
+
   function showToast(message, isError = false) {
     const toast = $("#toast");
     clearTimeout(toastTimer);
@@ -133,7 +258,7 @@
       <summary>
         <span class="entity-icon">${icon("brain")}</span>
         <span class="row-copy"><span class="row-meta"><i class="state-dot ${tone(item.status)}"></i><span>${esc(item.id)} · ${esc(pretty(item.layer))} · ${esc(dateTime(item.proposed_at))}</span></span><h2>${esc(item.title)}</h2><p>${esc(item.statement)}</p></span>
-        <span class="row-side">${status(item.status)}</span>
+        <span class="row-side">${status(item.status)}${copyButton("truth", item.id)}</span>
         <span class="chevron">${icon("chevron")}</span>
       </summary>
       <div class="row-body">
@@ -178,7 +303,7 @@
       <summary>
         <span class="entity-icon">${icon("layers")}</span>
         <span class="row-copy"><span class="row-meta"><i class="state-dot ${tone(item.status)}"></i><span>${esc(item.id)} · ${esc(item.priority)} priority · ${esc(item.capability_family || "Capability")}</span></span><h2><button class="slice-title-button" type="button" data-open-slice="${esc(item.id)}">${esc(item.title)}</button></h2><p>${esc(item.outcome || "Capability outcome is not recorded.")}</p></span>
-        <span class="row-side"><span>${esc(item.story_count)} stories · ${esc(linkedWork.length)} work</span>${status(item.status)}<button class="row-detail-button" type="button" data-open-slice="${esc(item.id)}">Details</button></span>
+        <span class="row-side"><span>${esc(item.story_count)} stories · ${esc(linkedWork.length)} work</span>${status(item.status)}<button class="row-detail-button" type="button" data-open-slice="${esc(item.id)}">Details</button>${copyButton("slice", item.id)}</span>
         <span class="chevron">${icon("chevron")}</span>
       </summary>
       <div class="row-body">
@@ -336,7 +461,7 @@
       <summary>
         <span class="entity-icon">${icon("list")}</span>
         <span class="row-copy"><span class="row-meta"><i class="state-dot ${tone(item.status)}"></i><span>${esc(item.id)} · ${esc(pretty(item.activity))} · ${esc(pretty(item.classification))} · ${esc(pretty(item.execution))}</span></span><h2>${esc(item.title)}</h2><p>${esc(item.expected_outcome || item.instruction || "Expected outcome is not recorded.")}</p></span>
-        <span class="row-side"><span class="owner">${esc(item.owner)}</span>${status(item.status)}</span>
+        <span class="row-side"><span class="owner">${esc(item.owner)}</span>${status(item.status)}${copyButton("work", item.id)}</span>
         <span class="chevron">${icon("chevron")}</span>
       </summary>
       <div class="row-body">
@@ -401,7 +526,7 @@
       <summary>
         <span class="entity-icon">${icon("alert")}</span>
         <span class="row-copy"><span class="row-meta"><i class="state-dot ${tone(itemStatus === "OPEN" ? "BLOCKED" : itemStatus)}"></i><span>${esc(item.id)} · ${esc(pretty(item.kind))}${item.severity ? ` · ${esc(pretty(item.severity))}` : ""}</span></span><h2>${esc(title)}</h2><p>${esc(detail)}</p></span>
-        <span class="row-side">${item.human_approval_required ? '<span class="status review">Human decision</span>' : ""}${status(itemStatus)}</span>
+        <span class="row-side">${item.human_approval_required ? '<span class="status review">Human decision</span>' : ""}${status(itemStatus)}${copyButton("issue", item.id)}</span>
         <span class="chevron">${icon("chevron")}</span>
       </summary>
       <div class="row-body">
@@ -505,6 +630,13 @@
     if (event.target === $("#slice-modal")) { closeModal(); return; }
     const tab = event.target.closest("[data-modal-tab]");
     if (tab) { modalTab = tab.dataset.modalTab; renderModal(); }
+  });
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-copy-entity]");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    copyEntity(button.dataset.copyEntity, button.dataset.copyId);
   });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && $("#slice-modal").classList.contains("is-open")) closeModal(); });
   window.addEventListener("hashchange", () => selectView(location.hash.slice(1), false));

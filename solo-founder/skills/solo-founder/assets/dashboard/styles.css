@@ -100,6 +100,9 @@ h1, h2, h3, h4, p { margin: 0; }
 .row-side .owner { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
 .row-detail-button { padding: 4px 7px; border: 1px solid var(--border); border-radius: 6px; background: #242424; color: var(--soft); font-size: 10px; cursor: pointer; }
 .row-detail-button:hover { border-color: rgba(232, 120, 50, 0.5); color: var(--orange); }
+.copy-button { display: grid; width: 27px; height: 27px; flex: 0 0 auto; place-items: center; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--faint); cursor: pointer; }
+.copy-button:hover { border-color: var(--border); background: #242424; color: var(--text); }
+.copy-button .icon { width: 14px; height: 14px; }
 .chevron { display: grid; place-items: center; color: var(--faint); transition: transform 0.15s ease; }
 .document-row[open] .chevron { transform: rotate(180deg); }
 .row-body { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(230px, 0.8fr); gap: 22px; padding: 16px 50px 18px 54px; border-top: 1px solid var(--border-soft); background: rgba(255, 255, 255, 0.008); }

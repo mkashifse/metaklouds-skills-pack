@@ -94,67 +94,23 @@ Use `action: RESOLVE` with `resolution_method`, `resolution_action`, and
 | Actor | Logical authority |
 | --- | --- |
 | Human | Direction, Truth approval, consequential risk, redirect/pause/stop |
-| PM | Full Product Ledger management, proposals, chat approval recording, classification, assignment, verification, `DONE`/`REWORK` |
-| Prototype Engineer | Optional assigned parallel prototype execution, typed handoff, result/evidence, blocker, and discovered issue reports for PM consumption |
-| Full-Stack Engineer | Optional assigned parallel execution, typed handoff, result/evidence, blocker, and discovered issue reports for PM consumption |
+| PM | Product decisions, proposals, chat approval recording, governed documents, Slices, and Work Package definition |
+| Prototype Engineer | Direct rapid prototype execution when explicitly invoked by the Human |
+| Full-Stack Engineer | Direct production implementation and verification when explicitly invoked by the Human |
 | Dashboard | Read all; approve proposed Truth only after Human confirmation |
 | Ledger updater | Physical scoped writes only; no judgment or approval |
 
-The PM is the default executor for every activity, including code. The only
-optional executor roles are `PROTOTYPE_ENGINEER` and `FULL_STACK_ENGINEER`.
-`owner` is the assigned worker identity, allowing multiple parallel executors
-without inventing more roles. `workstream` is the temporary focus:
-`PRODUCT`, `PROTOTYPE`, `FRONTEND`, `BACKEND`, or `FULL_STACK`.
+Role selection belongs to the Human. The PM does not automatically route,
+delegate, supervise, or restore context for either engineer. Engineers read
+only the task-local inputs needed for their work and do not change Canonical
+Truth or approved acceptance.
 
-Engineers cannot delegate further or change Mode, Layer, scope, role, owner,
-focus, acceptance, dependencies, initiative state, next action, authority,
-approved Truth, other work, or mark work `DONE`.
+The execution roles do not write the Product Ledger by default. When the Human
+asks for a durable record, update it once at the natural checkpoint using
+actual changed paths and verification evidence. Existing repositories may
+retain delegated-work and handoff fields for backward compatibility; they are
+not required by the thin direct-invocation workflow.
 
-Classification and execution are independent. A small code change is recorded
-like this:
-
-```yaml
-classification: TRIVIAL
-execution: DIRECT
-role: PM
-owner: PM
-workstream: FULL_STACK
-activity: IMPLEMENTATION
-delegation_reason: null
-handoff_type: null
-handoff_path: null
-handoff_submitted_at: null
-handoff_submitted_hash: null
-handoff_consumed_at: null
-owned_paths:
-  - apps/frontend
-  - apps/backend
-  - packages/contracts
-```
-
-When parallel delegation is expected to be faster, record it explicitly:
-
-```yaml
-classification: NON_TRIVIAL
-execution: DELEGATED
-role: FULL_STACK_ENGINEER
-owner: full-stack-1
-workstream: BACKEND
-activity: IMPLEMENTATION
-delegation_reason: PARALLELISM
-handoff_type: IMPLEMENTATION
-handoff_path: docs/solo-founder/handoffs/implementation/WORK-0042.md
-handoff_submitted_at: null
-handoff_submitted_hash: null
-handoff_consumed_at: null
-```
-
-Parallel engineers use separate Work Packages and distinct `owner` identities.
-Delegated work enters `VERIFYING` only after its typed handoff is complete. The
-PM consumes that handoff before recording `DONE` or `REWORK`. Read
-[handoff-contract.md](handoff-contract.md) for the payload and consumption
-rules.
-
-Use the deterministic updater for Ledger changes. It locks, reloads, checks
-actor permissions and transitions, validates, writes a temporary file, and
-atomically replaces the original.
+Use the deterministic updater only when a Ledger write is requested. It locks,
+reloads, validates, writes a temporary file, and atomically replaces the
+original.

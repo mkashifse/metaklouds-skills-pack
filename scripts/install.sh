@@ -29,6 +29,8 @@ only_count=0
 install_complete_profile="false"
 profile_skills=(
   solo-founder
+  prototype-engineer
+  full-stack-engineer
   vercel-react-best-practices
   frontend-design
   vercel-composition-patterns
@@ -104,7 +106,7 @@ if [[ "$only_count" -gt 0 ]]; then
       solo-founder)
         install_complete_profile="true"
         ;;
-      vercel-react-best-practices|frontend-design|vercel-composition-patterns|fastapi|nodejs-backend-patterns|python-testing-patterns|vitest|playwright-best-practices|supabase|supabase-postgres-best-practices)
+      prototype-engineer|full-stack-engineer|vercel-react-best-practices|frontend-design|vercel-composition-patterns|fastapi|nodejs-backend-patterns|python-testing-patterns|vitest|playwright-best-practices|supabase|supabase-postgres-best-practices)
         ;;
       *)
         echo "Error: unknown skill for --only: $selected_skill" >&2
@@ -237,6 +239,8 @@ if [[ "$install_complete_profile" == "true" ]]; then
 fi
 
 install_directory "$repository_root/solo-founder/skills/solo-founder" "solo-founder"
+install_directory "$repository_root/solo-founder/skills/prototype-engineer" "prototype-engineer"
+install_directory "$repository_root/solo-founder/skills/full-stack-engineer" "full-stack-engineer"
 
 fetch_and_install "https://github.com/vercel-labs/agent-skills.git" "7c180d9044c9ae2b442b567aad4e42a28dd5ed62" "skills/react-best-practices" "vercel-react-best-practices"
 fetch_and_install "https://github.com/anthropics/skills.git" "3b3fad96af16a10759d930941b4520ba0c40edae" "skills/frontend-design" "frontend-design"
@@ -251,12 +255,12 @@ fetch_and_install "https://github.com/supabase/agent-skills.git" "1207767388a0ff
 
 echo
 if [[ "$install_complete_profile" == "true" ]]; then
-  echo "Installed the complete Solo Founder profile (11 skills)."
+  echo "Installed the complete Solo Founder profile (13 skills)."
 else
   echo "Installed selected skills: ${only_skills[*]}"
 fi
 if [[ "$target" == "codex" ]]; then
-  echo "Start a new Codex task to refresh the skill catalog, then invoke: Use \$solo-founder"
+  echo "Start a new Codex task to refresh the skill catalog, then invoke: \$solo-founder, \$prototype-engineer, or \$full-stack-engineer"
 else
-  echo "Restart Claude Code, then invoke: Use \$solo-founder"
+  echo "Restart Claude Code, then invoke: \$solo-founder, \$prototype-engineer, or \$full-stack-engineer"
 fi

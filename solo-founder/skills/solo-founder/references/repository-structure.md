@@ -41,9 +41,9 @@ Use one implementation-ready structure across Solo Founder products:
 ## Boundaries
 
 - `docs/solo-founder/` contains governed product evidence and decisions.
-- `docs/solo-founder/handoffs/` contains typed return envelopes only when work
-  crosses from the PM to an optional parallel executor. Direct PM work does not
-  create a handoff.
+- `docs/solo-founder/handoffs/` preserves legacy or explicitly requested
+  cross-role records. Directly invoked execution does not create a handoff by
+  default.
 - `prototypes/` contains production-intent interfaces using local seed adapters.
 - `apps/` contains deployable product surfaces and services.
 - `packages/contracts/` contains API, event, and frontend service contracts.
@@ -69,9 +69,8 @@ approved.
 Prototype work starts in `prototypes/frontend/` or `prototypes/mobile/`.
 Promotion moves or copies approved sources into the matching `apps/` surface,
 extracts justified reusable UI into `packages/ui/`, preserves navigation and
-behavior, replaces the seed adapter with the production adapter, and records a
-handoff only when promotion was delegated. Direct promotion records ordinary
-Work Package evidence.
+behavior, and replaces the seed adapter with the production adapter. Record
+Work Package evidence only when the Human requests a durable delivery record.
 
 Folders for product surfaces that do not apply may remain empty. Remove them
 only with Human approval after Product Direction establishes that they are out

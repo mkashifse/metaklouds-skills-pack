@@ -1,9 +1,9 @@
 {
   "name": "solo-founder",
   "displayName": "Solo Founder",
-  "version": "1.6.1",
+  "version": "2.0.0",
   "entrySkill": "solo-founder",
-  "skills": ["solo-founder"],
+  "skills": ["solo-founder", "prototype-engineer", "full-stack-engineer"],
   "supportSkills": [
     "vercel-react-best-practices",
     "frontend-design",
@@ -24,24 +24,16 @@
     "writeBoundary": "human-confirmed-truth-approval-only"
   },
   "operatingModel": {
-    "humanContact": "Solo Founder Product Manager",
-    "optionalExecutorRoles": ["PROTOTYPE_ENGINEER", "FULL_STACK_ENGINEER"],
-    "defaultExecutor": "PM",
-    "defaultExecutionScope": "all-bounded-work-including-code",
-    "parallelism": "optional-only-when-net-faster",
-    "delegationReason": "PARALLELISM",
-    "handoffTypes": [
-      "RESEARCH",
-      "DOCUMENTATION",
-      "PROTOTYPE",
-      "IMPLEMENTATION",
-      "VERIFICATION",
-      "EXCEPTION"
-    ],
-    "handoffContract": "skills/solo-founder/references/handoff-contract.md",
+    "invocation": "explicit-role-selection",
+    "planningRole": "solo-founder",
+    "prototypeRole": "prototype-engineer",
+    "deliveryRole": "full-stack-engineer",
+    "automaticContextRestore": false,
+    "automaticDelegation": false,
+    "executionArtifacts": "only-when-explicitly-requested",
     "canonicalTruth": "docs/solo-founder/canonical-truth.yaml",
     "productLedger": "docs/solo-founder/product-ledger.yaml",
-    "contextRestore": "skills/solo-founder/scripts/restore_context.py",
+    "contextRestore": "manual-product-wide-status-only",
     "ledgerUpdater": "skills/solo-founder/scripts/update_ledger.py",
     "repositoryStructure": "skills/solo-founder/references/repository-structure.md"
   }

@@ -49,7 +49,11 @@ class SoloFounderTests(unittest.TestCase):
     def test_templates_validate_and_context_bootstrap_exists(self) -> None:
         validate_truth(read_yaml(self.base / "canonical-truth.yaml"))
         validate_ledger(read_yaml(self.base / "product-ledger.yaml"))
-        self.assertIn("$solo-founder", (self.root / "AGENTS.md").read_text())
+        bootstrap = (self.root / "AGENTS.md").read_text()
+        self.assertIn("$solo-founder", bootstrap)
+        self.assertIn("$prototype-engineer", bootstrap)
+        self.assertIn("$full-stack-engineer", bootstrap)
+        self.assertIn("Do not restore", bootstrap)
 
     def test_repository_structure_is_additive_and_git_visible(self) -> None:
         expected = (

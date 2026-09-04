@@ -1,0 +1,7 @@
+interface:
+  display_name: "Prototype Engineer"
+  short_description: "Fast edit-run-view prototype loops"
+  brand_color: "#F59E0B"
+  default_prompt: "Use $prototype-engineer to make this prototype change and show me the result."
+policy:
+  allow_implicit_invocation: false

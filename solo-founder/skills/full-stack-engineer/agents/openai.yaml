@@ -1,0 +1,7 @@
+interface:
+  display_name: "Full-Stack Engineer"
+  short_description: "Direct verified Work Package delivery"
+  brand_color: "#10B981"
+  default_prompt: "Use $full-stack-engineer to implement and verify this Work Package."
+policy:
+  allow_implicit_invocation: false

@@ -1,85 +1,33 @@
-# Implementation, Quality, Release, and Operations
+# Work Package and Release Planning
 
-Implementation begins only for a Human-approved, development-ready Fat Slice.
-The PM creates bounded Work Packages and classifies each as `TRIVIAL` or
-`NON_TRIVIAL`. Classification does not select the actor: the PM executes each
-production change end-to-end by default, including code.
-
-Do not split database, backend, and frontend portions merely because all are
-present. Delegate to a Full-Stack Engineer only when the parallelism criteria
-in [work-classification.md](work-classification.md) are satisfied. Multiple
-engineers require independent Work Packages and a clear PM integration owner.
+The Human invokes `$full-stack-engineer` directly to implement and verify a
+Work Package or bounded production change. The PM does not act as a mandatory
+execution intermediary and does not create handoffs for ordinary direct work.
 
 ## Work Package contract
 
-Each package records:
+Create a Work Package only when durable coordination is useful. Keep it
+implementation-ready and concise:
 
-- immutable instruction and expected outcome;
-- role, owner identity, focus/workstream, activity, owned paths, and exclusions;
-- direct or delegated execution, delegation reason, and typed handoff when
-  delegated;
-- linked approved Truth and Slice IDs;
+- exact outcome and non-goals;
+- linked approved decisions only when material;
+- relevant repositories and paths;
 - dependencies and acceptance criteria;
-- required tests and evidence;
-- result, changed paths, timestamps, and blockers.
+- required verification and observable evidence;
+- security, migration, rollout, or rollback constraints when applicable.
 
-Use the Product Ledger lifecycle:
+Do not prescribe an implementation plan that the codebase can answer more
+reliably. Do not split frontend, backend, and database work merely to create
+more packages; prefer one coherent end-to-end result.
 
-```text
-PENDING → READY → ACTIVE → VERIFYING → DONE
-                         ↘ BLOCKED
-VERIFYING → REWORK → ACTIVE
-```
+## Completion and release
 
-For direct work, the PM verifies the result and records completion. For
-delegated work, the engineer submits the integrated result, durable evidence,
-and complete typed handoff at `VERIFYING`. Only the PM may mark `DONE` or
-`REWORK` after consuming the handoff and reviewing acceptance.
+Implementation evidence should come from changed files and executed checks,
+not status claims. Whole-Slice completion may require integrated behavior,
+permissions, accessibility, migrations, reliability, observability, rollout,
+and rollback evidence, but include only what is material to that Slice.
 
-## Browser-control restriction during frontend development
-
-For frontend or mobile implementation, do not use interactive agent or in-app
-browser control by default. Avoid manual navigation, repeated clicking, page
-inspection, and screenshots. Interactive browser control is allowed only when
-the Human explicitly requests it in the current instruction; a general request
-to build, test, review, or verify the frontend is not authorization.
-
-Prefer static inspection, type checking, linting, unit/component tests, and
-deterministic Playwright tests run from the CLI with compact text results. Do
-not capture or inspect screenshots, video, or traces unless explicitly
-requested. Automated visual-regression comparison may run without passing its
-images through the agent. When acceptance still requires subjective visual
-judgment, provide the runnable frontend to the Human for review and record that
-visual confirmation remains pending.
-
-## Quality and release
-
-Do not declare a Slice complete because a component, package, commit, PR, or
-deployment finished. Require whole-Slice evidence for:
-
-- all acceptance criteria and test expectations;
-- integrated frontend/backend behavior and contracts;
-- permissions, security, privacy, accessibility, and migrations;
-- performance and reliability where material;
-- observability, deployment order, rollback, and remaining risks.
-
-Production release requires Human approval unless already delegated in the
-authority envelope. Record exact commits, deployments, test commands/results,
-and release evidence.
-
-## Outcome validation
-
-After the observation window, compare adoption, task completion, errors,
-latency, support incidents, user feedback, and operating findings with approved
-business and product outcomes. Recommend continue, modify, rollback, or replan.
-
-## Drift
-
-Drift is any mismatch between implementation evidence and approved Truth,
-Slice acceptance, prototype behavior, contracts, or authority. Pause only the
-affected dependency closure. Safe reversible implementation details may be
-resolved within authority and logged as `RESOLVED` during the next exit sweep;
-do not interrupt the work merely to write the Issue. Consequential drift becomes
-`AWAITING_HUMAN` with one recommendation and impact. Skip only that action and
-continue unrelated work. Durable Human decisions become `PROPOSED` Truth;
-one-time authorization remains in the Issue resolution.
+Production release requires Human approval unless release authority was
+explicitly delegated. If implementation reveals a consequential product
+decision, return only that decision to the PM; unrelated engineering can
+continue.

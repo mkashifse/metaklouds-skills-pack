@@ -20,17 +20,14 @@ from solo_founder_core import (
 START = "<!-- SOLO-FOUNDER:START -->"
 END = "<!-- SOLO-FOUNDER:END -->"
 BOOTSTRAP = f"""{START}
-## Solo Founder
+## Solo Founder roles
 
-This product is governed by `$solo-founder`. For product discovery, planning,
-prototype, implementation, QA, release, or operations work, load that skill and
-restore context from `docs/solo-founder/canonical-truth.yaml` and
-`docs/solo-founder/product-ledger.yaml` before acting. The Solo Founder Product
-Manager is the Human's single contact, handles research, documentation,
-planning, prototypes, production code, verification, release, and operations
-directly by default. A Prototype Engineer or Full-Stack Engineer is optional
-parallel capacity only when a bounded delegation is expected to reduce total
-delivery time. Every delegated result returns through a typed handoff to the PM.
+Use `$solo-founder` explicitly for product decisions, planning, governed
+documents, prototype checkpoints, Fat Slices, and Work Packages. Use
+`$prototype-engineer` explicitly for rapid prototype edits and visible feedback
+loops. Use `$full-stack-engineer` explicitly for direct implementation and
+verification. Do not restore the full Solo Founder context automatically;
+inspect only the artifacts relevant to the current request.
 {END}
 """
 
